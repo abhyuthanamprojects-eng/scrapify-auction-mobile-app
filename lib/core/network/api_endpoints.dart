@@ -1,0 +1,63 @@
+abstract final class Endpoints {
+  // Auth
+  static const register = '/auth/register';
+  static const login = '/auth/login';
+  static const requestOtp = '/auth/request-otp';
+  static const verifyOtp = '/auth/verify-otp';
+  static const me = '/auth/me';
+  static const logout = '/auth/logout';
+
+  // Profile
+  static const profile = '/profile';
+  static const addresses = '/profile/addresses';
+  static String address(int id) => '/profile/addresses/$id';
+  static const paymentMethods = '/profile/payment-methods';
+  static String paymentMethod(int id) => '/profile/payment-methods/$id';
+
+  // Categories
+  static const categories = '/categories';
+
+  // Auctions
+  static const auctions = '/auctions';
+  static String auction(String code) => '/auctions/$code';
+  static String auctionLots(String code) => '/auctions/$code/lots';
+  static String auctionLot(String code, String lotId) => '/auctions/$code/lots/$lotId';
+  static String auctionBids(String code) => '/auctions/$code/bids';
+  static String auctionLiveState(String code) => '/auctions/$code/live-state';
+  static String auctionInterested(String code) => '/auctions/$code/interested';
+  static String auctionSubmit(String code) => '/auctions/$code/submit';
+
+  // Bidding
+  static String placeBid(String code) => '/auctions/$code/bids';
+  static String proxyBid(String code) => '/auctions/$code/proxy-bid';
+  static const myBids = '/my-bids';
+
+  // Watchlist
+  static const watchlist = '/watchlist';
+  static String watchlistRemove(String code) => '/watchlist/$code';
+
+  // Wallet & EMD
+  static const wallet = '/wallet';
+  static const walletTransactions = '/wallet/transactions';
+  static const walletTopUp = '/wallet/top-up';
+  static const emd = '/emd';
+  static const emdLock = '/emd/lock';
+  static String emdRelease(int id) => '/emd/$id/release';
+
+  // Orders
+  static const orders = '/orders';
+  static String order(String code) => '/orders/$code';
+  static String orderPay(String code) => '/orders/$code/pay';
+  static String orderPickup(String code) => '/orders/$code/pickup';
+
+  // Vendor / KYC
+  static const vendorRegister = '/vendors/register';
+  static String vendorDocuments(String code) => '/vendors/$code/documents';
+  static String vendorPayment(String code) => '/vendors/$code/registration-payment';
+
+  // Notifications
+  static const notifications = '/notifications';
+  static String notificationRead(int id) => '/notifications/$id/read';
+  static const notificationsReadAll = '/notifications/read-all';
+  static const notificationPreferences = '/notification-preferences';
+}
