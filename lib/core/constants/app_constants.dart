@@ -1,56 +1,80 @@
 abstract final class AppConstants {
-  static const appName = 'Scrapify';
-  static const appTagline = 'Industrial Scrap Auction Platform';
-  static const mockDelay = Duration(milliseconds: 600);
+  static const appName = 'Scrapify Auctions';
+  static const appTagline = 'Enterprise Auction & Strategic Sourcing Marketplace';
+  static const mockDelay = Duration(milliseconds: 400);
   static const currencySymbol = '₹';
   static const locale = 'en_IN';
 
-  // Categories
+  // Generic Auction & Procurement Categories
   static const categories = [
-    'IT Assets',
-    'Mobiles',
-    'PCBs',
-    'Cables',
-    'Batteries',
-    'Appliances',
-    'Mixed Lots',
-    'Metals',
+    'All Categories',
+    'Metals & Scrap',
+    'Machinery & Plant',
+    'IT Assets & Electronics',
+    'Vehicles & Fleet',
+    'Raw Materials',
+    'Inventory & Stock',
+    'Logistics & Freight',
+    'Facility Management',
+    'Construction & Equipment',
+    'Service Contracts',
+    'Packaging & Bulk',
   ];
 
-  // Indian cities
+  // Indian Industrial Hubs & Cities
   static const cities = [
+    'Gurugram',
     'Mumbai',
-    'Delhi',
+    'Bengaluru',
+    'Delhi NCR',
     'Chennai',
-    'Jaipur',
-    'Bangalore',
     'Hyderabad',
     'Pune',
     'Ahmedabad',
+    'Kolkata',
+    'Jamshedpur',
+    'Surat',
+    'Jaipur',
   ];
 
-  // Onboarding
+  // Indian States
+  static const states = [
+    'Maharashtra',
+    'Haryana',
+    'Karnataka',
+    'Delhi',
+    'Tamil Nadu',
+    'Telangana',
+    'Gujarat',
+    'Uttar Pradesh',
+    'West Bengal',
+    'Rajasthan',
+    'Jharkhand',
+  ];
+
+  // Onboarding Slides
   static const onboardingSlides = [
     (
-      title: 'Discover Auctions',
-      subtitle: 'Browse industrial scrap lots from verified sellers across India',
+      title: 'Discover Opportunities',
+      subtitle: 'Participate in verified forward & reverse auctions across diverse enterprise categories.',
       icon: '🔍',
     ),
     (
-      title: 'Live Bidding',
-      subtitle: 'Bid in real-time with auto-extend timers and instant notifications',
+      title: 'Bid in Real Time',
+      subtitle: 'Secure live bidding with auto-bid proxy, anti-snipe extensions, and instant outbid alerts.',
       icon: '⚡',
     ),
     (
-      title: 'Escrow Secure',
-      subtitle: 'Your money is protected with EMD locks and verified transactions',
+      title: 'Manage Full Lifecycle',
+      subtitle: 'Track EMD security, digital gate passes, awards, fulfilment evidence, and payments in one place.',
       icon: '🔒',
     ),
   ];
 
-  // Bid increments
-  static const quickIncrements = [500, 1000, 5000];
+  // Quick Bid Increments / Decrements
+  static const quickIncrements = [5000, 10000, 25000, 50000];
 
-  // Add money quick amounts
-  static const quickAmounts = [1000, 5000, 10000, 25000];
+  // Add Money Quick Amounts
+  static const quickAmounts = [10000, 25000, 50000, 100000];
 }
+

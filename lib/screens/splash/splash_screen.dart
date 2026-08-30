@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/constants/asset_paths.dart';
+import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -23,17 +24,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1400),
     );
     _fadeIn = Tween(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.7, curve: Curves.easeOut)),
     );
-    _scaleUp = Tween(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.6, curve: Curves.easeOut)),
+    _scaleUp = Tween(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.7, curve: Curves.easeOutBack)),
     );
     _controller.forward();
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) context.go('/onboarding');
+
+    Future.delayed(const Duration(milliseconds: 2400), () {
+      if (!mounted) return;
+      final auth = ref.read(authProvider);
+      if (auth.isAuthenticated) {
+        if (auth.user?.kycVerified == true) {
+          context.go('/home');
+        } else {
+          context.go('/reg-status');
+        }
+      } else {
+        context.go('/onboarding');
+      }
     });
   }
 
@@ -58,59 +70,50 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // Brand Icon
                     Container(
-                      width: 176,
-                      height: 176,
+                      width: 110,
+                      height: 110,
                       decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(36),
-                        border: Border.all(
-                          color: AppColors.auctionWithOpacity(0.4),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.blackWithOpacity(0.3),
-                            blurRadius: 40,
-                            offset: const Offset(0, 16),
-                          ),
-                        ],
+                        gradient: AppColors.gradientGold,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: AppColors.shadowGold,
                       ),
-                      padding: const EdgeInsets.all(24),
-                      child: Image.asset(
-                        AssetPaths.appIcon,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => Icon(
+                      child: const Center(
+                        child: Icon(
                           Icons.gavel_rounded,
-                          size: 80,
-                          color: AppColors.auction,
+                          size: 54,
+                          color: AppColors.white,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFD4AF37), Color(0xFFF5D77A), Color(0xFFD4AF37)],
+                        colors: [AppColors.goldSoft, AppColors.white, AppColors.auction],
                       ).createShader(bounds),
                       child: Text(
-                        'Scrapify Auction',
+                        AppConstants.appName,
                         style: AppTextStyles.heading(
-                          size: 36,
+                          size: 38,
                           weight: FontWeight.w900,
                           color: AppColors.white,
-                          letterSpacing: -0.5,
+                          letterSpacing: -0.8,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
-                      'LIVE  ·  SCRAP  ·  ASSETS',
-                      style: AppTextStyles.body(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppColors.auctionWithOpacity(0.8),
-                      ).copyWith(letterSpacing: 3.0),
+                      'ENTERPRISE AUCTION & PROCUREMENT',
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.goldSoft.withValues(alpha: 0.9),
+                        letterSpacing: 2.5,
+                      ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 48),
                     _LoadingDots(),
                   ],
                 ),
@@ -154,9 +157,9 @@ class _LoadingDotsState extends State<_LoadingDots>
       builder: (_, __) => Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(3, (i) {
-          final delay = i * 0.2;
+          final delay = i * 0.25;
           final value = (_ctrl.value - delay).clamp(0.0, 1.0);
-          final opacity = (value < 0.5 ? value * 2 : 2 - value * 2).clamp(0.3, 1.0);
+          final opacity = (value < 0.5 ? value * 2 : 2 - value * 2).clamp(0.2, 1.0);
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
             width: 8,
@@ -171,3 +174,4 @@ class _LoadingDotsState extends State<_LoadingDots>
     );
   }
 }
+

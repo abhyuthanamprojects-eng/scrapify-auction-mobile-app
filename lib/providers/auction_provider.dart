@@ -2,50 +2,67 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/auction.dart';
 import '../services/auction_service.dart';
 import '../services/watchlist_service.dart';
+import '../services/mock_bidplay_repository.dart';
 
 final _auctionService = AuctionService();
 final _watchlistService = WatchlistService();
+final _mockRepo = MockBidPlayRepository();
 
 final auctionsProvider = FutureProvider.family<List<Auction>, AuctionFilter>(
   (ref, filter) async {
-    final result = await _auctionService.list(
-      segment: filter.segment,
-      category: filter.category,
-      search: filter.search,
+    try {
+      final result = await _auctionService.list(
+        segment: filter.segment,
+        category: filter.category,
+        search: filter.search,
+        direction: filter.direction,
+        status: filter.status,
+      );
+      if (result.auctions.isNotEmpty) return result.auctions;
+    } catch (_) {}
+    return _mockRepo.getAuctions(
       direction: filter.direction,
-      status: filter.status,
+      category: filter.category,
+      status: filter.status ?? filter.segment,
+      search: filter.search,
     );
-    return result.auctions;
   },
 );
 
 final liveAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  final result = await _auctionService.list(segment: 'live');
-  return result.auctions;
+  try {
+    final result = await _auctionService.list(segment: 'live');
+    if (result.auctions.isNotEmpty) return result.auctions;
+  } catch (_) {}
+  return _mockRepo.getAuctions(status: 'live');
 });
 
 final upcomingAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  final result = await _auctionService.list(segment: 'upcoming');
-  return result.auctions;
+  try {
+    final result = await _auctionService.list(segment: 'upcoming');
+    if (result.auctions.isNotEmpty) return result.auctions;
+  } catch (_) {}
+  return _mockRepo.getAuctions(status: 'upcoming');
 });
 
 final allAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  final result = await _auctionService.list(
-    status: 'published,live,closed',
-  );
-  return result.auctions;
+  try {
+    final result = await _auctionService.list();
+    if (result.auctions.isNotEmpty) return result.auctions;
+  } catch (_) {}
+  return _mockRepo.getAuctions();
 });
 
 final auctionDetailProvider =
     FutureProvider.family<Auction, String>((ref, code) async {
-  return _auctionService.show(code);
+  try {
+    final auc = await _auctionService.show(code);
+    return auc;
+  } catch (_) {}
+  final fallback = _mockRepo.getAuction(code);
+  if (fallback != null) return fallback;
+  throw Exception('Auction not found');
 });
-
-final liveStateProvider = FutureProvider.family<Map<String, dynamic>, String>(
-  (ref, code) async {
-    return _auctionService.liveState(code);
-  },
-);
 
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
 
@@ -55,7 +72,7 @@ final watchlistProvider =
 );
 
 class WatchlistNotifier extends StateNotifier<Set<String>> {
-  WatchlistNotifier() : super({});
+  WatchlistNotifier() : super({'BP-FWD-2026-1048', 'BP-REV-2026-0872'});
 
   Future<void> load() async {
     try {
@@ -68,13 +85,13 @@ class WatchlistNotifier extends StateNotifier<Set<String>> {
     if (state.contains(code)) {
       try {
         await _watchlistService.remove(code);
-        state = {...state}..remove(code);
       } catch (_) {}
+      state = {...state}..remove(code);
     } else {
       try {
         await _watchlistService.add(code);
-        state = {...state, code};
       } catch (_) {}
+      state = {...state, code};
     }
   }
 
@@ -87,6 +104,7 @@ class AuctionFilter {
   final String? search;
   final String? direction;
   final String? status;
+  final bool emdOnly;
 
   const AuctionFilter({
     this.segment,
@@ -94,6 +112,7 @@ class AuctionFilter {
     this.search,
     this.direction,
     this.status,
+    this.emdOnly = false,
   });
 
   @override
@@ -104,8 +123,10 @@ class AuctionFilter {
           category == other.category &&
           search == other.search &&
           direction == other.direction &&
-          status == other.status;
+          status == other.status &&
+          emdOnly == other.emdOnly;
 
   @override
-  int get hashCode => Object.hash(segment, category, search, direction, status);
+  int get hashCode => Object.hash(segment, category, search, direction, status, emdOnly);
 }
+

@@ -5,40 +5,69 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
-import '../../providers/auction_provider.dart';
-import '../../providers/bid_provider.dart';
 import '../../models/auction.dart';
+import '../../providers/auction_provider.dart';
 import '../../widgets/shared/status_chip.dart';
-import '../../widgets/shared/countdown_timer.dart';
-import '../../widgets/shared/loading_skeleton.dart';
+import '../../widgets/shared/price_display.dart';
+import '../../widgets/lot_details/clarifications_sheet.dart';
 
-class LotDetailsScreen extends ConsumerWidget {
+class LotDetailsScreen extends ConsumerStatefulWidget {
   final String lotId;
   const LotDetailsScreen({super.key, required this.lotId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auctionAsync = ref.watch(auctionDetailProvider(lotId));
+  ConsumerState<LotDetailsScreen> createState() => _LotDetailsScreenState();
+}
+
+class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _tabs = const ['Overview', 'Lots / Items', 'Commercial', 'Eligibility', 'Timeline', 'Docs'];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _tabs.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auctionAsync = ref.watch(auctionDetailProvider(widget.lotId));
+    final isWatchlisted = ref.watch(watchlistProvider).contains(widget.lotId);
 
     return auctionAsync.when(
-      data: (auction) => _AuctionDetailsBody(auction: auction),
+      data: (auction) => _buildBody(context, auction, isWatchlisted),
       loading: () => const Scaffold(
+        backgroundColor: AppColors.appBg,
         body: Center(child: CircularProgressIndicator(color: AppColors.auction)),
       ),
       error: (e, _) => Scaffold(
-        body: Center(child: Text('Error: $e')),
+        backgroundColor: AppColors.appBg,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Failed to load auction: $e', style: AppTextStyles.caption),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(auctionDetailProvider(widget.lotId)),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
-}
 
-class _AuctionDetailsBody extends ConsumerWidget {
-  final Auction auction;
-  const _AuctionDetailsBody({required this.auction});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final bidsAsync = ref.watch(bidHistoryProvider(auction.code));
+  Widget _buildBody(BuildContext context, Auction auction, bool isWatchlisted) {
+    final isReverse = auction.isReverse;
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -46,323 +75,532 @@ class _AuctionDetailsBody extends ConsumerWidget {
         children: [
           CustomScrollView(
             slivers: [
-              _buildImageHeader(context),
-              SliverToBoxAdapter(child: _buildInfo()),
-              if (auction.isLive) SliverToBoxAdapter(child: _buildLiveBidCard()),
-              SliverToBoxAdapter(child: _buildFactsGrid()),
-              SliverToBoxAdapter(child: _buildBidHistory(bidsAsync)),
-              SliverToBoxAdapter(child: _buildEmdNotice()),
-              if (auction.contact != null) SliverToBoxAdapter(child: _buildContactInfo()),
-              const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          ),
-          if (auction.isLive) _buildStickyBottom(context),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImageHeader(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 240,
-      pinned: true,
-      backgroundColor: AppColors.navy,
-      leading: GestureDetector(
-        onTap: () => context.pop(),
-        child: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.whiteWithOpacity(0.95),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
-        ),
-      ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.all(8),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.whiteWithOpacity(0.95),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(auction.code, style: AppTextStyles.labelTiny),
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          color: AppColors.navyWithOpacity(0.1),
-          child: auction.photos.isNotEmpty
-              ? PageView.builder(
-                  itemCount: auction.photos.length,
-                  itemBuilder: (_, i) => Image.network(
-                    auction.photos[i],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        Center(child: Icon(Icons.image, size: 48, color: AppColors.navyWithOpacity(0.2))),
+              // Sliver App Bar with Media Carousel
+              SliverAppBar(
+                expandedHeight: 250,
+                pinned: true,
+                backgroundColor: AppColors.navy,
+                leading: GestureDetector(
+                  onTap: () => context.pop(),
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withValues(alpha: 0.9),
+                      shape: BoxShape.circle,
+                      boxShadow: AppColors.shadowSm,
+                    ),
+                    child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
                   ),
-                )
-              : Center(child: Icon(Icons.image, size: 48, color: AppColors.navyWithOpacity(0.2))),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfo() {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (auction.category != null) _categoryChip(auction.category!),
-              if (auction.materialType != null) ...[
-                const SizedBox(width: 6),
-                _categoryChip(auction.materialType!),
-              ],
-              const Spacer(),
-              if (auction.isLive) StatusChip.live(),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(auction.title, style: AppTextStyles.titleLarge),
-          const SizedBox(height: 4),
-          Text(
-            '${auction.company} · ${auction.location ?? ''}',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.navyWithOpacity(0.7), height: 1.5,
-            ),
-          ),
-          if (auction.terms != null) ...[
-            const SizedBox(height: 8),
-            Text(auction.terms!, style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.navyWithOpacity(0.6), height: 1.4,
-            )),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _categoryChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: AppColors.accentBlue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accentBlue),
-      ),
-    );
-  }
-
-  Widget _buildLiveBidCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(color: AppColors.auction.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('CURRENT BID', style: AppTextStyles.labelTiny.copyWith(
-                    color: AppColors.navyWithOpacity(0.5),
-                  )),
-                  const SizedBox(height: 2),
-                  Text(Formatters.formatINR(auction.currentHighestInr), style: AppTextStyles.priceLarge),
+                ),
+                actions: [
+                  GestureDetector(
+                    onTap: () => ref.read(watchlistProvider.notifier).toggle(auction.code),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isWatchlisted ? Icons.bookmark : Icons.bookmark_border,
+                        size: 18,
+                        color: isWatchlisted ? AppColors.auction : AppColors.navy,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Auction link copied: ${auction.code}')),
+                      );
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 8, right: 14, left: 4),
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: AppColors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.share_outlined, size: 18, color: AppColors.navy),
+                    ),
+                  ),
                 ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      auction.photos.isNotEmpty
+                          ? Image.network(
+                              auction.photos.first,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _mediaPlaceholder(),
+                            )
+                          : _mediaPlaceholder(),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.45),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.7),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 14,
+                        left: 20,
+                        right: 20,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(auction.code, style: AppTextStyles.mono),
+                            ),
+                            AuctionTypeChip(direction: auction.direction),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('ENDS IN', style: AppTextStyles.labelTiny.copyWith(
-                    color: AppColors.navyWithOpacity(0.5),
-                  )),
-                  const SizedBox(height: 2),
-                  CountdownTimer(initialSeconds: auction.secondsRemaining),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.people_outline, size: 12, color: AppColors.navyWithOpacity(0.5)),
-              const SizedBox(width: 4),
-              Text('${auction.bidders} bidders', style: AppTextStyles.captionMuted),
-              const Spacer(),
-              Text(
-                auction.isForward ? 'Forward Auction' : 'Reverse Auction',
-                style: AppTextStyles.labelTiny.copyWith(color: AppColors.accentBlue),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFactsGrid() {
-    final facts = [
-      ('Quantity', auction.quantity ?? '-', Icons.scale),
-      ('Location', auction.location ?? '-', Icons.location_on_outlined),
-      ('Material', auction.materialType ?? '-', Icons.info_outline),
-      ('EMD', Formatters.formatINR(auction.emdAmountInr), Icons.account_balance_wallet_outlined),
-    ];
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 2.5,
-        children: facts.map((f) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.navyWithOpacity(0.03),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          ),
-          child: Row(
-            children: [
-              Icon(f.$3, size: 16, color: AppColors.navyWithOpacity(0.4)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(f.$1, style: AppTextStyles.captionMuted),
-                    Text(f.$2, style: AppTextStyles.labelMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
+              // Title & Core Summary Card
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+                    border: Border.all(color: AppColors.cardBorder),
+                    boxShadow: AppColors.shadowSm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (auction.category != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.navy.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                auction.category!,
+                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.navy),
+                              ),
+                            ),
+                          const Spacer(),
+                          if (auction.isLive)
+                            StatusChip.live()
+                          else
+                            StatusChip.fromStatus(auction.status.name),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        auction.title,
+                        style: AppTextStyles.heading(size: 18, weight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.business, size: 14, color: Color(0xFF64748B)),
+                          const SizedBox(width: 5),
+                          Text(auction.company, style: AppTextStyles.caption),
+                          if (auction.location != null) ...[
+                            const SizedBox(width: 8),
+                            const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                            const SizedBox(width: 3),
+                            Text(auction.location!, style: AppTextStyles.captionMuted),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      // Price & Countdown Banner
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.appBg,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            PriceDisplay(
+                              label: isReverse ? 'CURRENT L1 OFFER' : 'CURRENT HIGHEST BID',
+                              amount: auction.currentHighestInr > 0 ? auction.currentHighestInr : auction.startingPriceInr,
+                              isReverse: isReverse,
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                const Text(
+                                  'CLOSING IN',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.timer_outlined, size: 14, color: AppColors.auction),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      Formatters.formatCountdown(auction.secondsRemaining),
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.auction),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Tab Selector Strip
+              SliverToBoxAdapter(
+                child: Container(
+                  height: 40,
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelColor: AppColors.white,
+                    unselectedLabelColor: AppColors.navyWithOpacity(0.6),
+                    labelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
+                    unselectedLabelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                    indicator: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerHeight: 0,
+                    tabs: _tabs.map((t) => Tab(text: t)).toList(),
+                  ),
+                ),
+              ),
+
+              // Tab Content Area
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(16, 14, 16, 120),
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+                    border: Border.all(color: AppColors.cardBorder),
+                    boxShadow: AppColors.shadowSm,
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _tabController,
+                    builder: (ctx, _) {
+                      switch (_tabController.index) {
+                        case 0:
+                          return _buildOverviewTab(auction);
+                        case 1:
+                          return _buildLotsTab(auction);
+                        case 2:
+                          return _buildCommercialTab(auction);
+                        case 3:
+                          return _buildEligibilityTab(auction);
+                        case 4:
+                          return _buildTimelineTab(auction);
+                        case 5:
+                          return _buildDocumentsTab(auction);
+                        default:
+                          return _buildOverviewTab(auction);
+                      }
+                    },
+                  ),
                 ),
               ),
             ],
           ),
-        )).toList(),
+
+          // Contextual Bottom CTA
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: _buildStickyBottomCTA(context, auction),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBidHistory(AsyncValue bidsAsync) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-      child: Column(
+  Widget _mediaPlaceholder() {
+    return Container(
+      color: AppColors.navyDark,
+      child: const Center(
+        child: Icon(Icons.gavel_rounded, size: 60, color: AppColors.white),
+      ),
+    );
+  }
+
+  Widget _buildOverviewTab(Auction a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle('Event Description & Scope'),
+        const SizedBox(height: 8),
+        Text(
+          a.description.isNotEmpty
+              ? a.description
+              : 'Detailed industrial auction lot. Inspection encouraged before participation. Material sold strictly on as-is where-is basis.',
+          style: AppTextStyles.body(size: 13.5, color: AppColors.navy.withValues(alpha: 0.8), height: 1.6),
+        ),
+        const SizedBox(height: 18),
+        _tabSectionTitle('Key Parameters'),
+        const SizedBox(height: 8),
+        _keyValRow('Event ID', a.code),
+        _keyValRow('Category', a.category ?? 'Industrial Asset'),
+        _keyValRow('Auction Format', a.direction.toUpperCase()),
+        _keyValRow('Quantity / Unit', '${a.quantity ?? '1'} ${a.uom ?? 'Lot'}'),
+        _keyValRow('Plant / Location', a.location ?? 'Pan-India'),
+        _keyValRow('Inspection', a.inspectionRequired ? 'Mandatory Site Inspection' : 'Optional / Online BOQ'),
+        if (a.inspectionDate != null) _keyValRow('Inspection Window', a.inspectionDate!),
+      ],
+    );
+  }
+
+  Widget _buildLotsTab(Auction a) {
+    if (a.subLots.isEmpty) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Bid History', style: AppTextStyles.titleSmall),
+          _tabSectionTitle('Single Consolidated Lot'),
           const SizedBox(height: 8),
-          bidsAsync.when(
-            data: (bids) => Column(
-              children: (bids as List).take(5).map((b) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.appBg,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.inventory_2_outlined, color: AppColors.navy, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(a.title, style: AppTextStyles.labelLarge),
+                      const SizedBox(height: 2),
+                      Text('Quantity: ${a.quantity ?? '1'} ${a.uom ?? 'Units'}', style: AppTextStyles.captionMuted),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle('Sub-Lots Breakdown (${a.subLots.length} Items)'),
+        const SizedBox(height: 10),
+        ...a.subLots.map((sl) => Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.appBg,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(sl.code, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.white)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(sl.name, style: AppTextStyles.labelMedium),
+                        Text('Qty: ${sl.quantity ?? "1"} ${sl.uom ?? "Units"}', style: AppTextStyles.captionMuted),
+                      ],
+                    ),
+                  ),
+                  Text(Formatters.formatINR(sl.currentBidInr), style: AppTextStyles.labelLarge),
+                ],
+              ),
+            )),
+      ],
+    );
+  }
+
+  Widget _buildCommercialTab(Auction a) {
+    final isReverse = a.isReverse;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle(isReverse ? 'Reverse Pricing Structure' : 'Forward Bidding Rules'),
+        const SizedBox(height: 10),
+        _keyValRow(isReverse ? 'Opening Ceiling Price' : 'Starting Price', Formatters.formatINR(a.startingPriceInr)),
+        _keyValRow(isReverse ? 'Minimum Decrement Step' : 'Minimum Increment Step', Formatters.formatINR(isReverse ? a.decrementInr : a.bidIncrementInr)),
+        _keyValRow('EMD Security Deposit', Formatters.formatINR(a.emdAmountInr)),
+        _keyValRow('Reserve / Target Visibility', a.reserveNa ? 'Not Applicable' : 'Confidential (Admin Evaluated)'),
+        if (a.landedCosts.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _tabSectionTitle('Landed Cost Components'),
+          const SizedBox(height: 6),
+          ...a.landedCosts.map((lc) => _keyValRow(lc.label, Formatters.formatINR(lc.amount))),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEligibilityTab(Auction a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle('Bidder Qualification Checklist'),
+        const SizedBox(height: 12),
+        _eligibilityItem('Company Registration & GST Verified', true, 'Verified via GSTIN Portal'),
+        _eligibilityItem('Category Authorization', true, 'Eligible for ${a.category ?? "General Auctions"}'),
+        _eligibilityItem('Auction Terms & Conditions', a.termsAccepted, a.termsAccepted ? 'Accepted v1.2' : 'Action Required: Acceptance Pending'),
+        _eligibilityItem('EMD Security Escrow', a.emdPaid, a.emdPaid ? 'Locked in Escrow' : 'Deposit required before live bidding'),
+        if (a.inspectionRequired)
+          _eligibilityItem('Physical Site Inspection', false, 'Book inspection slot prior to event'),
+      ],
+    );
+  }
+
+  Widget _buildTimelineTab(Auction a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle('Event Schedule & Deadlines'),
+        const SizedBox(height: 12),
+        _timelineStep('Inspection Window', a.inspectionDate ?? '28 Aug 2026', true),
+        _timelineStep('Registration & EMD Cutoff', '2 hours prior to live start', true),
+        _timelineStep('Live Auction Start', a.scheduleStart ?? 'Active Now', a.isLive),
+        _timelineStep('Auction Closure & Sniping Extension', a.scheduleEnd ?? 'In 12 mins', false),
+        _timelineStep('Award Acceptance & 100% Settlement', 'Within 48h of closure', false),
+      ],
+    );
+  }
+
+  Widget _buildDocumentsTab(Auction a) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _tabSectionTitle('Tender Documents & Addenda'),
+        const SizedBox(height: 10),
+        _docTile('Full Technical Specification & BOQ.pdf', '2.4 MB • Verified', Icons.picture_as_pdf),
+        _docTile('General Auction Terms & Lifting Policy.pdf', '1.1 MB • Legal Version 1.2', Icons.description),
+        const SizedBox(height: 14),
+        OutlinedButton.icon(
+          onPressed: () => ClarificationsSheet.show(context, auctionCode: a.code, auctionTitle: a.title),
+          icon: const Icon(Icons.forum_outlined, size: 18, color: AppColors.navy),
+          label: const Text('Pre-Bid Clarifications & Q&A (2 Published)', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy)),
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+          ),
+        ),
+        if (a.addenda.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _tabSectionTitle('Addenda & Corrigenda'),
+          const SizedBox(height: 6),
+          ...a.addenda.map((ad) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.warningLight,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color: AppColors.navyWithOpacity(0.05),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          b.vendorName.isNotEmpty ? b.vendorName[0] : '?',
-                          style: AppTextStyles.labelMedium,
-                        ),
-                      ),
-                    ),
+                    const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(b.vendorName, style: AppTextStyles.labelSmall),
-                          Text(Formatters.timeAgo(b.at), style: AppTextStyles.captionMuted),
+                          Text('Addendum #${ad.number}: ${ad.title}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                          Text(ad.description, style: const TextStyle(fontSize: 10.5, color: AppColors.navy)),
                         ],
                       ),
                     ),
-                    Text(
-                      Formatters.formatINR(b.amountInr),
-                      style: AppTextStyles.priceSmall,
-                    ),
                   ],
                 ),
-              )).toList(),
-            ),
-            loading: () => const LoadingSkeleton(height: 100),
-            error: (_, __) => const Text('Failed to load bids'),
-          ),
+              )),
+        ],
+      ],
+    );
+  }
+
+  Widget _tabSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.navy.withValues(alpha: 0.7), letterSpacing: 0.4),
+    );
+  }
+
+  Widget _keyValRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
         ],
       ),
     );
   }
 
-  Widget _buildEmdNotice() {
-    return Container(
-      margin: const EdgeInsets.all(AppSpacing.screenPaddingH),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.auction.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.auction.withValues(alpha: 0.15)),
-      ),
+  Widget _eligibilityItem(String title, bool isComplete, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, size: 16, color: AppColors.auction),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'EMD of ${Formatters.formatINR(auction.emdAmountInr)} required to place a bid',
-              style: AppTextStyles.caption.copyWith(color: AppColors.auction),
-            ),
+          Icon(
+            isComplete ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            color: isComplete ? AppColors.success : AppColors.auction,
+            size: 18,
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactInfo() {
-    final c = auction.contact!;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.navyWithOpacity(0.05),
-              shape: BoxShape.circle,
-            ),
-            child: Center(child: Text(c.name?[0] ?? 'C', style: AppTextStyles.labelLarge)),
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(c.name ?? 'Contact', style: AppTextStyles.labelMedium),
-                if (c.phone != null || c.email != null)
-                  Text(c.phone ?? c.email ?? '', style: AppTextStyles.captionMuted),
+                Text(title, style: AppTextStyles.labelMedium),
+                Text(subtitle, style: AppTextStyles.captionMuted),
               ],
             ),
           ),
@@ -371,44 +609,114 @@ class _AuctionDetailsBody extends ConsumerWidget {
     );
   }
 
-  Widget _buildStickyBottom(BuildContext context) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Container(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.screenPaddingH,
-          12,
-          AppSpacing.screenPaddingH,
-          MediaQuery.of(context).padding.bottom + 12,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          border: Border(top: BorderSide(color: AppColors.blackWithOpacity(0.05))),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('Current Bid', style: AppTextStyles.captionMuted),
-                  Text(Formatters.formatINR(auction.currentHighestInr), style: AppTextStyles.priceMedium),
-                ],
+  Widget _timelineStep(String label, String time, bool isDone) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isDone ? AppColors.success : AppColors.navy.withValues(alpha: 0.3),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(label, style: AppTextStyles.labelMedium)),
+          Text(time, style: AppTextStyles.captionMuted),
+        ],
+      ),
+    );
+  }
+
+  Widget _docTile(String name, String meta, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.appBg,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.accentBlue, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                Text(meta, style: AppTextStyles.captionMuted),
+              ],
+            ),
+          ),
+          const Icon(Icons.download_rounded, size: 18, color: AppColors.navy),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickyBottomCTA(BuildContext context, Auction a) {
+    final isLive = a.isLive;
+
+    String ctaLabel;
+    VoidCallback onCta;
+    Color buttonColor = AppColors.auction;
+
+    if (!a.termsAccepted) {
+      ctaLabel = 'Accept Terms & Conditions';
+      onCta = () => context.push('/terms/${a.code}');
+    } else if (a.inspectionRequired) {
+      ctaLabel = 'Book Physical Inspection';
+      onCta = () => context.push('/inspection/${a.code}');
+    } else if (!a.emdPaid && a.emdAmountInr > 0) {
+      ctaLabel = 'Lock EMD (${Formatters.formatINR(a.emdAmountInr)})';
+      onCta = () => context.push('/emd/${a.code}');
+    } else if (a.direction == 'rfq') {
+      ctaLabel = 'Submit RFx / Technical Prequalification';
+      buttonColor = AppColors.purple;
+      onCta = () => context.push('/rfx/${a.code}');
+    } else if (isLive) {
+      ctaLabel = a.isReverse ? 'Enter Live Reverse Auction' : 'Enter Live Bidding Room';
+      buttonColor = a.isReverse ? AppColors.accentBlue : AppColors.auction;
+      onCta = () => context.push(a.isReverse ? '/live-reverse/${a.code}' : '/live/${a.code}');
+    } else {
+      ctaLabel = 'View Auction Result';
+      buttonColor = AppColors.navy;
+      onCta = () => context.push('/won');
+    }
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        border: const Border(top: BorderSide(color: AppColors.cardBorder)),
+        boxShadow: AppColors.shadowLg,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 52,
+              child: ElevatedButton(
+                onPressed: onCta,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: AppColors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  ctaLabel,
+                  style: AppTextStyles.heading(size: 14.5, weight: FontWeight.w800, color: AppColors.white),
+                ),
               ),
             ),
-            SizedBox(
-              height: AppSpacing.buttonXl,
-              child: ElevatedButton.icon(
-                onPressed: () => context.push('/live/${auction.code}'),
-                icon: const Icon(Icons.gavel, size: 18),
-                label: const Text('Place Bid'),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

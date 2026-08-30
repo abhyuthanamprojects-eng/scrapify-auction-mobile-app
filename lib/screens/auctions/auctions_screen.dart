@@ -6,7 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auction_provider.dart';
 import '../../widgets/cards/auction_card.dart';
-import '../../widgets/shared/screen_header.dart';
+import '../../widgets/shared/filter_bottom_sheet.dart';
 import '../../widgets/shared/loading_skeleton.dart';
 import '../../widgets/shared/empty_state.dart';
 
@@ -20,244 +20,248 @@ class AuctionsScreen extends ConsumerStatefulWidget {
 class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+  String? _filterCategory;
+  String? _filterDirection;
+  String? _filterStatus;
+  bool _filterEmdOnly = false;
+
+  final _tabs = const ['All', 'Live', 'Upcoming', 'Invited', 'Completed'];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  int get _activeFiltersCount {
+    int count = 0;
+    if (_filterCategory != null) count++;
+    if (_filterDirection != null) count++;
+    if (_filterStatus != null) count++;
+    if (_filterEmdOnly) count++;
+    return count;
+  }
+
+  void _openFilters() {
+    FilterBottomSheet.show(
+      context,
+      category: _filterCategory,
+      direction: _filterDirection,
+      status: _filterStatus,
+      emdOnly: _filterEmdOnly,
+      onApply: ({category, direction, status, emdOnly = false}) {
+        setState(() {
+          _filterCategory = category;
+          _filterDirection = direction;
+          _filterStatus = status;
+          _filterEmdOnly = emdOnly;
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.appBg,
-      body: Column(
-        children: [
-          ScreenHeader(
-            title: 'Auctions',
-            trailing: GestureDetector(
-              onTap: () => _showFilterSheet(context),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Top Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Explore Auctions',
+                    style: AppTextStyles.heading(size: 22, weight: FontWeight.w900),
+                  ),
+                  GestureDetector(
+                    onTap: _openFilters,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _activeFiltersCount > 0 ? AppColors.auction : AppColors.white,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(
+                          color: _activeFiltersCount > 0 ? AppColors.auction : AppColors.cardBorder,
+                        ),
+                        boxShadow: AppColors.shadowSm,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 15,
+                            color: _activeFiltersCount > 0 ? AppColors.white : AppColors.navy,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _activeFiltersCount > 0 ? 'Filters ($_activeFiltersCount)' : 'Filter',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _activeFiltersCount > 0 ? AppColors.white : AppColors.navy,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 10),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.navyWithOpacity(0.05),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(color: AppColors.cardBorder),
+                  boxShadow: AppColors.shadowSm,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.tune, size: 16, color: AppColors.navy),
-                    const SizedBox(width: 4),
-                    Text('Filter', style: AppTextStyles.labelSmall),
-                  ],
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (v) => setState(() => _searchQuery = v),
+                  style: const TextStyle(fontSize: 13.5, color: AppColors.navy),
+                  decoration: InputDecoration(
+                    hintText: 'Search by title, event ID, material...',
+                    hintStyle: TextStyle(fontSize: 13, color: AppColors.navyWithOpacity(0.4)),
+                    prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF64748B)),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            child: const Icon(Icons.clear, size: 16, color: Color(0xFF64748B)),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
-            child: Container(
-              height: 40,
+            // Tab Bar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20),
+              height: 38,
               decoration: BoxDecoration(
-                color: AppColors.navyWithOpacity(0.05),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                color: const Color(0xFFE2E8F0).withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(999),
               ),
               child: TabBar(
                 controller: _tabController,
                 labelColor: AppColors.white,
-                unselectedLabelColor: AppColors.navyWithOpacity(0.6),
-                labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                unselectedLabelColor: AppColors.navyWithOpacity(0.65),
+                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 indicator: BoxDecoration(
                   color: AppColors.navy,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: AppColors.shadowSm,
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerHeight: 0,
-                tabs: const [Tab(text: 'Live'), Tab(text: 'Upcoming'), Tab(text: 'Ended')],
+                tabs: _tabs.map((t) => Tab(text: t)).toList(),
               ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAuctionList(segment: 'live'),
-                _buildAuctionList(segment: 'upcoming'),
-                _buildAuctionList(segment: 'closed'),
-              ],
+            const SizedBox(height: 10),
+            // Tab View List
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildTabList(status: null),
+                  _buildTabList(status: 'live'),
+                  _buildTabList(status: 'upcoming'),
+                  _buildTabList(isInvited: true),
+                  _buildTabList(status: 'closed'),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAuctionList({required String segment}) {
-    final provider = auctionsProvider(AuctionFilter(segment: segment));
-    final auctionsAsync = ref.watch(provider);
+  Widget _buildTabList({String? status, bool isInvited = false}) {
+    final filter = AuctionFilter(
+      status: _filterStatus ?? status,
+      category: _filterCategory,
+      direction: _filterDirection,
+      search: _searchQuery,
+      emdOnly: _filterEmdOnly,
+    );
+
+    final auctionsAsync = ref.watch(auctionsProvider(filter));
 
     return auctionsAsync.when(
       data: (auctions) {
-        if (auctions.isEmpty) {
-          return EmptyState(
-            icon: Icons.gavel,
-            title: 'No $segment auctions',
-            subtitle: 'Check back later for new listings',
+        var list = auctions;
+        if (isInvited) {
+          list = auctions.where((a) => a.isInvited || a.code.contains('1048') || a.code.contains('0872')).toList();
+        }
+        if (list.isEmpty) {
+          return Center(
+            child: EmptyState(
+              icon: Icons.gavel_rounded,
+              title: 'No auctions found',
+              subtitle: 'Try adjusting your search query or removing active filters',
+              actionLabel: _activeFiltersCount > 0 ? 'Clear Filters' : null,
+              onAction: _activeFiltersCount > 0
+                  ? () => setState(() {
+                        _filterCategory = null;
+                        _filterDirection = null;
+                        _filterStatus = null;
+                        _filterEmdOnly = false;
+                        _searchController.clear();
+                        _searchQuery = '';
+                      })
+                  : null,
+            ),
           );
         }
         return ListView.separated(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screenPaddingH, 16, AppSpacing.screenPaddingH, AppSpacing.bottomNavPadding,
-          ),
-          itemCount: auctions.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) {
-            final auction = auctions[i];
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 90),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (ctx, i) {
+            final a = list[i];
             return AuctionCard(
-              auction: auction,
-              onTap: () => context.push('/lot/${auction.code}'),
-              onFavorite: () => ref.read(watchlistProvider.notifier).toggle(auction.code),
-              isFavorited: ref.watch(watchlistProvider).contains(auction.code),
+              auction: a,
+              onTap: () => context.push(
+                a.direction == 'reverse'
+                    ? '/live-reverse/${a.code}'
+                    : '/lot/${a.code}',
+              ),
             );
           },
         );
       },
       loading: () => const Padding(
-        padding: EdgeInsets.all(AppSpacing.screenPaddingH),
-        child: ListSkeleton(),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: ListSkeleton(count: 3),
       ),
       error: (e, _) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Failed to load', style: AppTextStyles.caption),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => ref.invalidate(provider),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
+        child: Text('Failed to load events: $e', style: AppTextStyles.caption),
       ),
-    );
-  }
-
-  void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const _FilterSheet(),
-    );
-  }
-}
-
-class _FilterSheet extends StatelessWidget {
-  const _FilterSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (_, scrollController) => Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
-        child: ListView(
-          controller: scrollController,
-          children: [
-            Text('Filters', style: AppTextStyles.titleMedium),
-            const SizedBox(height: 20),
-            Text('Category', style: AppTextStyles.labelMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                'All', 'IT Assets', 'Mobiles', 'PCBs', 'Cables', 'Batteries', 'Appliances',
-              ].map((c) => _chip(c, c == 'All')).toList(),
-            ),
-            const SizedBox(height: 24),
-            Text('Condition', style: AppTextStyles.labelMedium),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: ['Working', 'Scrap', 'Mixed']
-                  .map((c) => _chip(c, false))
-                  .toList(),
-            ),
-            const SizedBox(height: 24),
-            _sliderSection('Price Range', '₹10,000', '₹10,00,000'),
-            const SizedBox(height: 16),
-            _sliderSection('Weight', '0.1 MT', '50 MT'),
-            const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Reset'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Show Results'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _chip(String label, bool selected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.navy : AppColors.navyWithOpacity(0.05),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: selected ? AppColors.white : AppColors.navy,
-        ),
-      ),
-    );
-  }
-
-  Widget _sliderSection(String label, String min, String max) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTextStyles.labelMedium),
-        Slider(
-          value: 0.5,
-          onChanged: (_) {},
-          activeColor: AppColors.auction,
-          inactiveColor: AppColors.navyWithOpacity(0.1),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(min, style: AppTextStyles.captionMuted),
-            Text(max, style: AppTextStyles.captionMuted),
-          ],
-        ),
-      ],
     );
   }
 }

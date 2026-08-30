@@ -121,4 +121,65 @@ class AuctionService {
             .toList() ??
         [];
   }
+
+  // Pre-Auction Inspections & Gate Passes
+  Future<Map<String, dynamic>> getInspections(String code) async {
+    return await _api.get(Endpoints.auctionInspections(code));
+  }
+
+  Future<Map<String, dynamic>> bookInspection(String code, Map<String, dynamic> body) async {
+    return await _api.post(Endpoints.auctionInspections(code), data: body);
+  }
+
+  Future<Map<String, dynamic>> verifyGatePass(String qrToken) async {
+    return await _api.get(Endpoints.verifyGatePass(qrToken), anonymous: true);
+  }
+
+  Future<Map<String, dynamic>> scanGatePass(String qrToken) async {
+    return await _api.post(Endpoints.scanGatePass(qrToken));
+  }
+
+  // RFx & Technical Qualification
+  Future<Map<String, dynamic>> getRfx(String code) async {
+    return await _api.get(Endpoints.auctionRfx(code));
+  }
+
+  Future<Map<String, dynamic>> submitRfx(String code, int packageId, Map<String, dynamic> answers) async {
+    return await _api.post(Endpoints.submitRfx(code, packageId), data: {'answers': answers});
+  }
+
+  // Clarifications & Addenda
+  Future<Map<String, dynamic>> getClarifications(String code) async {
+    return await _api.get(Endpoints.auctionClarifications(code));
+  }
+
+  Future<Map<String, dynamic>> askClarification(String code, String question, {String? section, bool isPublic = true}) async {
+    return await _api.post(Endpoints.auctionClarifications(code), data: {
+      'question': question,
+      'section': section ?? 'Commercial Terms',
+      'is_public': isPublic,
+    });
+  }
+
+  Future<Map<String, dynamic>> acknowledgeAddendum(String code, int addendumId) async {
+    return await _api.post(Endpoints.acknowledgeAddendum(code, addendumId));
+  }
+
+  // Awards & Fallback
+  Future<Map<String, dynamic>> getAwards(String code) async {
+    return await _api.get(Endpoints.auctionAwards(code));
+  }
+
+  Future<Map<String, dynamic>> acceptAward(int awardId) async {
+    return await _api.post(Endpoints.acceptAward(awardId));
+  }
+
+  // Disputes & Arbitration
+  Future<Map<String, dynamic>> raiseDispute(Map<String, dynamic> body) async {
+    return await _api.post(Endpoints.disputes, data: body);
+  }
+
+  Future<Map<String, dynamic>> addDisputeMessage(String code, String message) async {
+    return await _api.post(Endpoints.disputeMessage(code), data: {'message': message});
+  }
 }

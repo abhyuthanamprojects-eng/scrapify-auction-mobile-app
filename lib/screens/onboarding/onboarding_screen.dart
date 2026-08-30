@@ -19,27 +19,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   static const _slides = [
     _SlideData(
       tag: 'Discover',
-      title: 'Find auctions near you',
+      title: 'Discover Opportunities',
       body:
-          'Discover live scrap and IT-asset lots close to your city — filtered, verified, ready to bid.',
+          'Participate in verified auctions from leading enterprises across metals, machinery, IT assets, vehicles, logistics & services.',
       imagePath: AssetPaths.onboardFind,
-      icon: Icons.location_on_rounded,
+      icon: Icons.search_rounded,
       iconColor: Color(0xFF1565C0),
     ),
     _SlideData(
       tag: 'Live Bidding',
-      title: 'Bid live in real time',
+      title: 'Bid in Real Time',
       body:
-          'Watch bids come in second by second. Place yours with a single confident tap.',
+          'Securely participate in forward & reverse auctions with real-time ranking, anti-snipe timer extensions, and auto-bid proxy.',
       imagePath: AssetPaths.onboardBid,
-      icon: Icons.cell_tower_rounded,
+      icon: Icons.gavel_rounded,
       iconColor: Color(0xFFF97316),
     ),
     _SlideData(
-      tag: 'Escrow Secure',
-      title: 'Win & pay securely',
+      tag: 'Full Lifecycle',
+      title: 'Manage Everything',
       body:
-          'Escrow-backed payments and instant EMD refunds keep every deal completely safe.',
+          'Track EMD security, digital gate passes, awards, payments, evidence capture, and fulfilment from one seamless app.',
       imagePath: AssetPaths.onboardSecure,
       icon: Icons.verified_user_rounded,
       iconColor: Color(0xFF22C55E),
@@ -99,10 +99,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'SCRAPIFY',
+                        'SCRAPIFY AUCTIONS',
                         style: AppTextStyles.body(
-                          size: 11,
-                          weight: FontWeight.w700,
+                          size: 12,
+                          weight: FontWeight.w800,
                           color: AppColors.navy,
                         ).copyWith(letterSpacing: 2.5),
                       ),

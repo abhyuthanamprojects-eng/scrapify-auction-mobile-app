@@ -60,4 +60,26 @@ abstract final class Endpoints {
   static String notificationRead(int id) => '/notifications/$id/read';
   static const notificationsReadAll = '/notifications/read-all';
   static const notificationPreferences = '/notification-preferences';
+
+  // RFx & Technical Evaluation
+  static String auctionRfx(String code) => '/auctions/$code/rfx';
+  static String submitRfx(String code, int packageId) => '/auctions/$code/rfx/$packageId/submit';
+
+  // Site Inspection & Gate Pass
+  static String auctionInspections(String code) => '/auctions/$code/inspections';
+  static String verifyGatePass(String token) => '/gate-passes/verify/$token';
+  static String scanGatePass(String token) => '/gate-passes/$token/scan';
+
+  // Clarifications & Addenda
+  static String auctionClarifications(String code) => '/auctions/$code/clarifications';
+  static String acknowledgeAddendum(String code, int addendumId) => '/auctions/$code/addenda/$addendumId/acknowledge';
+
+  // Awards & Fallback
+  static String auctionAwards(String code) => '/auctions/$code/awards';
+  static String acceptAward(int id) => '/awards/$id/accept';
+
+  // Disputes
+  static const disputes = '/disputes';
+  static String dispute(String code) => '/disputes/$code';
+  static String disputeMessage(String code) => '/disputes/$code/messages';
 }

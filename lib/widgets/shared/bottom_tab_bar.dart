@@ -14,21 +14,13 @@ class BottomTabBar extends StatelessWidget {
     this.isSeller = false,
   });
 
-  List<_TabItem> get _items => isSeller
-      ? [
-          _TabItem(Icons.home_rounded, 'Home'),
-          _TabItem(Icons.gavel_rounded, 'Auctions'),
-          _TabItem(Icons.account_balance_wallet_rounded, 'Wallet'),
-          _TabItem(Icons.monitor_rounded, 'Monitor'),
-          _TabItem(Icons.person_rounded, 'Profile'),
-        ]
-      : [
-          _TabItem(Icons.home_rounded, 'Home'),
-          _TabItem(Icons.gavel_rounded, 'Auctions'),
-          _TabItem(Icons.account_balance_wallet_rounded, 'Wallet'),
-          _TabItem(Icons.receipt_long_rounded, 'My Bids'),
-          _TabItem(Icons.person_rounded, 'Profile'),
-        ];
+  List<_TabItem> get _items => const [
+        _TabItem(Icons.home_rounded, 'Home'),
+        _TabItem(Icons.gavel_rounded, 'Events'),
+        _TabItem(Icons.receipt_long_rounded, 'Bids'),
+        _TabItem(Icons.local_shipping_rounded, 'Orders'),
+        _TabItem(Icons.person_rounded, 'Profile'),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +41,7 @@ class BottomTabBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(_items.length, (i) {
-          final isCenter = i == 2;
           final isActive = currentIndex == i;
-          if (isCenter) {
-            return _buildWalletButton(isActive);
-          }
           return _buildTab(_items[i], isActive, i);
         }),
       ),
@@ -79,40 +67,11 @@ class BottomTabBar extends StatelessWidget {
               item.label,
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
                 color: isActive ? AppColors.auction : AppColors.whiteWithOpacity(0.5),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalletButton(bool isActive) {
-    return GestureDetector(
-      onTap: () => onTap(2),
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          gradient: isActive ? AppColors.gradientGold : null,
-          color: isActive ? null : AppColors.whiteWithOpacity(0.1),
-          shape: BoxShape.circle,
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: AppColors.auction.withValues(alpha: 0.5),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ]
-              : null,
-        ),
-        child: Icon(
-          Icons.account_balance_wallet_rounded,
-          size: 24,
-          color: isActive ? AppColors.white : AppColors.whiteWithOpacity(0.5),
         ),
       ),
     );

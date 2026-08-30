@@ -10,10 +10,15 @@ enum AuctionStatus {
   rejected,
   published,
   live,
+  paused,
+  extended,
+  underEvaluation,
+  awaitingApproval,
+  awarded,
   closed,
   cancelled;
 
-  static AuctionStatus fromString(String? s) => switch (s) {
+  static AuctionStatus fromString(String? s) => switch (s?.toLowerCase()) {
         'draft' => draft,
         'pending_approval' => pendingApproval,
         'approved' => approved,
@@ -21,6 +26,11 @@ enum AuctionStatus {
         'rejected' => rejected,
         'published' => published,
         'live' => live,
+        'paused' => paused,
+        'extended' => extended,
+        'under_evaluation' => underEvaluation,
+        'awaiting_approval' => awaitingApproval,
+        'awarded' => awarded,
         'closed' => closed,
         'cancelled' => cancelled,
         _ => draft,
@@ -34,18 +44,81 @@ enum AuctionStatus {
         rejected => 'rejected',
         published => 'published',
         live => 'live',
+        paused => 'paused',
+        extended => 'extended',
+        underEvaluation => 'under_evaluation',
+        awaitingApproval => 'awaiting_approval',
+        awarded => 'awarded',
         closed => 'closed',
         cancelled => 'cancelled',
       };
 
-  bool get isLive => this == live;
-  bool get isPublic =>
-      this == published || this == live || this == closed;
+  bool get isLive => this == live || this == extended || this == paused;
+  bool get isPublic => this == published || this == live || this == closed || this == extended || this == paused || this == awarded;
+}
+
+class LandedCostComponent extends Equatable {
+  final String label;
+  final double amount;
+  final bool isPercentage;
+
+  const LandedCostComponent({required this.label, required this.amount, this.isPercentage = false});
+
+  factory LandedCostComponent.fromJson(Map<String, dynamic> json) => LandedCostComponent(
+        label: json['label'] as String? ?? '',
+        amount: (json['amount'] as num?)?.toDouble() ?? 0,
+        isPercentage: json['is_percentage'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {'label': label, 'amount': amount, 'is_percentage': isPercentage};
+
+  @override
+  List<Object?> get props => [label, amount, isPercentage];
+}
+
+class AuctionAddendum extends Equatable {
+  final String id;
+  final int number;
+  final String title;
+  final String description;
+  final String publishedAt;
+  final bool isAcknowledged;
+
+  const AuctionAddendum({
+    required this.id,
+    required this.number,
+    required this.title,
+    required this.description,
+    required this.publishedAt,
+    this.isAcknowledged = false,
+  });
+
+  factory AuctionAddendum.fromJson(Map<String, dynamic> json) => AuctionAddendum(
+        id: json['id'] as String? ?? '',
+        number: json['number'] as int? ?? 1,
+        title: json['title'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        publishedAt: json['published_at'] as String? ?? '',
+        isAcknowledged: json['is_acknowledged'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'number': number,
+        'title': title,
+        'description': description,
+        'published_at': publishedAt,
+        'is_acknowledged': isAcknowledged,
+      };
+
+  @override
+  List<Object?> get props => [id, number, title, isAcknowledged];
 }
 
 class Auction extends Equatable {
   final String code;
   final String title;
+  final String description;
   final String company;
   final String? plant;
   final String? warehouse;
@@ -54,7 +127,7 @@ class Auction extends Equatable {
   final String? category;
   final int? categoryId;
   final String lotType;
-  final String direction;
+  final String direction; // 'forward' | 'reverse' | 'rfq' | 'sealed' | 'lot_wise'
   final String? materialType;
   final String? quantity;
   final String? uom;
@@ -62,6 +135,8 @@ class Auction extends Equatable {
   final bool reserveNa;
   final double startingPriceInr;
   final double bidIncrementInr;
+  final double decrementInr;
+  final double targetPriceInr;
   final double emdAmountInr;
   final double currentHighestInr;
   final int bidders;
@@ -70,11 +145,18 @@ class Auction extends Equatable {
   final String? submittedAt;
   final String? scheduleStart;
   final String? scheduleEnd;
-  final String? inspection;
+  final bool inspectionRequired;
   final String? inspectionDate;
   final String? inspectionTime;
   final String? inspectionLocation;
+  final String? inspectionContact;
   final String? terms;
+  final int termsVersion;
+  final bool termsAccepted;
+  final bool emdPaid;
+  final bool isInvited;
+  final int? myRank;
+  final double? myLastBidInr;
   final String? paymentTerms;
   final String? liftingPeriod;
   final String? liftingUnit;
@@ -83,6 +165,8 @@ class Auction extends Equatable {
   final List<Lot> subLots;
   final List<Bid> bids;
   final List<AuctionExtension> extensions;
+  final List<AuctionAddendum> addenda;
+  final List<LandedCostComponent> landedCosts;
   final String? reviewComment;
   final String? publishedAt;
   final List<String> publishChannels;
@@ -96,6 +180,7 @@ class Auction extends Equatable {
   const Auction({
     required this.code,
     required this.title,
+    this.description = '',
     required this.company,
     this.plant,
     this.warehouse,
@@ -111,7 +196,9 @@ class Auction extends Equatable {
     this.reservePriceInr = 0,
     this.reserveNa = false,
     this.startingPriceInr = 0,
-    this.bidIncrementInr = 0,
+    this.bidIncrementInr = 5000,
+    this.decrementInr = 5000,
+    this.targetPriceInr = 0,
     this.emdAmountInr = 0,
     this.currentHighestInr = 0,
     this.bidders = 0,
@@ -120,11 +207,18 @@ class Auction extends Equatable {
     this.submittedAt,
     this.scheduleStart,
     this.scheduleEnd,
-    this.inspection,
+    this.inspectionRequired = false,
     this.inspectionDate,
     this.inspectionTime,
     this.inspectionLocation,
+    this.inspectionContact,
     this.terms,
+    this.termsVersion = 1,
+    this.termsAccepted = false,
+    this.emdPaid = false,
+    this.isInvited = false,
+    this.myRank,
+    this.myLastBidInr,
     this.paymentTerms,
     this.liftingPeriod,
     this.liftingUnit,
@@ -133,6 +227,8 @@ class Auction extends Equatable {
     this.subLots = const [],
     this.bids = const [],
     this.extensions = const [],
+    this.addenda = const [],
+    this.landedCosts = const [],
     this.reviewComment,
     this.publishedAt,
     this.publishChannels = const [],
@@ -147,6 +243,7 @@ class Auction extends Equatable {
   factory Auction.fromJson(Map<String, dynamic> json) => Auction(
         code: json['code'] as String? ?? json['id'] as String? ?? '',
         title: json['title'] as String? ?? '',
+        description: json['description'] as String? ?? '',
         company: json['company'] as String? ?? '',
         plant: json['plant'] as String?,
         warehouse: json['warehouse'] as String?,
@@ -162,7 +259,9 @@ class Auction extends Equatable {
         reservePriceInr: _num(json['reserve_price_inr']),
         reserveNa: json['reserve_na'] as bool? ?? false,
         startingPriceInr: _num(json['starting_price_inr']),
-        bidIncrementInr: _num(json['bid_increment_inr']),
+        bidIncrementInr: _num(json['bid_increment_inr']) == 0 ? 5000 : _num(json['bid_increment_inr']),
+        decrementInr: _num(json['decrement_inr']) == 0 ? 5000 : _num(json['decrement_inr']),
+        targetPriceInr: _num(json['target_price_inr']),
         emdAmountInr: _num(json['emd_amount_inr']),
         currentHighestInr: _num(json['current_highest_inr']),
         bidders: json['bidders'] as int? ?? 0,
@@ -171,11 +270,18 @@ class Auction extends Equatable {
         submittedAt: json['submitted_at'] as String?,
         scheduleStart: json['schedule_start'] as String?,
         scheduleEnd: json['schedule_end'] as String?,
-        inspection: json['inspection'] as String?,
+        inspectionRequired: json['inspection_required'] as bool? ?? false,
         inspectionDate: json['inspection_date'] as String?,
         inspectionTime: json['inspection_time'] as String?,
         inspectionLocation: json['inspection_location'] as String?,
+        inspectionContact: json['inspection_contact'] as String?,
         terms: json['terms'] as String?,
+        termsVersion: json['terms_version'] as int? ?? 1,
+        termsAccepted: json['terms_accepted'] as bool? ?? false,
+        emdPaid: json['emd_paid'] as bool? ?? false,
+        isInvited: json['is_invited'] as bool? ?? false,
+        myRank: json['my_rank'] as int?,
+        myLastBidInr: json['my_last_bid_inr'] != null ? _num(json['my_last_bid_inr']) : null,
         paymentTerms: json['payment_terms'] as String?,
         liftingPeriod: json['lifting_period'] as String?,
         liftingUnit: json['lifting_unit'] as String?,
@@ -196,6 +302,14 @@ class Auction extends Equatable {
                     AuctionExtension.fromJson(e as Map<String, dynamic>))
                 .toList() ??
             [],
+        addenda: (json['addenda'] as List?)
+                ?.map((e) => AuctionAddendum.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
+        landedCosts: (json['landed_costs'] as List?)
+                ?.map((e) => LandedCostComponent.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
         reviewComment: json['review_comment'] as String?,
         publishedAt: json['published_at'] as String?,
         publishChannels:
@@ -212,6 +326,7 @@ class Auction extends Equatable {
 
   Map<String, dynamic> toJson() => {
         'title': title,
+        'description': description,
         'company': company,
         'plant': plant,
         'warehouse': warehouse,
@@ -227,14 +342,21 @@ class Auction extends Equatable {
         'reserve_na': reserveNa,
         'starting_price': startingPriceInr,
         'bid_increment': bidIncrementInr,
+        'decrement_inr': decrementInr,
+        'target_price': targetPriceInr,
         'emd_amount': emdAmountInr,
         'schedule_start': scheduleStart,
         'schedule_end': scheduleEnd,
-        'inspection': inspection,
+        'inspection_required': inspectionRequired,
         'inspection_date': inspectionDate,
         'inspection_time': inspectionTime,
         'inspection_location': inspectionLocation,
         'terms': terms,
+        'terms_accepted': termsAccepted,
+        'emd_paid': emdPaid,
+        'is_invited': isInvited,
+        'my_rank': myRank,
+        'my_last_bid_inr': myLastBidInr,
         'payment_terms': paymentTerms,
         'lifting_period': liftingPeriod,
         'lifting_unit': liftingUnit,
@@ -245,9 +367,11 @@ class Auction extends Equatable {
         'guidelines_doc': guidelinesDoc,
       };
 
-  bool get isLive => status == AuctionStatus.live;
-  bool get isLotWise => lotType == 'lot_wise';
+  bool get isLive => status == AuctionStatus.live || status == AuctionStatus.extended || status == AuctionStatus.paused;
+  bool get isLotWise => lotType == 'lot_wise' || lotType == 'multi_lot';
   bool get isForward => direction == 'forward';
+  bool get isReverse => direction == 'reverse';
+  bool get isRfq => direction == 'rfq';
 
   int get secondsRemaining {
     if (scheduleEnd == null) return 0;
@@ -262,10 +386,15 @@ class Auction extends Equatable {
     AuctionStatus? status,
     String? scheduleEnd,
     List<Bid>? bids,
+    bool? termsAccepted,
+    bool? emdPaid,
+    int? myRank,
+    double? myLastBidInr,
   }) =>
       Auction(
         code: code,
         title: title,
+        description: description,
         company: company,
         plant: plant,
         warehouse: warehouse,
@@ -282,6 +411,8 @@ class Auction extends Equatable {
         reserveNa: reserveNa,
         startingPriceInr: startingPriceInr,
         bidIncrementInr: bidIncrementInr,
+        decrementInr: decrementInr,
+        targetPriceInr: targetPriceInr,
         emdAmountInr: emdAmountInr,
         currentHighestInr: currentHighestInr ?? this.currentHighestInr,
         bidders: bidders ?? this.bidders,
@@ -290,11 +421,18 @@ class Auction extends Equatable {
         submittedAt: submittedAt,
         scheduleStart: scheduleStart,
         scheduleEnd: scheduleEnd ?? this.scheduleEnd,
-        inspection: inspection,
+        inspectionRequired: inspectionRequired,
         inspectionDate: inspectionDate,
         inspectionTime: inspectionTime,
         inspectionLocation: inspectionLocation,
+        inspectionContact: inspectionContact,
         terms: terms,
+        termsVersion: termsVersion,
+        termsAccepted: termsAccepted ?? this.termsAccepted,
+        emdPaid: emdPaid ?? this.emdPaid,
+        isInvited: isInvited,
+        myRank: myRank ?? this.myRank,
+        myLastBidInr: myLastBidInr ?? this.myLastBidInr,
         paymentTerms: paymentTerms,
         liftingPeriod: liftingPeriod,
         liftingUnit: liftingUnit,
@@ -303,6 +441,8 @@ class Auction extends Equatable {
         subLots: subLots,
         bids: bids ?? this.bids,
         extensions: extensions,
+        addenda: addenda,
+        landedCosts: landedCosts,
         reviewComment: reviewComment,
         publishedAt: publishedAt,
         publishChannels: publishChannels,
@@ -315,7 +455,7 @@ class Auction extends Equatable {
       );
 
   @override
-  List<Object?> get props => [code];
+  List<Object?> get props => [code, currentHighestInr, bidders, status, termsAccepted, emdPaid, myRank];
 }
 
 class AuctionContact {
@@ -355,3 +495,4 @@ class AuctionExtension {
 }
 
 double _num(dynamic v) => (v as num?)?.toDouble() ?? 0;
+
