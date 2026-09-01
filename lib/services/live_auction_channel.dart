@@ -22,9 +22,16 @@ class LiveAuctionChannel {
   bool _connected = false;
   bool get isConnected => _connected;
 
+  bool _isReconnecting = false;
+  bool get isReconnecting => _isReconnecting;
+
+  final _reconnectingController = StreamController<bool>.broadcast();
+  Stream<bool> get onReconnectingChange => _reconnectingController.stream;
+
   Future<void> connect(String auctionCode) async {
     _auctionCode = auctionCode;
     await _disconnect();
+    _setReconnecting(false);
 
     try {
       final uri = Uri(
@@ -37,6 +44,7 @@ class LiveAuctionChannel {
       _channel = WebSocketChannel.connect(uri);
       await _channel!.ready;
       _connected = true;
+      _setReconnecting(false);
 
       // Subscribe to the auction's public channel
       _channel!.sink.add(jsonEncode({
@@ -46,8 +54,14 @@ class LiveAuctionChannel {
 
       _sub = _channel!.stream.listen(
         _handleMessage,
-        onError: (_) => _fallbackToPolling(),
-        onDone: () => _fallbackToPolling(),
+        onError: (_) {
+          if (kDebugMode) debugPrint('[WS] Stream error, falling back to polling');
+          _fallbackToPolling();
+        },
+        onDone: () {
+          if (kDebugMode) debugPrint('[WS] Stream closed, falling back to polling');
+          _fallbackToPolling();
+        },
       );
 
       if (kDebugMode) debugPrint('[WS] Connected to auction.$auctionCode');
@@ -55,6 +69,11 @@ class LiveAuctionChannel {
       if (kDebugMode) debugPrint('[WS] Connection failed: $e');
       _fallbackToPolling();
     }
+  }
+
+  void _setReconnecting(bool value) {
+    _isReconnecting = value;
+    _reconnectingController.add(value);
   }
 
   void _handleMessage(dynamic raw) {
@@ -84,6 +103,7 @@ class LiveAuctionChannel {
   void _fallbackToPolling() {
     if (_auctionCode == null) return;
     _connected = false;
+    _setReconnecting(true);
     if (kDebugMode) debugPrint('[WS] Falling back to polling');
 
     _pollTimer?.cancel();
@@ -100,11 +120,13 @@ class LiveAuctionChannel {
     _pollTimer?.cancel();
     _pollTimer = null;
     _connected = false;
+    _setReconnecting(false);
   }
 
   Future<void> dispose() async {
     await _disconnect();
-    _bidController.close();
-    _stateController.close();
+    await _bidController.close();
+    await _stateController.close();
+    await _reconnectingController.close();
   }
 }
