@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auction_provider.dart';
-import '../../services/mock_bidplay_repository.dart';
 
 class TermsConditionsScreen extends ConsumerStatefulWidget {
   final String auctionCode;
@@ -75,18 +74,11 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(20),
                 children: [
-                  _section('1. Bidding Eligibility & Authority',
-                      'By participating in this event, you confirm that you are an authorized representative of your registered corporate entity with valid GSTIN and legal bidding authority. All bids placed are irrevocable, binding, and subject to acceptance rules.'),
-                  _section('2. Commercial Rules & EMD Security',
-                      'Earnest Money Deposit (EMD) must be locked prior to placing bids. In the event of successful award, the EMD is adjusted against final invoice payment. For non-winning bidders, 100% EMD is auto-refunded to the source wallet immediately upon closure.'),
-                  _section('3. Inspection & As-Is Sale Policy',
-                      'All materials and services are catalogued to the best of seller knowledge but sold strictly on "As-Is Where-Is" basis. Participants are encouraged to book physical gate pass inspection during the official inspection window.'),
-                  _section('4. Sniping Protection & Timer Extensions',
-                      'To ensure fair market realization, any valid bid received in the final 3 minutes will automatically extend the closing countdown timer by 2 minutes.'),
-                  _section('5. Settlement & Lifting Deadlines',
-                      'Winning bidders (H1 in Forward, L1 in Reverse) must accept award within 24 hours and clear net invoice balance within 48 hours. Material lifting must be scheduled within 15 calendar days.'),
-                  _section('6. Dispute Resolution',
-                      'All commercial disputes will be mediated under Scrapify Platform Dispute Resolution Guidelines and subject to designated municipal jurisdiction.'),
+                  if (auction.terms?.trim().isNotEmpty ?? false)
+                    ...auction.terms!.split(RegExp(r'\r?\n')).asMap().entries.map((entry) =>
+                        _section('${entry.key + 1}. Event Terms', entry.value.trim()))
+                  else
+                    _section('Event terms', 'No additional terms have been published for this event.'),
                 ],
               ),
             ),
@@ -128,9 +120,6 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
                           ? null
                           : () async {
                               setState(() => _submitting = true);
-                              MockBidPlayRepository().acceptTerms(widget.auctionCode);
-                              ref.invalidate(auctionDetailProvider(widget.auctionCode));
-                              await Future.delayed(const Duration(milliseconds: 300));
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('✓ Terms Accepted Successfully')),

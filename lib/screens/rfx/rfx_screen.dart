@@ -6,7 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../models/rfx.dart';
 import '../../providers/domain_providers.dart';
-import '../../services/mock_bidplay_repository.dart';
+import '../../services/auction_service.dart';
 
 class RfxScreen extends ConsumerStatefulWidget {
   final String auctionCode;
@@ -23,21 +23,12 @@ class _RfxScreenState extends ConsumerState<RfxScreen> {
   @override
   void initState() {
     super.initState();
-    final pkg = ref.read(rfxProvider(widget.auctionCode)) ?? MockBidPlayRepository().getRfx(widget.auctionCode);
     _answers = {};
-    if (pkg != null) {
-      for (final q in pkg.questions) {
-        if (q.responseBool != null) _answers[q.id] = q.responseBool;
-        if (q.responseNumber != null) _answers[q.id] = q.responseNumber.toString();
-        if (q.responseText != null) _answers[q.id] = q.responseText;
-        if (q.attachmentUrl != null) _answers[q.id] = q.attachmentUrl;
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final pkg = ref.watch(rfxProvider(widget.auctionCode)) ?? MockBidPlayRepository().getRfx(widget.auctionCode);
+    final pkg = ref.watch(rfxProvider(widget.auctionCode)).valueOrNull;
 
     if (pkg == null) {
       return Scaffold(
@@ -153,7 +144,12 @@ class _RfxScreenState extends ConsumerState<RfxScreen> {
                 ? null
                 : () async {
                     setState(() => _submitted = true);
-                    await Future.delayed(const Duration(milliseconds: 400));
+                    try {
+                      await AuctionService().submitRfx(widget.auctionCode, int.parse(pkg.id), _answers);
+                    } catch (_) {
+                      if (mounted) setState(() => _submitted = false);
+                      return;
+                    }
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('✓ Technical RFx Response Submitted Successfully')),

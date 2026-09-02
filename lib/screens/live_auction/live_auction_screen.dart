@@ -8,8 +8,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/auction.dart';
 import '../../models/bid_receipt.dart';
-import '../../providers/auction_provider.dart';
-import '../../services/mock_bidplay_repository.dart';
+import '../../services/auction_service.dart';
+import '../../services/bid_service.dart';
 import '../../widgets/shared/bid_confirmation_sheet.dart';
 
 class LiveAuctionScreen extends ConsumerStatefulWidget {
@@ -34,34 +34,19 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
   String? _bannerNotice;
   Timer? _tickerTimer;
   Timer? _botTimer;
+  bool _loading = true;
+  String? _loadError;
 
   final List<Map<String, dynamic>> _bidFeed = [];
 
   @override
   void initState() {
     super.initState();
-    final repo = MockBidPlayRepository();
-    final initial = repo.getAuction(widget.lotId) ??
-        Auction(
-          code: widget.lotId,
-          title: 'Industrial Copper Scrap & Cables',
-          company: 'Tata Power Heavy Logistics',
-          currentHighestInr: 2480000,
-          bidIncrementInr: 20000,
-          scheduleEnd: DateTime.now().add(const Duration(minutes: 6, seconds: 30)).toIso8601String(),
-        );
-
-    _auction = initial;
-    _currentHighest = initial.currentHighestInr > 0 ? initial.currentHighestInr : 2480000;
-    _secondsRemaining = initial.secondsRemaining > 0 ? initial.secondsRemaining : 390;
-    _bidders = initial.bidders > 0 ? initial.bidders : 14;
-    _myLastBid = initial.myLastBidInr ?? 2460000;
-
-    _bidFeed.addAll([
-      {'bidder': 'Bidder #14', 'amount': _currentHighest, 'time': 'Just now', 'isMe': false},
-      {'bidder': 'You', 'amount': _currentHighest - 20000, 'time': '18s ago', 'isMe': true},
-      {'bidder': 'Bidder #07', 'amount': _currentHighest - 40000, 'time': '45s ago', 'isMe': false},
-    ]);
+    _auction = Auction(code: widget.lotId, title: '', company: '');
+    _currentHighest = 0;
+    _secondsRemaining = 0;
+    _bidders = 0;
+    _loadAuction();
 
     // Main Countdown Timer
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -78,34 +63,36 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
       });
     });
 
-    // Simulated Opponent Bids
-    _botTimer = Timer.periodic(const Duration(seconds: 14), (t) {
-      if (!mounted || _isPaused || _secondsRemaining <= 0) return;
-      final step = _auction.bidIncrementInr > 0 ? _auction.bidIncrementInr : 20000;
-      final nextPrice = _currentHighest + step;
-      final botName = 'Bidder #${(10 + (t.tick % 8))}';
+  }
 
+  Future<void> _loadAuction() async {
+    try {
+      final auction = await AuctionService().show(widget.lotId);
+      final bids = await AuctionService().bids(widget.lotId);
+      if (!mounted) return;
       setState(() {
-        _currentHighest = nextPrice;
-        _bidders++;
-        _myRank = 2; // Outbid
-        _bidFeed.insert(0, {
-          'bidder': botName,
-          'amount': nextPrice,
-          'time': 'Just now',
-          'isMe': false,
-        });
-        _bannerNotice = '⚠️ You have been outbid by $botName';
+        _auction = auction;
+        _currentHighest = auction.currentHighestInr;
+        _secondsRemaining = auction.secondsRemaining;
+        _bidders = auction.bidders;
+        _myLastBid = auction.myLastBidInr;
+        _bidFeed
+          ..clear()
+          ..addAll(bids.map((bid) => {
+                'bidder': bid.vendorName,
+                'amount': bid.amountInr,
+                'time': bid.at.toLocal().toString(),
+                'isMe': false,
+              }));
+        _loading = false;
       });
-
-      // Auto-Bid Response
-      if (_isAutoBidEnabled && nextPrice + step <= _autoBidCeiling) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          _submitBid(nextPrice + step, isAuto: true);
-        });
-      }
-    });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.toString();
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -115,9 +102,12 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
     super.dispose();
   }
 
-  void _submitBid(double amount, {bool isAuto = false}) {
-    setState(() {
-      _currentHighest = amount;
+  Future<void> _submitBid(double amount, {bool isAuto = false}) async {
+    try {
+      final result = await BidService().placeBid(auctionCode: _auction.code, amount: amount);
+      if (!mounted) return;
+      setState(() {
+      _currentHighest = result.currentHighest;
       _myLastBid = amount;
       _myRank = 1; // Leading
       _bannerNotice = isAuto ? '⚡ Auto-Bid placed successfully' : '✓ Bid Accepted! You are currently Rank #1 (Leading)';
@@ -127,8 +117,11 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
         'time': 'Just now',
         'isMe': true,
       });
-    });
-    MockBidPlayRepository().placeBid(_auction.code, amount);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _bannerNotice = 'Bid rejected: $error');
+    }
   }
 
   void _openAutoBidSheet() {
@@ -276,6 +269,27 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: AppColors.navyDark,
+        body: Center(child: CircularProgressIndicator(color: AppColors.auction)),
+      );
+    }
+    if (_loadError != null) {
+      return Scaffold(
+        backgroundColor: AppColors.navyDark,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _loadError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.white),
+            ),
+          ),
+        ),
+      );
+    }
     final step = _auction.bidIncrementInr > 0 ? _auction.bidIncrementInr : 20000;
     final nextValidBid = _currentHighest + step;
     final isLeading = _myRank == 1;

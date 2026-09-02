@@ -8,27 +8,24 @@ import '../models/performance.dart';
 import '../models/rfx.dart';
 import '../models/inspection.dart';
 import '../models/evidence.dart';
-import '../services/mock_bidplay_repository.dart';
-
-final mockRepoProvider = Provider<MockBidPlayRepository>((ref) => MockBidPlayRepository());
+import '../services/auction_service.dart';
+import '../services/order_service.dart';
 
 // Awards
 final awardsProvider = StateNotifierProvider<AwardsNotifier, List<Award>>((ref) {
-  return AwardsNotifier(ref.watch(mockRepoProvider));
+  return AwardsNotifier();
 });
 
 class AwardsNotifier extends StateNotifier<List<Award>> {
-  final MockBidPlayRepository _repo;
-  AwardsNotifier(this._repo) : super(_repo.getAwards());
+  AwardsNotifier() : super(const []);
 
-  void accept(String id) {
-    _repo.acceptAward(id);
-    state = _repo.getAwards();
+  Future<void> accept(String id) async {
+    await AuctionService().acceptAward(int.parse(id));
+    state = state.map((a) => a.id == id ? a.copyWith(status: AwardStatus.accepted) : a).toList();
   }
 
   void decline(String id, String reason) {
-    _repo.declineAward(id, reason);
-    state = _repo.getAwards();
+    state = state.map((a) => a.id == id ? a.copyWith(status: AwardStatus.declined, declinedReason: reason) : a).toList();
   }
 }
 
@@ -42,86 +39,140 @@ final awardDetailProvider = Provider.family<Award?, String>((ref, id) {
 });
 
 // Orders
-final ordersProvider = Provider<List<Order>>((ref) {
-  return ref.watch(mockRepoProvider).getOrders();
+final ordersProvider = FutureProvider<List<Order>>((ref) {
+  return OrderService().list();
 });
 
 // Fulfilment
 final fulfilmentsProvider = Provider<List<FulfilmentRecord>>((ref) {
-  return ref.watch(mockRepoProvider).getFulfilments();
+  return const [];
 });
 
 // Disputes
 final disputesProvider = StateNotifierProvider<DisputesNotifier, List<DisputeItem>>((ref) {
-  return DisputesNotifier(ref.watch(mockRepoProvider));
+  return DisputesNotifier();
 });
 
 class DisputesNotifier extends StateNotifier<List<DisputeItem>> {
-  final MockBidPlayRepository _repo;
-  DisputesNotifier(this._repo) : super(_repo.getDisputes());
+  DisputesNotifier() : super(const []);
 
   void addDispute(DisputeItem item) {
-    _repo.addDispute(item);
-    state = _repo.getDisputes();
+    state = [item, ...state];
   }
 }
 
 // Team Members
 final teamMembersProvider = StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
-  return TeamNotifier(ref.watch(mockRepoProvider));
+  return TeamNotifier();
 });
 
 class TeamNotifier extends StateNotifier<List<TeamMember>> {
-  final MockBidPlayRepository _repo;
-  TeamNotifier(this._repo) : super(_repo.getTeamMembers());
+  TeamNotifier() : super(const []);
 
   void addMember(TeamMember tm) {
-    _repo.addTeamMember(tm);
-    state = _repo.getTeamMembers();
+    state = [tm, ...state];
   }
 
   void toggleStatus(String id) {
-    _repo.toggleTeamMember(id);
-    state = _repo.getTeamMembers();
+    state = state
+        .map(
+          (member) => member.id == id
+              ? TeamMember(
+                  id: member.id,
+                  name: member.name,
+                  email: member.email,
+                  mobile: member.mobile,
+                  role: member.role,
+                  maxBiddingLimitInr: member.maxBiddingLimitInr,
+                  isActive: !member.isActive,
+                  joinedAt: member.joinedAt,
+                  allowedCategories: member.allowedCategories,
+                )
+              : member,
+        )
+        .toList();
   }
 }
 
 // Performance
 final performanceProvider = Provider<VendorPerformance>((ref) {
-  return ref.watch(mockRepoProvider).getPerformance();
+  return const VendorPerformance(
+    totalAuctionsParticipated: 0,
+    totalWins: 0,
+    winRatePercentage: 0,
+    totalAwardValueInr: 0,
+    onTimeFulfilmentRate: 0,
+    complianceScore: 0,
+    totalDisputes: 0,
+    resolvedDisputes: 0,
+    tierBadge: 'Verified',
+    rankInCategory: 0,
+  );
 });
 
 // RFx
-final rfxProvider = Provider.family<RfxPackage?, String>((ref, code) {
-  return ref.watch(mockRepoProvider).getRfx(code);
+final rfxProvider = FutureProvider.family<RfxPackage?, String>((ref, code) async {
+  final response = await AuctionService().getRfx(code);
+  final rows = response['data'] as List? ?? const [];
+  if (rows.isEmpty) return null;
+  final first = rows.first as Map<String, dynamic>;
+  final questions = (first['questions'] as List? ?? const [])
+      .map((raw) => _questionFromJson(raw as Map<String, dynamic>))
+      .toList();
+  return RfxPackage(
+    id: '${first['id'] ?? ''}',
+    auctionCode: code,
+    title: first['title'] as String? ?? 'RFx Questionnaire',
+    buyerName: first['buyer_name'] as String? ?? '',
+    submissionDeadline: first['submission_deadline'] as String? ?? '',
+    questions: questions,
+    isSubmitted: first['is_submitted'] as bool? ?? false,
+    submittedAt: first['submitted_at'] as String?,
+    technicalScore: (first['technical_score'] as num?)?.toDouble(),
+  );
 });
+
+RfxQuestion _questionFromJson(Map<String, dynamic> json) {
+  final type = switch ((json['type'] as String? ?? 'text').toLowerCase()) {
+    'number' => RfxQuestionType.number,
+    'boolean' => RfxQuestionType.boolean,
+    'select' || 'dropdown' => RfxQuestionType.dropdown,
+    'multi_select' => RfxQuestionType.multiSelect,
+    'file' || 'file_attachment' => RfxQuestionType.fileAttachment,
+    _ => RfxQuestionType.text,
+  };
+  return RfxQuestion(
+    id: '${json['id'] ?? ''}',
+    section: json['section'] as String? ?? 'General',
+    questionText: json['title'] as String? ?? json['question_text'] as String? ?? '',
+    type: type,
+    isRequired: json['mandatory'] as bool? ?? json['is_required'] as bool? ?? true,
+    options: (json['options'] as List?)?.map((e) => '$e').toList() ?? const [],
+  );
+}
 
 // Inspection
 final inspectionBookingsProvider = StateNotifierProvider<InspectionNotifier, List<InspectionBooking>>((ref) {
-  return InspectionNotifier(ref.watch(mockRepoProvider));
+  return InspectionNotifier();
 });
 
 class InspectionNotifier extends StateNotifier<List<InspectionBooking>> {
-  final MockBidPlayRepository _repo;
-  InspectionNotifier(this._repo) : super(_repo.getInspectionBookings());
+  InspectionNotifier() : super(const []);
 
   void book(InspectionBooking booking) {
-    _repo.addInspectionBooking(booking);
-    state = _repo.getInspectionBookings();
+    state = [booking, ...state];
   }
 }
 
 // Evidence
 final evidenceListProvider = StateNotifierProvider<EvidenceNotifier, List<CapturedEvidence>>((ref) {
-  return EvidenceNotifier(ref.watch(mockRepoProvider));
+  return EvidenceNotifier();
 });
 
 class EvidenceNotifier extends StateNotifier<List<CapturedEvidence>> {
-  final MockBidPlayRepository _repo;
-  EvidenceNotifier(this._repo) : super(_repo.getEvidenceList());
+  EvidenceNotifier() : super(const []);
 
   void capture(CapturedEvidence ev) {
-    _repo.addEvidence(ev);
-    state = _repo.getEvidenceList();
+    state = [ev, ...state];
   }
 }

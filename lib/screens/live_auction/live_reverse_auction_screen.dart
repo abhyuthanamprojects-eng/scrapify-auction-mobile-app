@@ -8,7 +8,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/auction.dart';
 import '../../models/bid_receipt.dart';
-import '../../services/mock_bidplay_repository.dart';
+import '../../services/auction_service.dart';
+import '../../services/bid_service.dart';
 import '../../widgets/shared/bid_confirmation_sheet.dart';
 
 class LiveReverseAuctionScreen extends ConsumerStatefulWidget {
@@ -32,6 +33,8 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   String? _bannerNotice;
   Timer? _tickerTimer;
   Timer? _botTimer;
+  bool _loading = true;
+  String? _loadError;
 
   // Landed Cost inputs
   double _basePrice = 900000;
@@ -44,30 +47,11 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   @override
   void initState() {
     super.initState();
-    final repo = MockBidPlayRepository();
-    final initial = repo.getAuction(widget.lotId) ??
-        Auction(
-          code: widget.lotId,
-          title: 'Fleet Transportation Services — Mumbai to Delhi Corridor',
-          company: 'Reliance Logistics Hub',
-          direction: 'reverse',
-          startingPriceInr: 1200000,
-          currentHighestInr: 920000,
-          decrementInr: 10000,
-          scheduleEnd: DateTime.now().add(const Duration(minutes: 8, seconds: 15)).toIso8601String(),
-        );
-
-    _auction = initial;
-    _currentL1 = initial.currentHighestInr > 0 ? initial.currentHighestInr : 920000;
-    _secondsRemaining = initial.secondsRemaining > 0 ? initial.secondsRemaining : 495;
-    _bidders = 8;
-    _myLastOffer = 940000;
-
-    _offerFeed.addAll([
-      {'vendor': 'Vendor #03', 'amount': _currentL1, 'time': 'Just now', 'isMe': false},
-      {'vendor': 'You', 'amount': 940000.0, 'time': '32s ago', 'isMe': true},
-      {'vendor': 'Vendor #06', 'amount': 960000.0, 'time': '1m ago', 'isMe': false},
-    ]);
+    _auction = Auction(code: widget.lotId, title: '', company: '', direction: 'reverse');
+    _currentL1 = 0;
+    _secondsRemaining = 0;
+    _bidders = 0;
+    _loadAuction();
 
     // Countdown
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -77,35 +61,36 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
       });
     });
 
-    // Simulated Competitor Lower Offer
-    _botTimer = Timer.periodic(const Duration(seconds: 16), (t) {
-      if (!mounted || _isPaused || _secondsRemaining <= 0) return;
-      final step = _auction.decrementInr > 0 ? _auction.decrementInr : 10000;
-      final lowerOffer = _currentL1 - step;
-      if (lowerOffer <= 500000) return;
+  }
 
-      final botName = 'Vendor #${(t.tick % 5 + 1)}';
-
+  Future<void> _loadAuction() async {
+    try {
+      final auction = await AuctionService().show(widget.lotId);
+      final bids = await AuctionService().bids(widget.lotId);
+      if (!mounted) return;
       setState(() {
-        _currentL1 = lowerOffer;
-        _myRank = 2; // Lost L1 position
-        _offerFeed.insert(0, {
-          'vendor': botName,
-          'amount': lowerOffer,
-          'time': 'Just now',
-          'isMe': false,
-        });
-        _bannerNotice = '⚠️ L1 Offer reduced by $botName to ${Formatters.formatINR(lowerOffer)}';
+        _auction = auction;
+        _currentL1 = auction.currentHighestInr;
+        _secondsRemaining = auction.secondsRemaining;
+        _bidders = auction.bidders;
+        _myLastOffer = auction.myLastBidInr;
+        _offerFeed
+          ..clear()
+          ..addAll(bids.map((bid) => {
+                'vendor': bid.vendorName,
+                'amount': bid.amountInr,
+                'time': bid.at.toLocal().toString(),
+                'isMe': false,
+              }));
+        _loading = false;
       });
-
-      // Auto-Bid Floor Response
-      if (_isAutoBidEnabled && lowerOffer - step >= _autoBidFloor) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          _submitOffer(lowerOffer - step, isAuto: true);
-        });
-      }
-    });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.toString();
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -115,9 +100,12 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
     super.dispose();
   }
 
-  void _submitOffer(double amount, {bool isAuto = false}) {
-    setState(() {
-      _currentL1 = amount;
+  Future<void> _submitOffer(double amount, {bool isAuto = false}) async {
+    try {
+      final result = await BidService().placeBid(auctionCode: _auction.code, amount: amount);
+      if (!mounted) return;
+      setState(() {
+      _currentL1 = result.currentHighest;
       _myLastOffer = amount;
       _myRank = 1; // Now L1
       _bannerNotice = isAuto ? '⚡ Auto-Offer matched at L1' : '✓ Offer Accepted! You are currently Rank #1 (L1 Lowest)';
@@ -127,8 +115,11 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
         'time': 'Just now',
         'isMe': true,
       });
-    });
-    MockBidPlayRepository().placeBid(_auction.code, amount);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _bannerNotice = 'Offer rejected: $error');
+    }
   }
 
   void _openLandedCostSheet() {
@@ -295,6 +286,27 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: AppColors.navyDark,
+        body: Center(child: CircularProgressIndicator(color: AppColors.auction)),
+      );
+    }
+    if (_loadError != null) {
+      return Scaffold(
+        backgroundColor: AppColors.navyDark,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              _loadError!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.white),
+            ),
+          ),
+        ),
+      );
+    }
     final step = _auction.decrementInr > 0 ? _auction.decrementInr : 10000;
     final nextValidOffer = _currentL1 - step;
     final isL1 = _myRank == 1;

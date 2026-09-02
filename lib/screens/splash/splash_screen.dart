@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -15,6 +16,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
+  Timer? _navigationTimer;
   late AnimationController _controller;
   late Animation<double> _fadeIn;
   late Animation<double> _scaleUp;
@@ -27,14 +29,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: const Duration(milliseconds: 1400),
     );
     _fadeIn = Tween(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.7, curve: Curves.easeOut)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 0.7, curve: Curves.easeOut),
+      ),
     );
     _scaleUp = Tween(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: const Interval(0, 0.7, curve: Curves.easeOutBack)),
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0, 0.7, curve: Curves.easeOutBack),
+      ),
     );
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 2400), () {
+    _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
       if (!mounted) return;
       final auth = ref.read(authProvider);
       if (auth.isAuthenticated) {
@@ -51,6 +59,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
+    _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -90,7 +99,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     const SizedBox(height: 28),
                     ShaderMask(
                       shaderCallback: (bounds) => const LinearGradient(
-                        colors: [AppColors.goldSoft, AppColors.white, AppColors.auction],
+                        colors: [
+                          AppColors.goldSoft,
+                          AppColors.white,
+                          AppColors.auction,
+                        ],
                       ).createShader(bounds),
                       child: Text(
                         AppConstants.appName,
@@ -159,7 +172,10 @@ class _LoadingDotsState extends State<_LoadingDots>
         children: List.generate(3, (i) {
           final delay = i * 0.25;
           final value = (_ctrl.value - delay).clamp(0.0, 1.0);
-          final opacity = (value < 0.5 ? value * 2 : 2 - value * 2).clamp(0.2, 1.0);
+          final opacity = (value < 0.5 ? value * 2 : 2 - value * 2).clamp(
+            0.2,
+            1.0,
+          );
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
             width: 8,
@@ -174,4 +190,3 @@ class _LoadingDotsState extends State<_LoadingDots>
     );
   }
 }
-

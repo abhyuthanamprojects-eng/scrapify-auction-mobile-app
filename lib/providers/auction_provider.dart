@@ -2,66 +2,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/auction.dart';
 import '../services/auction_service.dart';
 import '../services/watchlist_service.dart';
-import '../services/mock_bidplay_repository.dart';
 
 final _auctionService = AuctionService();
 final _watchlistService = WatchlistService();
-final _mockRepo = MockBidPlayRepository();
 
 final auctionsProvider = FutureProvider.family<List<Auction>, AuctionFilter>(
   (ref, filter) async {
-    try {
-      final result = await _auctionService.list(
-        segment: filter.segment,
-        category: filter.category,
-        search: filter.search,
-        direction: filter.direction,
-        status: filter.status,
-      );
-      if (result.auctions.isNotEmpty) return result.auctions;
-    } catch (_) {}
-    return _mockRepo.getAuctions(
-      direction: filter.direction,
+    final result = await _auctionService.list(
+      segment: filter.segment,
       category: filter.category,
-      status: filter.status ?? filter.segment,
       search: filter.search,
+      direction: filter.direction,
+      status: filter.status,
     );
+    return result.auctions;
   },
 );
 
 final liveAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  try {
-    final result = await _auctionService.list(segment: 'live');
-    if (result.auctions.isNotEmpty) return result.auctions;
-  } catch (_) {}
-  return _mockRepo.getAuctions(status: 'live');
+  final result = await _auctionService.list(segment: 'live');
+  return result.auctions;
 });
 
 final upcomingAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  try {
-    final result = await _auctionService.list(segment: 'upcoming');
-    if (result.auctions.isNotEmpty) return result.auctions;
-  } catch (_) {}
-  return _mockRepo.getAuctions(status: 'upcoming');
+  final result = await _auctionService.list(segment: 'upcoming');
+  return result.auctions;
 });
 
 final allAuctionsProvider = FutureProvider<List<Auction>>((ref) async {
-  try {
-    final result = await _auctionService.list();
-    if (result.auctions.isNotEmpty) return result.auctions;
-  } catch (_) {}
-  return _mockRepo.getAuctions();
+  final result = await _auctionService.list();
+  return result.auctions;
 });
 
 final auctionDetailProvider =
     FutureProvider.family<Auction, String>((ref, code) async {
-  try {
-    final auc = await _auctionService.show(code);
-    return auc;
-  } catch (_) {}
-  final fallback = _mockRepo.getAuction(code);
-  if (fallback != null) return fallback;
-  throw Exception('Auction not found');
+  return _auctionService.show(code);
 });
 
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);
@@ -72,25 +47,23 @@ final watchlistProvider =
 );
 
 class WatchlistNotifier extends StateNotifier<Set<String>> {
-  WatchlistNotifier() : super({'BP-FWD-2026-1048', 'BP-REV-2026-0872'});
+  WatchlistNotifier() : super(<String>{});
 
   Future<void> load() async {
     try {
       final auctions = await _watchlistService.list();
       state = auctions.map((a) => a.code).toSet();
-    } catch (_) {}
+    } catch (_) {
+      rethrow;
+    }
   }
 
   Future<void> toggle(String code) async {
     if (state.contains(code)) {
-      try {
-        await _watchlistService.remove(code);
-      } catch (_) {}
+      await _watchlistService.remove(code);
       state = {...state}..remove(code);
     } else {
-      try {
-        await _watchlistService.add(code);
-      } catch (_) {}
+      await _watchlistService.add(code);
       state = {...state, code};
     }
   }
@@ -129,4 +102,3 @@ class AuctionFilter {
   @override
   int get hashCode => Object.hash(segment, category, search, direction, status, emdOnly);
 }
-

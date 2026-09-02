@@ -1,7 +1,15 @@
 enum Flavor { dev, staging, prod }
 
 class AppEnv {
-  static late final AppEnv _instance;
+  static AppEnv _instance = AppEnv._(
+    flavor: Flavor.dev,
+    apiBaseUrl: 'https://api.scrapifyauctions.com',
+    reverbHost: 'api.scrapifyauctions.com',
+    reverbPort: 443,
+    reverbKey: 'scrapify-local-key',
+    appTitle: 'Scrapify DEV',
+    enableLogging: true,
+  );
 
   final Flavor flavor;
   final String apiBaseUrl;
@@ -30,9 +38,9 @@ class AppEnv {
   factory AppEnv.dev() {
     _instance = AppEnv._(
       flavor: Flavor.dev,
-      apiBaseUrl: 'http://localhost:8000',
-      reverbHost: 'localhost',
-      reverbPort: 8090,
+      apiBaseUrl: 'https://api.scrapifyauctions.com',
+      reverbHost: 'api.scrapifyauctions.com',
+      reverbPort: 443,
       reverbKey: 'scrapify-local-key',
       appTitle: 'Scrapify DEV',
       enableLogging: true,
@@ -43,8 +51,8 @@ class AppEnv {
   factory AppEnv.staging() {
     _instance = AppEnv._(
       flavor: Flavor.staging,
-      apiBaseUrl: 'https://staging-api.scrapify.in',
-      reverbHost: 'staging-ws.scrapify.in',
+      apiBaseUrl: 'https://api.scrapifyauctions.com',
+      reverbHost: 'api.scrapifyauctions.com',
       reverbPort: 443,
       reverbKey: 'scrapify-staging-key',
       appTitle: 'Scrapify STG',
@@ -56,8 +64,8 @@ class AppEnv {
   factory AppEnv.prod() {
     _instance = AppEnv._(
       flavor: Flavor.prod,
-      apiBaseUrl: 'https://api.scrapify.in',
-      reverbHost: 'ws.scrapify.in',
+      apiBaseUrl: 'https://api.scrapifyauctions.com',
+      reverbHost: 'api.scrapifyauctions.com',
       reverbPort: 443,
       reverbKey: 'scrapify-prod-key',
       appTitle: 'Scrapify Auction',

@@ -7,8 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/auction.dart';
-import '../../services/mock_bidplay_repository.dart';
-import '../../providers/auction_provider.dart';
+import '../../services/auction_service.dart';
 
 class AuctionWaitingRoomScreen extends ConsumerStatefulWidget {
   final String auctionCode;
@@ -19,12 +18,15 @@ class AuctionWaitingRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScreen> {
-  int _secondsLeft = 145; // 2 mins 25 secs
+  int _secondsLeft = 0;
   Timer? _timer;
+  Auction? _auction;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
+    _loadAuction();
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (_secondsLeft > 0) {
         setState(() => _secondsLeft--);
@@ -32,6 +34,23 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
         t.cancel();
       }
     });
+  }
+
+  Future<void> _loadAuction() async {
+    try {
+      final auction = await AuctionService().show(widget.auctionCode);
+      final startsAt = DateTime.tryParse(auction.scheduleStart ?? '');
+      if (!mounted) return;
+      setState(() {
+        _auction = auction;
+        _secondsLeft = startsAt == null
+            ? 0
+            : startsAt.difference(DateTime.now()).inSeconds.clamp(0, 864000);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString());
+    }
   }
 
   @override
@@ -48,19 +67,19 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
 
   @override
   Widget build(BuildContext context) {
-    final auction = MockBidPlayRepository().getAuction(widget.auctionCode) ??
-        Auction(
-          code: widget.auctionCode,
-          title: 'Industrial Copper Scrap & Armoured Cables (28 MT)',
-          company: 'Tata Power Limited',
-          category: 'Metals & Scrap',
-          status: AuctionStatus.live,
-          startingPriceInr: 1450000,
-          currentHighestInr: 1680000,
-          bidIncrementInr: 10000,
-          emdAmountInr: 50000,
-          direction: 'forward',
-        );
+    if (_error != null) {
+      return Scaffold(body: Center(child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(_error!, textAlign: TextAlign.center),
+      )));
+    }
+    final auction = _auction;
+    if (auction == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.navy,
+        body: Center(child: CircularProgressIndicator(color: AppColors.auction)),
+      );
+    }
 
     final isReverse = auction.isReverse;
 
@@ -123,7 +142,7 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
                   const SizedBox(height: 12),
                   Text(auction.title, style: AppTextStyles.heading(size: 17, weight: FontWeight.w900, color: AppColors.white)),
                   const SizedBox(height: 4),
-                  Text('Seller: ${auction.company ?? "Tata Power Limited"}', style: TextStyle(fontSize: 12.5, color: AppColors.white.withValues(alpha: 0.7))),
+                  Text('Seller: ${auction.company}', style: TextStyle(fontSize: 12.5, color: AppColors.white.withValues(alpha: 0.7))),
                 ],
               ),
             ),
@@ -184,7 +203,7 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
                       style: TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.navy)),
                   const SizedBox(height: 12),
                   _checkRow('Corporate KYB & GSTIN', 'Verified', true),
-                  _checkRow('Security / EMD Escrow', 'Paid ${Formatters.formatINR(auction.emdAmountInr ?? 50000)}', true),
+                  _checkRow('Security / EMD Escrow', 'Paid ${Formatters.formatINR(auction.emdAmountInr)}', auction.emdPaid),
                   _checkRow('Platform Terms & Integrity Pact', 'Accepted v2.1', true),
                   _checkRow('Technical Qualification / RFx', 'Qualified (Score 94%)', true),
                 ],
@@ -205,8 +224,8 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
                   const Text('COMMERCIAL BIDDING RULES',
                       style: TextStyle(fontFamily: 'monospace', fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.navy)),
                   const SizedBox(height: 12),
-                  _ruleRow('Starting / Base Price', Formatters.formatINR(auction.startingPriceInr ?? 1450000)),
-                  _ruleRow(isReverse ? 'Minimum Decrement Step' : 'Minimum Increment Step', Formatters.formatINR(auction.bidIncrementInr ?? 10000)),
+                  _ruleRow('Starting / Base Price', Formatters.formatINR(auction.startingPriceInr)),
+                  _ruleRow(isReverse ? 'Minimum Decrement Step' : 'Minimum Increment Step', Formatters.formatINR(isReverse ? auction.decrementInr : auction.bidIncrementInr)),
                   _ruleRow('Anti-Sniping Rule', 'Auto +3 mins extension if bid in final 3m'),
                   _ruleRow('Currency & Taxes', 'INR (₹) • 18% GST Applicable on Invoice'),
                 ],

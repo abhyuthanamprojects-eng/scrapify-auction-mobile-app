@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/error_display.dart';
+import '../../core/network/api_exception.dart';
 
 /// IMPROVED LOGIN SCREEN - Shows proper error handling with new ErrorDisplay widget
 class LoginScreenImproved extends ConsumerStatefulWidget {
@@ -56,7 +57,7 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
       return Scaffold(
         backgroundColor: AppColors.appBg,
         body: ErrorDisplay(
-          error: authState.error!,
+          error: ApiException(statusCode: 0, message: authState.error!),
           onRetry: _login,
           showRetryButton: true,
         ),

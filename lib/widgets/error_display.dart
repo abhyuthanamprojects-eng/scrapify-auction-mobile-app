@@ -51,7 +51,7 @@ class ErrorDisplay extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
               ),
               child: Icon(
                 icon,
@@ -68,10 +68,10 @@ class ErrorDisplay extends StatelessWidget {
             Text(
               error.userMessage,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             if (error.hasFieldErrors) ...[
@@ -79,8 +79,8 @@ class ErrorDisplay extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.05),
-                  border: Border.all(color: color.withOpacity(0.2)),
+                  color: color.withValues(alpha: 0.05),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                 ),
                 child: Column(
@@ -118,9 +118,9 @@ class ErrorDisplay extends StatelessWidget {
                                     ),
                                     TextSpan(
                                       text: entry.value.join(', '),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                   ],

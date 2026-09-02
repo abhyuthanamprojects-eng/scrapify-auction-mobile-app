@@ -16,6 +16,7 @@ abstract final class AppColors {
   static const black = Color(0xFF000000);
   static const cardBorder = Color(0xFFE2E8F0);
   static const inputBg = Color(0xFFF8FAFC);
+  static const textSecondary = Color(0xFF64748B);
 
   // Extended tints & shades
   static const navyDark = Color(0xFF06132A);
