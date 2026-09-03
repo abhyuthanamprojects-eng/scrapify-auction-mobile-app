@@ -49,13 +49,19 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () {
-              ref.read(awardsProvider.notifier).decline(widget.awardId, reasonCtl.text.trim());
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Award Offer Declined')),
-              );
-              context.pop();
+            onPressed: () async {
+              try {
+                await ref.read(awardsProvider.notifier).decline(widget.awardId, reasonCtl.text.trim());
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Award Offer Declined')),
+                );
+                context.pop();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${e.toString()}')),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive),
             child: const Text('Confirm Decline', style: TextStyle(color: AppColors.white)),
@@ -262,13 +268,21 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                             ? null
                             : () async {
                                 setState(() => _submitting = true);
-                                ref.read(awardsProvider.notifier).accept(widget.awardId);
-                                await Future.delayed(const Duration(milliseconds: 300));
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('✓ Award Accepted Successfully! Proceeding to Payment...')),
-                                  );
-                                  context.push('/payments');
+                                try {
+                                  await ref.read(awardsProvider.notifier).accept(widget.awardId);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('✓ Award Accepted Successfully! Proceeding to Payment...')),
+                                    );
+                                    context.push('/payments');
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: ${e.toString()}')),
+                                    );
+                                    setState(() => _submitting = false);
+                                  }
                                 }
                               },
                         style: ElevatedButton.styleFrom(

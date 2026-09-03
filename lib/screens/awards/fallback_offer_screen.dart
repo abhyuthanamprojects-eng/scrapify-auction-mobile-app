@@ -177,13 +177,21 @@ class _FallbackOfferScreenState extends ConsumerState<FallbackOfferScreen> {
                       ? null
                       : () async {
                           setState(() => _submitting = true);
-                          ref.read(awardsProvider.notifier).accept(widget.offerId);
-                          await Future.delayed(const Duration(milliseconds: 300));
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('✓ Fallback Offer Accepted! Contract Generated.')),
-                            );
-                            context.push('/payments');
+                          try {
+                            await ref.read(awardsProvider.notifier).accept(widget.offerId);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('✓ Fallback Offer Accepted! Contract Generated.')),
+                              );
+                              context.push('/payments');
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: ${e.toString()}')),
+                              );
+                              setState(() => _submitting = false);
+                            }
                           }
                         },
                   style: ElevatedButton.styleFrom(

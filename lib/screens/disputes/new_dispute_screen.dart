@@ -191,35 +191,29 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                 ? null
                 : () async {
                     setState(() => _submitting = true);
-                    final dispute = DisputeItem(
-                      id: 'DSP-2026-${DateTime.now().millisecondsSinceEpoch % 10000}',
-                      disputeId: 'DISP-2026-${DateTime.now().millisecondsSinceEpoch % 10000}',
-                      orderId: widget.orderId,
-                      auctionTitle: 'Fulfilment Order #${widget.orderId}',
-                      claimedAmountInr: double.tryParse(_amountCtl.text.trim()) ?? 45000,
-                      category: _category,
-                      status: DisputeStatus.raised,
-                      title: _titleCtl.text.trim().isNotEmpty ? _titleCtl.text.trim() : _category,
-                      description: _descCtl.text.trim().isNotEmpty
-                          ? _descCtl.text.trim()
-                          : 'Material weighment variance reported against manifest.',
-                      createdDate: DateTime.now().toIso8601String().split('T').first,
-                      evidencePhotos: ['https://cdn.scrapify.io/evidence/weigh.jpg'],
-                      timeline: [
-                        DisputeTimelineEvent(
-                          author: 'You (Devzign Solutions)',
-                          timestamp: 'Just now',
-                          message: 'Formal commercial claim submitted for arbitration review.',
-                        ),
-                      ],
-                    );
-                    ref.read(disputesProvider.notifier).addDispute(dispute);
-                    await Future.delayed(const Duration(milliseconds: 300));
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✓ Dispute filed successfully. Arbitration ticket generated.')),
-                      );
-                      context.pop();
+                    try {
+                      await ref.read(disputesProvider.notifier).addDispute({
+                        'order_id': widget.orderId,
+                        'category': _category,
+                        'subject': _titleCtl.text.trim().isNotEmpty ? _titleCtl.text.trim() : _category,
+                        'description': _descCtl.text.trim().isNotEmpty
+                            ? _descCtl.text.trim()
+                            : 'Material weighment variance reported against manifest.',
+                        'claimed_amount': double.tryParse(_amountCtl.text.trim()) ?? 45000,
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('✓ Dispute filed successfully. Arbitration ticket generated.')),
+                        );
+                        context.pop();
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${e.toString()}')),
+                        );
+                        setState(() => _submitting = false);
+                      }
                     }
                   },
             style: ElevatedButton.styleFrom(

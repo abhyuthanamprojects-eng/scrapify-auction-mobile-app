@@ -174,6 +174,10 @@ class AuctionService {
     return await _api.post(Endpoints.acceptAward(awardId));
   }
 
+  Future<Map<String, dynamic>> declineAward(int awardId, String reason) async {
+    return await _api.post(Endpoints.acceptAward(awardId), data: {'status': 'declined', 'reason': reason});
+  }
+
   // Disputes & Arbitration
   Future<Map<String, dynamic>> raiseDispute(Map<String, dynamic> body) async {
     return await _api.post(Endpoints.disputes, data: body);
@@ -181,5 +185,28 @@ class AuctionService {
 
   Future<Map<String, dynamic>> addDisputeMessage(String code, String message) async {
     return await _api.post(Endpoints.disputeMessage(code), data: {'message': message});
+  }
+
+  Future<Map<String, dynamic>> uploadDisputeEvidence(String code, Map<String, dynamic> body) async {
+    return await _api.post(Endpoints.disputeEvidence(code), data: body);
+  }
+
+  // Team Members
+  Future<List<Map<String, dynamic>>> getTeamMembers() async {
+    final data = await _api.get(Endpoints.teamMembers);
+    return List<Map<String, dynamic>>.from(data['data'] as List? ?? []);
+  }
+
+  Future<Map<String, dynamic>> addTeamMember(Map<String, dynamic> body) async {
+    return await _api.post(Endpoints.teamMembers, data: body);
+  }
+
+  Future<Map<String, dynamic>> updateTeamMember(int id, Map<String, dynamic> body) async {
+    return await _api.patch(Endpoints.teamMember(id), data: body);
+  }
+
+  // Auction Terms
+  Future<void> acceptAuctionTerms(String code) async {
+    await _api.post(Endpoints.acceptTerms(code));
   }
 }

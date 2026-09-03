@@ -82,4 +82,12 @@ abstract final class Endpoints {
   static const disputes = '/disputes';
   static String dispute(String code) => '/disputes/$code';
   static String disputeMessage(String code) => '/disputes/$code/messages';
+  static String disputeEvidence(String code) => '/disputes/$code/evidence';
+
+  // Team Members
+  static const teamMembers = '/team/members';
+  static String teamMember(int id) => '/team/members/$id';
+
+  // Auction Terms
+  static String acceptTerms(String code) => '/auctions/$code/terms/accept';
 }

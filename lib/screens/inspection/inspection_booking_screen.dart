@@ -225,26 +225,26 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
                 ? null
                 : () async {
                     setState(() => _submitting = true);
-                    final booking = InspectionBooking(
-                      bookingId: 'INS-2026-${DateTime.now().millisecondsSinceEpoch % 10000}',
-                      auctionCode: widget.auctionCode,
-                      auctionTitle: ref.read(auctionDetailProvider(widget.auctionCode)).valueOrNull?.title ?? '',
-                      facilityAddress: ref.read(auctionDetailProvider(widget.auctionCode)).valueOrNull?.inspectionLocation ?? 'Plant Yard',
-                      contactPerson: ref.read(auctionDetailProvider(widget.auctionCode)).valueOrNull?.inspectionContact ?? 'Security Office',
-                      contactPhone: '+91 98765 43210',
-                      selectedDate: _selectedDate,
-                      selectedTimeSlot: _selectedSlot,
-                      visitorName: _nameCtl.text.trim(),
-                      visitorMobile: _mobileCtl.text.trim(),
-                      visitorGovtId: _govtIdCtl.text.trim(),
-                      vehicleNumber: _vehicleCtl.text.trim(),
-                      numberOfVisitors: _visitorsCount,
-                      gatePassToken: 'SCRAPIFY-GP-${widget.auctionCode}-TOKEN',
-                    );
-                    ref.read(inspectionBookingsProvider.notifier).book(booking);
-                    await Future.delayed(const Duration(milliseconds: 400));
-                    if (mounted) {
-                      context.pushReplacement('/gate-pass/${widget.auctionCode}');
+                    try {
+                      await ref.read(inspectionBookingsProvider.notifier).book(widget.auctionCode, {
+                        'visitor_name': _nameCtl.text.trim(),
+                        'visitor_mobile': _mobileCtl.text.trim(),
+                        'visitor_govt_id': _govtIdCtl.text.trim(),
+                        'vehicle_number': _vehicleCtl.text.trim(),
+                        'number_of_visitors': _visitorsCount,
+                        'slot': _selectedSlot,
+                        'date': _selectedDate,
+                      });
+                      if (mounted) {
+                        context.pushReplacement('/gate-pass/${widget.auctionCode}');
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${e.toString()}')),
+                        );
+                        setState(() => _submitting = false);
+                      }
                     }
                   },
             icon: const Icon(Icons.qr_code_2_rounded),
