@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
+import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -62,11 +63,20 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileHeader(BuildContext context, dynamic user) {
+  Widget _buildProfileHeader(BuildContext context, AppUser? user) {
     final kycStatus = user?.kycStatus ?? 'pending';
     final isApproved = user?.kycVerified ?? false;
     final isRejected = user?.isKycRejected ?? false;
-    final isPending = user?.isKycPending ?? false;
+    final userName = user?.name ?? '';
+    final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+    final displayName = userName.isNotEmpty ? userName : 'Registered User';
+    final companyName = (user?.companyName != null && user!.companyName!.isNotEmpty)
+        ? user.companyName!
+        : (user?.roleLabel ?? 'Account Holder');
+    final gstin = (user?.vendor?.gstNumber != null && user!.vendor!.gstNumber!.isNotEmpty)
+        ? user.vendor!.gstNumber!
+        : 'Not Linked';
+    final rejectionReason = user?.rejectionReason;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -91,7 +101,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    (user?.name != null && user.name.isNotEmpty ? user.name[0] : 'U').toUpperCase(),
+                    initial,
                     style: AppTextStyles.heading(size: 22, color: AppColors.white),
                   ),
                 ),
@@ -102,12 +112,12 @@ class ProfileScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.name != null && user.name.isNotEmpty ? user.name : 'Registered User',
+                      displayName,
                       style: AppTextStyles.heading(size: 16, weight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      user?.companyName != null && user.companyName.isNotEmpty ? user.companyName : (user?.roleLabel ?? 'Account Holder'),
+                      companyName,
                       style: AppTextStyles.captionMuted,
                     ),
                     const SizedBox(height: 2),
@@ -131,11 +141,11 @@ class ProfileScreen extends ConsumerWidget {
               children: [
                 _miniDetail('Role', user?.roleLabel ?? 'Buyer'),
                 _miniDetail('Vendor Code', user?.vendorCode ?? 'Pending'),
-                _miniDetail('GSTIN', user?.vendor?.gstNumber != null && user.vendor.gstNumber.isNotEmpty ? user.vendor.gstNumber : 'Not Linked'),
+                _miniDetail('GSTIN', gstin),
               ],
             ),
           ],
-          if (isRejected && user?.rejectionReason != null) ...[
+          if (isRejected && rejectionReason != null && rejectionReason.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -154,7 +164,7 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         const Text('KYC Action Required', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.destructive)),
                         const SizedBox(height: 2),
-                        Text(user.rejectionReason!, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                        Text(rejectionReason, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
                       ],
                     ),
                   ),

@@ -58,7 +58,7 @@ class EditProfileScreen extends ConsumerWidget {
                         ),
                         child: Center(
                           child: Text(
-                            (user?.name != null && user.name.isNotEmpty ? user.name[0] : 'U').toUpperCase(),
+                            (user?.name != null && user!.name.isNotEmpty ? user.name[0] : 'U').toUpperCase(),
                             style: AppTextStyles.heading(size: 32, color: AppColors.white),
                           ),
                         ),
