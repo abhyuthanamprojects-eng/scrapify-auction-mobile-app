@@ -266,15 +266,19 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
       await WalletService().topUp(amount: amount, method: _method.toLowerCase());
       widget.ref.invalidate(walletBalanceProvider);
       widget.ref.invalidate(transactionsProvider);
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _processing = false;
         _success = true;
       });
+      }
     } catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _processing = false;
         _error = e.toString();
       });
+      }
     }
   }
 

@@ -52,7 +52,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (auth.isAuthenticated) {
         context.go('/home');
       } else {
-        context.go('/auctions');
+        context.go('/onboarding');
       }
     });
   }
