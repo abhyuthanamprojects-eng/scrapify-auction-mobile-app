@@ -47,7 +47,7 @@ abstract final class AppTheme {
           backgroundColor: AppColors.auction,
           foregroundColor: AppColors.white,
           elevation: 0,
-          minimumSize: Size(double.infinity, AppSpacing.buttonMd),
+          minimumSize: Size(0, AppSpacing.buttonMd),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
@@ -61,7 +61,7 @@ abstract final class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.navy,
           elevation: 0,
-          minimumSize: Size(double.infinity, AppSpacing.buttonMd),
+          minimumSize: Size(0, AppSpacing.buttonMd),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           ),
