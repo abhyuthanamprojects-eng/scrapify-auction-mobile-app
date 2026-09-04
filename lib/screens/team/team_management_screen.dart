@@ -28,83 +28,97 @@ class TeamManagementScreen extends ConsumerWidget {
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text('Add Corporate Bidder', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
-              const SizedBox(height: 4),
-              const Text('Delegate bidding limits and event access to team members.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-              const SizedBox(height: 16),
-              TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder())),
-              const SizedBox(height: 10),
-              TextField(controller: emailCtl, decoration: const InputDecoration(labelText: 'Corporate Email', border: OutlineInputBorder())),
-              const SizedBox(height: 10),
-              TextField(controller: mobileCtl, decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder())),
-              const SizedBox(height: 10),
-              TextField(
-                controller: limitCtl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Max Bidding Limit (₹)', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: role,
-                decoration: const InputDecoration(labelText: 'Role Permission', border: OutlineInputBorder()),
-                items: ['Administrator', 'Authorized Bidder', 'Viewer / Observer']
-                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                    .toList(),
-                onChanged: (v) => setModalState(() => role = v ?? role),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (nameCtl.text.trim().isEmpty) return;
-                    final member = TeamMember(
-                      id: 'TM-00${DateTime.now().millisecondsSinceEpoch % 100}',
-                      name: nameCtl.text.trim(),
-                      email: emailCtl.text.trim(),
-                      mobile: mobileCtl.text.trim(),
-                      role: TeamRole.values.firstWhere(
-                        (r) => r.label == role,
-                        orElse: () => TeamRole.authorizedBidder,
-                      ),
-                      maxBiddingLimitInr: double.tryParse(limitCtl.text.trim()) ?? 5000000,
-                      isActive: true,
-                      allowedCategories: const ['All Categories'],
-                    );
-                    ref.read(teamMembersProvider.notifier).addMember({
-                      'email': member.email,
-                      'name': member.name,
-                      'role': member.role.toString().split('.').last,
-                      'max_bidding_limit_inr': member.maxBiddingLimitInr,
-                      'is_active': member.isActive,
-                    });
-                    Navigator.of(ctx).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✓ Team member authorization updated')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navy,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
                   ),
-                  child: const Text('Add Authorized Member', style: TextStyle(fontWeight: FontWeight.w800)),
                 ),
-              ),
-            ],
+                const SizedBox(height: 14),
+                Text('Add Corporate Bidder', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                const Text('Delegate bidding limits and event access to team members.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const SizedBox(height: 16),
+                TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(controller: emailCtl, decoration: const InputDecoration(labelText: 'Corporate Email', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(controller: mobileCtl, decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder())),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: limitCtl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Max Bidding Limit (₹)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: role,
+                  decoration: const InputDecoration(labelText: 'Role Permission', border: OutlineInputBorder()),
+                  items: ['Administrator', 'Authorized Bidder', 'Viewer / Observer']
+                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                      .toList(),
+                  onChanged: (v) => setModalState(() => role = v ?? role),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (nameCtl.text.trim().isEmpty || emailCtl.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter name and corporate email')),
+                        );
+                        return;
+                      }
+
+                      final roleVal = switch (role) {
+                        'Administrator' => 'seller',
+                        'Viewer / Observer' => 'finance_manager',
+                        _ => 'buyer',
+                      };
+
+                      try {
+                        await ref.read(teamMembersProvider.notifier).addMember({
+                          'name': nameCtl.text.trim(),
+                          'email': emailCtl.text.trim(),
+                          'phone': mobileCtl.text.trim(),
+                          'mobile': mobileCtl.text.trim(),
+                          'role': roleVal,
+                          'password': 'password123',
+                          'max_bidding_limit_inr': double.tryParse(limitCtl.text.trim()) ?? 5000000,
+                          'is_active': true,
+                        });
+                        if (context.mounted) {
+                          Navigator.of(ctx).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('✓ Team member added & access granted')),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error adding member: ${e.toString()}')),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: AppColors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                    ),
+                    child: const Text('Add Authorized Member', style: TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../providers/domain_providers.dart';
 
 class NewDisputeScreen extends ConsumerStatefulWidget {
@@ -19,7 +20,7 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
   final _amountCtl = TextEditingController(text: '45000');
   final _titleCtl = TextEditingController();
   final _descCtl = TextEditingController();
-  bool _hasPhoto = true;
+  PickedAttachment? _attachedEvidence;
   bool _submitting = false;
 
   final _categories = const [
@@ -141,36 +142,95 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
             const SizedBox(height: 16),
 
             // Evidence Upload Box
-            Text('Supporting Evidence (Weighbridge Slip / Photos)', style: AppTextStyles.labelMedium),
+            Text('Supporting Evidence (Weighbridge Slip / Photos / Invoices)', style: AppTextStyles.labelMedium),
             const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.white,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.attach_file, color: AppColors.auction, size: 24),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _hasPhoto ? 'weighbridge_slip_tare.jpg (Attached)' : 'Attach weighbridge or yard photo',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _hasPhoto ? AppColors.navy : const Color(0xFF64748B)),
-                        ),
-                        Text(_hasPhoto ? '1.4 MB • GPS stamped' : 'PNG, JPG or PDF up to 10MB', style: AppTextStyles.captionMuted),
-                      ],
+            InkWell(
+              onTap: () async {
+                final picked = await AppFilePicker.showPickerBottomSheet(
+                  context,
+                  title: 'Attach Commercial Dispute Evidence',
+                );
+                if (picked != null) {
+                  setState(() => _attachedEvidence = picked);
+                }
+              },
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(
+                    color: _attachedEvidence != null ? AppColors.success.withValues(alpha: 0.5) : AppColors.cardBorder,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _attachedEvidence != null
+                            ? AppColors.success.withValues(alpha: 0.1)
+                            : AppColors.auction.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        _attachedEvidence != null
+                            ? (_attachedEvidence!.isImage ? Icons.image : Icons.picture_as_pdf)
+                            : Icons.attach_file,
+                        color: _attachedEvidence != null ? AppColors.success : AppColors.auction,
+                        size: 22,
+                      ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _hasPhoto = !_hasPhoto),
-                    child: Text(_hasPhoto ? 'Remove' : 'Upload', style: const TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _attachedEvidence != null
+                                ? _attachedEvidence!.name
+                                : 'Tap to attach weighbridge slip, photos or PDF',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: _attachedEvidence != null ? AppColors.navy : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _attachedEvidence != null
+                                ? '${_attachedEvidence!.formattedSize} • Ready to upload'
+                                : 'Supports Camera, Gallery, PDF up to 10MB',
+                            style: AppTextStyles.captionMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_attachedEvidence != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: AppColors.destructive),
+                        onPressed: () => setState(() => _attachedEvidence = null),
+                        tooltip: 'Remove',
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: () async {
+                          final picked = await AppFilePicker.showPickerBottomSheet(
+                            context,
+                            title: 'Attach Commercial Dispute Evidence',
+                          );
+                          if (picked != null) {
+                            setState(() => _attachedEvidence = picked);
+                          }
+                        },
+                        icon: const Icon(Icons.upload, size: 16),
+                        label: const Text('Browse', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],

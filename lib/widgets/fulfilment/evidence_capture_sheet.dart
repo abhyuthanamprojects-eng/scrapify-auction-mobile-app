@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../models/evidence.dart';
 
 class EvidenceCaptureSheet extends StatefulWidget {
@@ -42,6 +44,7 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
   EvidenceType _selectedType = EvidenceType.photo;
   final _remarksCtl = TextEditingController();
   final _metricValCtl = TextEditingController();
+  PickedAttachment? _attachedFile;
   bool _signed = false;
   bool _uploading = false;
 
@@ -133,23 +136,115 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
             ),
             const SizedBox(height: 12),
           ] else ...[
-            // Photo Preview Placeholder
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.appBg,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.cardBorder, style: BorderStyle.solid),
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_a_photo_outlined, size: 36, color: AppColors.navy),
-                    SizedBox(height: 4),
-                    Text('Capture Photo with GPS & Timestamp', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                  ],
+            // Photo / Document Picker Box
+            InkWell(
+              onTap: () async {
+                final picked = await AppFilePicker.showPickerBottomSheet(
+                  context,
+                  title: 'Capture / Attach ${_selectedType.name.toUpperCase()}',
+                );
+                if (picked != null) {
+                  setState(() => _attachedFile = picked);
+                }
+              },
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              child: Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppColors.appBg,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(
+                    color: _attachedFile != null ? AppColors.success.withValues(alpha: 0.6) : AppColors.cardBorder,
+                  ),
                 ),
+                child: _attachedFile != null
+                    ? (_attachedFile!.isImage && _attachedFile!.path != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                            child: Stack(
+                              children: [
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  child: Image.file(
+                                    File(_attachedFile!.path!),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  color: Colors.black.withValues(alpha: 0.6),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${_attachedFile!.name} (${_attachedFile!.formattedSize})',
+                                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () => setState(() => _attachedFile = null),
+                                        child: const Icon(Icons.close, color: Colors.white, size: 18),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.picture_as_pdf, color: AppColors.destructive, size: 36),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _attachedFile!.name,
+                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(_attachedFile!.formattedSize, style: AppTextStyles.captionMuted),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, color: AppColors.destructive),
+                                    onPressed: () => setState(() => _attachedFile = null),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ))
+                    : Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _selectedType == EvidenceType.documentPdf ? Icons.upload_file : Icons.add_a_photo_outlined,
+                              size: 36,
+                              color: AppColors.navy,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _selectedType == EvidenceType.documentPdf
+                                  ? 'Tap to select PDF document'
+                                  : 'Capture Photo or Browse Gallery (GPS stamped)',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
+                            ),
+                            const SizedBox(height: 2),
+                            Text('Supports Camera, Gallery, PDF up to 10MB', style: AppTextStyles.captionMuted),
+                          ],
+                        ),
+                      ),
               ),
             ),
             const SizedBox(height: 12),
@@ -176,8 +271,10 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
                       final ev = CapturedEvidence(
                         id: 'EV-${DateTime.now().millisecondsSinceEpoch % 10000}',
                         type: _selectedType,
-                        title: '${_selectedType.name.toUpperCase()} Evidence',
-                        fileUrl: 'https://cdn.bidplay.io/evidence/ev1.jpg',
+                        title: _attachedFile?.name ?? '${_selectedType.name.toUpperCase()} Evidence',
+                        fileUrl: _attachedFile?.path != null
+                            ? 'file://${_attachedFile!.path}'
+                            : 'https://cdn.bidplay.io/evidence/ev1.jpg',
                         timestamp: DateTime.now().toIso8601String(),
                         capturedBy: 'Yard Supervisor / Driver',
                         geoCoordinates: '22.8046° N, 86.2029° E (Tata Plant Yard)',

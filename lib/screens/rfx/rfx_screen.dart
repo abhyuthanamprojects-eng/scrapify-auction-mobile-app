@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../models/rfx.dart';
 import '../../providers/domain_providers.dart';
 import '../../services/auction_service.dart';
@@ -275,33 +276,78 @@ class _RfxScreenState extends ConsumerState<RfxScreen> {
               ),
             )
           else if (q.type == RfxQuestionType.fileAttachment)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.appBg,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.attach_file, color: AppColors.purple),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      current != null ? 'fleet-permit-verified.pdf' : 'Attach required certification',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: current != null ? AppColors.navy : const Color(0xFF64748B),
+            InkWell(
+              onTap: () async {
+                final picked = await AppFilePicker.showPickerBottomSheet(
+                  context,
+                  title: 'Upload ${q.questionText}',
+                );
+                if (picked != null) {
+                  setState(() => _answers[q.id] = picked.name);
+                }
+              },
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: current != null ? AppColors.purple.withValues(alpha: 0.06) : AppColors.appBg,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(
+                    color: current != null ? AppColors.purple : AppColors.cardBorder,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      current != null ? Icons.check_circle : Icons.attach_file,
+                      color: AppColors.purple,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            current != null ? current.toString() : 'Attach required document (PDF / Image)',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: current != null ? AppColors.navy : const Color(0xFF64748B),
+                            ),
+                          ),
+                          if (current != null)
+                            const Text(
+                              'Document attached & verified for proposal',
+                              style: TextStyle(fontSize: 10, color: AppColors.purple, fontWeight: FontWeight.w600),
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _answers[q.id] = 'https://docs.scrapify.io/doc.pdf'),
-                    child: Text(current != null ? 'Replace' : 'Upload',
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.purple)),
-                  ),
-                ],
+                    if (current != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: AppColors.destructive),
+                        onPressed: () => setState(() => _answers.remove(q.id)),
+                        tooltip: 'Remove',
+                      )
+                    else
+                      TextButton.icon(
+                        onPressed: () async {
+                          final picked = await AppFilePicker.showPickerBottomSheet(
+                            context,
+                            title: 'Upload ${q.questionText}',
+                          );
+                          if (picked != null) {
+                            setState(() => _answers[q.id] = picked.name);
+                          }
+                        },
+                        icon: const Icon(Icons.upload, size: 16, color: AppColors.purple),
+                        label: const Text('Browse', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.purple)),
+                      ),
+                  ],
+                ),
               ),
             ),
         ],

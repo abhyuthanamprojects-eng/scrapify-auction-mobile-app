@@ -90,7 +90,7 @@ abstract final class Endpoints {
 
   // Team Members
   static const teamMembers = '/team/members';
-  static String teamMember(int id) => '/team/members/$id';
+  static String teamMember(dynamic id) => '/team/members/$id';
 
   // Auction Terms
   static String acceptTerms(String code) => '/auctions/$code/terms/accept';

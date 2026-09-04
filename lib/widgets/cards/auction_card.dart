@@ -194,42 +194,45 @@ class AuctionCard extends StatelessWidget {
   }
 
   Widget _buildTagsRow() {
-    return Row(
-      children: [
-        AuctionTypeChip(direction: auction.direction, compact: true),
-        if (auction.category != null) ...[
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.navy.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              auction.category!,
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.navyWithOpacity(0.7),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          AuctionTypeChip(direction: auction.direction, compact: true),
+          if (auction.category != null) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.navy.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                auction.category!,
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.navyWithOpacity(0.7),
+                ),
               ),
             ),
-          ),
-        ],
-        if (auction.isLotWise) ...[
-          const SizedBox(width: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.auction.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(999),
+          ],
+          if (auction.isLotWise) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.auction.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                'Multi-Lot',
+                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.auction),
+              ),
             ),
-            child: const Text(
-              'Multi-Lot',
-              style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.auction),
-            ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

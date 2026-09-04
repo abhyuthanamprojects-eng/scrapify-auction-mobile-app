@@ -201,7 +201,7 @@ class AuctionService {
     return await _api.post(Endpoints.teamMembers, data: body);
   }
 
-  Future<Map<String, dynamic>> updateTeamMember(int id, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> updateTeamMember(dynamic id, Map<String, dynamic> body) async {
     return await _api.patch(Endpoints.teamMember(id), data: body);
   }
 

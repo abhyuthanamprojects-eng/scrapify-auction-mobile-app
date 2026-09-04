@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../core/utils/formatters.dart';
 
 class EmdPaySheet extends StatefulWidget {
@@ -25,10 +26,10 @@ class EmdPaySheet extends StatefulWidget {
 class _EmdPaySheetState extends State<EmdPaySheet> {
   String _mode = 'gateway'; // 'gateway' | 'neft'
   final _refController = TextEditingController();
-  bool _slipUploaded = false;
+  PickedAttachment? _slipAttachment;
 
   bool get _canPay =>
-      _mode == 'gateway' || (_refController.text.trim().length >= 6 && _slipUploaded);
+      _mode == 'gateway' || (_refController.text.trim().length >= 6 && _slipAttachment != null);
 
   @override
   void dispose() {
@@ -164,31 +165,61 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
 
             // Upload slip button
             GestureDetector(
-              onTap: () => setState(() => _slipUploaded = true),
+              onTap: () async {
+                final picked = await AppFilePicker.showPickerBottomSheet(
+                  context,
+                  title: 'Upload Bank Payment Slip (NEFT/RTGS)',
+                );
+                if (picked != null) {
+                  setState(() => _slipAttachment = picked);
+                }
+              },
               child: Container(
-                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: _slipAttachment != null ? AppColors.success.withValues(alpha: 0.08) : AppColors.white,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                  border: Border.all(color: AppColors.blackWithOpacity(0.1)),
+                  border: Border.all(
+                    color: _slipAttachment != null ? AppColors.success : AppColors.blackWithOpacity(0.1),
+                  ),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      _slipUploaded ? Icons.check : Icons.upload_file,
-                      size: 15,
-                      color: _slipUploaded ? AppColors.success : AppColors.navy,
+                      _slipAttachment != null ? Icons.check_circle : Icons.upload_file,
+                      size: 20,
+                      color: _slipAttachment != null ? AppColors.success : AppColors.navy,
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _slipUploaded ? 'neft_slip.pdf attached' : 'Upload payment slip',
-                      style: AppTextStyles.body(
-                        size: 14,
-                        weight: FontWeight.w600,
-                        color: AppColors.navy,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _slipAttachment != null ? _slipAttachment!.name : 'Upload payment slip',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body(
+                              size: 13,
+                              weight: FontWeight.w600,
+                              color: AppColors.navy,
+                            ),
+                          ),
+                          if (_slipAttachment != null)
+                            Text(
+                              '${_slipAttachment!.formattedSize} • Ready to verify',
+                              style: const TextStyle(fontSize: 10, color: AppColors.success, fontWeight: FontWeight.w600),
+                            ),
+                        ],
                       ),
                     ),
+                    if (_slipAttachment != null)
+                      GestureDetector(
+                        onTap: () => setState(() => _slipAttachment = null),
+                        child: const Icon(Icons.close, size: 18, color: AppColors.destructive),
+                      )
+                    else
+                      const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF94A3B8)),
                   ],
                 ),
               ),

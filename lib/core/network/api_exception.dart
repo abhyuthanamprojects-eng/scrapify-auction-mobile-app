@@ -38,7 +38,12 @@ class ApiException implements Exception {
 
   String get userMessage {
     if (isNetwork) return 'No internet connection. Please check your network.';
-    if (isTimeout) return 'Request timed out. Please try again.';
+    if (isTimeout || statusCode == 522 || statusCode == 524 || statusCode == 504) {
+      return 'Server is taking too long to respond (Connection timed out). Please try again in a few moments.';
+    }
+    if (statusCode == 502 || statusCode == 503) {
+      return 'Server is temporarily unavailable. Please try again shortly.';
+    }
     if (isUnauthorized) return 'Your session has expired. Please log in again.';
     if (isForbidden) return 'You do not have permission to perform this action.';
     if (isNotFound) return 'The requested resource was not found.';
@@ -49,7 +54,10 @@ class ApiException implements Exception {
   }
 
   factory ApiException.fromDioResponse(Map<String, dynamic>? data, int status) {
-    final message = data?['message'] as String? ?? 'Something went wrong';
+    final message = data?['message'] as String? ??
+        data?['detail'] as String? ??
+        data?['title'] as String? ??
+        'Something went wrong';
     final rawErrors = data?['errors'] as Map<String, dynamic>? ?? {};
     final fieldErrors = rawErrors.map(
       (key, value) => MapEntry(key, (value as List).cast<String>()),
@@ -58,6 +66,7 @@ class ApiException implements Exception {
       statusCode: status,
       message: message,
       fieldErrors: fieldErrors,
+      errorType: (status == 522 || status == 524 || status == 504) ? 'timeout' : null,
     );
   }
 

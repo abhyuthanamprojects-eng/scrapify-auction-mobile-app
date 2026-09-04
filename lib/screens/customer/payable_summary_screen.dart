@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../widgets/shared/screen_header.dart';
 
@@ -168,9 +169,20 @@ class _PayableSummaryScreenState extends State<PayableSummaryScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: GestureDetector(
-                                  onTap: () {
-                                    setState(() => _paid = true);
-                                    widget.onUploadSlip?.call();
+                                  onTap: () async {
+                                    final picked = await AppFilePicker.showPickerBottomSheet(
+                                      context,
+                                      title: 'Upload Balance Payment Slip (NEFT/RTGS)',
+                                    );
+                                    if (picked != null) {
+                                      setState(() => _paid = true);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('✓ Payment slip "${picked.name}" submitted for verification')),
+                                        );
+                                      }
+                                      widget.onUploadSlip?.call();
+                                    }
                                   },
                                   child: Container(
                                     height: 44,

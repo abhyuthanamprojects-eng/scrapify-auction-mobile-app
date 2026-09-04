@@ -125,10 +125,11 @@ class _DocumentCentreScreenState extends State<DocumentCentreScreen> with Single
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Center(
                 child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2))),
               ),
@@ -238,8 +239,9 @@ class _DocumentCentreScreenState extends State<DocumentCentreScreen> with Single
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _viewSecureDoc(DocItem doc) {
     showDialog(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 
 class SupportCenterScreen extends StatefulWidget {
   const SupportCenterScreen({super.key});
@@ -16,6 +17,7 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> with SingleTi
   final _descCtl = TextEditingController();
   final _eventCodeCtl = TextEditingController(text: 'BP-FWD-2026-1048');
   String _selectedCategory = 'Live Auction Technical Query';
+  PickedAttachment? _attachedFile;
   bool _creating = false;
 
   final List<Map<String, String>> _tickets = [
@@ -72,10 +74,13 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> with SingleTi
           'eventCode': _eventCodeCtl.text.trim(),
           'status': 'Open',
           'createdAt': 'Just now',
-          'latestResponse': 'Ticket queued for Priority Level 1 support team.',
+          'latestResponse': _attachedFile != null
+              ? 'Ticket queued with attachment: ${_attachedFile!.name}'
+              : 'Ticket queued for Priority Level 1 support team.',
         });
         _subjectCtl.clear();
         _descCtl.clear();
+        _attachedFile = null;
         _tabCtl.animateTo(1);
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,6 +204,80 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> with SingleTi
                     labelText: 'Detailed Description *',
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Attachment Picker Card
+                InkWell(
+                  onTap: () async {
+                    final picked = await AppFilePicker.showPickerBottomSheet(
+                      context,
+                      title: 'Attach Support File / Screenshot',
+                    );
+                    if (picked != null) {
+                      setState(() => _attachedFile = picked);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.appBg,
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                      border: Border.all(
+                        color: _attachedFile != null ? AppColors.accentBlue : AppColors.cardBorder,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _attachedFile != null
+                                ? AppColors.accentBlue.withValues(alpha: 0.15)
+                                : const Color(0xFFE2E8F0),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _attachedFile != null
+                                ? (_attachedFile!.isImage ? Icons.image : Icons.picture_as_pdf)
+                                : Icons.attach_file,
+                            color: _attachedFile != null ? AppColors.accentBlue : const Color(0xFF64748B),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _attachedFile != null ? _attachedFile!.name : 'Attach screenshot, invoice or error log',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: _attachedFile != null ? AppColors.navy : const Color(0xFF64748B),
+                                ),
+                              ),
+                              Text(
+                                _attachedFile != null ? _attachedFile!.formattedSize : 'PNG, JPG, PDF up to 10MB (Optional)',
+                                style: AppTextStyles.captionMuted,
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_attachedFile != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18, color: AppColors.destructive),
+                            onPressed: () => setState(() => _attachedFile = null),
+                          )
+                        else
+                          const Text('Browse', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 18),

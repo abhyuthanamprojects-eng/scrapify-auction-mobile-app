@@ -28,6 +28,8 @@ class PickedAttachment {
   }
 }
 
+enum PickerAction { document, gallery, camera }
+
 class AppFilePicker {
   static final _imagePicker = ImagePicker();
 
@@ -121,8 +123,7 @@ class AppFilePicker {
     String title = 'Upload Document or Photo',
     List<String>? allowedExtensions,
   }) async {
-    PickedAttachment? selected;
-    await showModalBottomSheet<void>(
+    final action = await showModalBottomSheet<PickerAction>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -160,10 +161,7 @@ class AppFilePicker {
                     icon: Icons.description_outlined,
                     label: 'Browse PDF / Files',
                     color: AppColors.auction,
-                    onTap: () async {
-                      Navigator.of(ctx).pop();
-                      selected = await pickDocument(allowedExtensions: allowedExtensions);
-                    },
+                    onTap: () => Navigator.of(ctx).pop(PickerAction.document),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -172,10 +170,7 @@ class AppFilePicker {
                     icon: Icons.photo_library_outlined,
                     label: 'Photo Gallery',
                     color: AppColors.accentBlue,
-                    onTap: () async {
-                      Navigator.of(ctx).pop();
-                      selected = await pickImage(source: ImageSource.gallery);
-                    },
+                    onTap: () => Navigator.of(ctx).pop(PickerAction.gallery),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -184,10 +179,7 @@ class AppFilePicker {
                     icon: Icons.camera_alt_outlined,
                     label: 'Take Photo',
                     color: AppColors.navy,
-                    onTap: () async {
-                      Navigator.of(ctx).pop();
-                      selected = await pickImage(source: ImageSource.camera);
-                    },
+                    onTap: () => Navigator.of(ctx).pop(PickerAction.camera),
                   ),
                 ),
               ],
@@ -197,7 +189,17 @@ class AppFilePicker {
         ),
       ),
     );
-    return selected;
+
+    if (action == null) return null;
+
+    switch (action) {
+      case PickerAction.document:
+        return await pickDocument(allowedExtensions: allowedExtensions);
+      case PickerAction.gallery:
+        return await pickImage(source: ImageSource.gallery);
+      case PickerAction.camera:
+        return await pickImage(source: ImageSource.camera);
+    }
   }
 
   static Widget _pickerOption({

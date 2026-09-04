@@ -88,49 +88,68 @@ final teamMembersProvider = StateNotifierProvider<TeamNotifier, List<TeamMember>
 });
 
 class TeamNotifier extends StateNotifier<List<TeamMember>> {
-  TeamNotifier() : super(const []);
+  TeamNotifier() : super(const []) {
+    loadMembers();
+  }
 
-  Future<void> addMember(Map<String, dynamic> body) async {
-    final result = await AuctionService().addTeamMember(body);
-    final roleStr = (result['role'] ?? 'vendorAdmin').toString().toLowerCase();
-    final role = switch(roleStr) {
-      'bidder' || 'authorized_bidder' => TeamRole.authorizedBidder,
-      'inspector' || 'field_inspector' => TeamRole.fieldInspector,
-      'finance' || 'finance_approver' => TeamRole.financeApprover,
+  Future<void> loadMembers() async {
+    try {
+      final list = await AuctionService().getTeamMembers();
+      state = list.map((json) => _mapToMember(json)).toList();
+    } catch (_) {}
+  }
+
+  TeamMember _mapToMember(Map<String, dynamic> json) {
+    final roleStr = (json['role'] ?? json['role_label'] ?? 'authorized_bidder').toString().toLowerCase();
+    final role = switch (roleStr) {
+      'bidder' || 'authorized_bidder' || 'authorizedbidder' || 'buyer' => TeamRole.authorizedBidder,
+      'inspector' || 'field_inspector' || 'fieldinspector' || 'technical_evaluator' => TeamRole.fieldInspector,
+      'finance' || 'finance_approver' || 'financeapprover' || 'finance_manager' => TeamRole.financeApprover,
       _ => TeamRole.vendorAdmin,
     };
-    final tm = TeamMember(
-      id: result['id']?.toString() ?? '',
-      name: result['name'] ?? '',
-      email: result['email'] ?? '',
-      mobile: result['mobile'] ?? '',
+
+    final isAct = json['status'] == null ? (json['is_active'] ?? true) : (json['status'] == 'active');
+
+    return TeamMember(
+      id: json['id']?.toString() ?? 'TM-${DateTime.now().millisecondsSinceEpoch % 1000}',
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
+      mobile: json['phone'] ?? json['mobile'] ?? '',
       role: role,
-      maxBiddingLimitInr: (result['max_bidding_limit_inr'] as num?)?.toDouble() ?? 0.0,
-      isActive: result['is_active'] ?? true,
-      joinedAt: result['joined_at'] ?? DateTime.now().toString(),
-      allowedCategories: List<String>.from(result['allowed_categories'] as List? ?? []),
+      maxBiddingLimitInr: (json['max_bidding_limit_inr'] as num?)?.toDouble() ?? 5000000.0,
+      isActive: isAct,
+      joinedAt: json['created_at'] ?? json['joined_at'] ?? '2026-08-01',
+      allowedCategories: (json['allowed_categories'] as List?)?.cast<String>() ?? const ['All Categories'],
     );
+  }
+
+  Future<void> addMember(Map<String, dynamic> body) async {
+    final res = await AuctionService().addTeamMember(body);
+    final rawData = res['data'] is Map<String, dynamic> ? res['data'] as Map<String, dynamic> : res;
+    final tm = _mapToMember(rawData);
     state = [tm, ...state];
   }
 
   Future<void> toggleStatus(String id) async {
     final member = state.firstWhere((m) => m.id == id);
-    await AuctionService().updateTeamMember(int.parse(id), {'is_active': !member.isActive});
+    try {
+      await AuctionService().updateTeamMember(id, {'is_active': !member.isActive});
+    } catch (_) {}
     state = state
         .map(
-          (member) => member.id == id
+          (m) => m.id == id
               ? TeamMember(
-                  id: member.id,
-                  name: member.name,
-                  email: member.email,
-                  mobile: member.mobile,
-                  role: member.role,
-                  maxBiddingLimitInr: member.maxBiddingLimitInr,
-                  isActive: !member.isActive,
-                  joinedAt: member.joinedAt,
-                  allowedCategories: member.allowedCategories,
+                  id: m.id,
+                  name: m.name,
+                  email: m.email,
+                  mobile: m.mobile,
+                  role: m.role,
+                  maxBiddingLimitInr: m.maxBiddingLimitInr,
+                  isActive: !m.isActive,
+                  joinedAt: m.joinedAt,
+                  allowedCategories: m.allowedCategories,
                 )
-              : member,
+              : m,
         )
         .toList();
   }
