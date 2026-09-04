@@ -59,12 +59,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Scrapify requires camera access to take photos of scrap materials, weighment slips, and compliance documents.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Scrapify requires access to your photo library to upload statutory certificates, inspection photos, and KYC documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Scrapify needs permission to save official bid receipts and digital certificates to your photos.</string>
 </dict>
 </plist>

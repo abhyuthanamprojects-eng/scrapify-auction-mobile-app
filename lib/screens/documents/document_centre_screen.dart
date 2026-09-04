@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
+import '../../core/utils/file_picker_service.dart';
 
 enum DocStatus { verified, pending, rejected, expiringSoon, expired }
 
@@ -39,8 +40,8 @@ class DocumentCentreScreen extends StatefulWidget {
 class _DocumentCentreScreenState extends State<DocumentCentreScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtl;
 
-  final List<DocItem> _documents = const [
-    DocItem(
+  List<DocItem> _documents = [
+    const DocItem(
       id: 'DOC-GST-01',
       title: 'GST Registration Certificate (Form REG-06)',
       category: 'Tax & Statutory',
@@ -49,7 +50,7 @@ class _DocumentCentreScreenState extends State<DocumentCentreScreen> with Single
       uploadedAt: '12 Aug 2026',
       status: DocStatus.verified,
     ),
-    DocItem(
+    const DocItem(
       id: 'DOC-PAN-01',
       title: 'Company PAN Card',
       category: 'Tax & Statutory',
@@ -58,35 +59,35 @@ class _DocumentCentreScreenState extends State<DocumentCentreScreen> with Single
       uploadedAt: '12 Aug 2026',
       status: DocStatus.verified,
     ),
-    DocItem(
+    const DocItem(
       id: 'DOC-PCB-01',
-      title: 'State Pollution Control Board (SPCB) Consent to Operate',
-      category: 'Environmental & Safety',
+      title: 'State Pollution Control Board Consent to Operate (CTO)',
+      category: 'Environmental & Regulatory',
       fileFormat: 'PDF',
       fileSize: '3.8 MB',
-      uploadedAt: '14 Aug 2026',
+      uploadedAt: '05 Jul 2026',
       expiryDate: '15 Sep 2026',
       status: DocStatus.expiringSoon,
     ),
-    DocItem(
-      id: 'DOC-BNK-01',
-      title: 'Cancelled Cheque with Printed Name',
-      category: 'Financial',
-      fileFormat: 'JPEG',
-      fileSize: '1.1 MB',
-      uploadedAt: '20 Aug 2026',
-      status: DocStatus.verified,
-    ),
-    DocItem(
+    const DocItem(
       id: 'DOC-ISO-01',
       title: 'ISO 9001:2015 Quality Management Certificate',
-      category: 'Technical & Quality',
+      category: 'Operations & Quality',
       fileFormat: 'PDF',
-      fileSize: '2.2 MB',
-      uploadedAt: '24 Aug 2026',
+      fileSize: '2.1 MB',
+      uploadedAt: '20 Aug 2026',
       status: DocStatus.pending,
     ),
-    DocItem(
+    const DocItem(
+      id: 'DOC-BNK-01',
+      title: 'Cancelled Corporate Cheque & Penny-Drop Mandate',
+      category: 'Financial & Settlement',
+      fileFormat: 'PDF',
+      fileSize: '1.1 MB',
+      uploadedAt: '10 Aug 2026',
+      status: DocStatus.verified,
+    ),
+    const DocItem(
       id: 'DOC-POA-01',
       title: 'Board Resolution & Power of Attorney for Live Bidding',
       category: 'Legal & Governance',
@@ -111,67 +112,130 @@ class _DocumentCentreScreenState extends State<DocumentCentreScreen> with Single
   }
 
   void _showReplaceDialog(DocItem doc) {
+    PickedAttachment? selectedFile;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 14),
-            Text('Replace Document', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(doc.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: AppColors.appBg,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-                border: Border.all(color: AppColors.cardBorder, style: BorderStyle.solid),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          decoration: const BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2))),
               ),
-              child: Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.cloud_upload_outlined, size: 40, color: AppColors.navy),
-                    const SizedBox(height: 8),
-                    const Text('Tap to choose PDF or Image file', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
-                    const SizedBox(height: 2),
-                    const Text('Max file size 10MB • Clear legible scan required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('✓ ${doc.title} replaced and queued for compliance verification')),
+              const SizedBox(height: 14),
+              Text('Replace Document', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(doc.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () async {
+                  final picked = await AppFilePicker.showPickerBottomSheet(
+                    context,
+                    title: 'Upload ${doc.title}',
                   );
+                  if (picked != null) {
+                    setSheetState(() => selectedFile = picked);
+                  }
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy,
-                  foregroundColor: AppColors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: selectedFile != null ? AppColors.success.withValues(alpha: 0.05) : AppColors.appBg,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    border: Border.all(
+                      color: selectedFile != null ? AppColors.success : AppColors.cardBorder,
+                      width: selectedFile != null ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: selectedFile != null
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                selectedFile!.isImage ? Icons.image_rounded : Icons.description_rounded,
+                                size: 36,
+                                color: AppColors.success,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      selectedFile!.name,
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${selectedFile!.extension.toUpperCase()} • ${selectedFile!.formattedSize} • Ready to upload',
+                                      style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.check_circle, color: AppColors.success, size: 22),
+                            ],
+                          )
+                        : Column(
+                            children: [
+                              const Icon(Icons.cloud_upload_outlined, size: 40, color: AppColors.navy),
+                              const SizedBox(height: 8),
+                              const Text('Tap to choose PDF or Image file', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                              const SizedBox(height: 2),
+                              const Text('Max file size 10MB • Clear legible scan required', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                            ],
+                          ),
+                  ),
                 ),
-                child: const Text('Upload & Submit for Review', style: TextStyle(fontWeight: FontWeight.w800)),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    setState(() {
+                      final idx = _documents.indexWhere((d) => d.id == doc.id);
+                      if (idx != -1) {
+                        _documents[idx] = DocItem(
+                          id: doc.id,
+                          title: doc.title,
+                          category: doc.category,
+                          fileFormat: selectedFile?.extension.toUpperCase() ?? 'PDF',
+                          fileSize: selectedFile?.formattedSize ?? '1.2 MB',
+                          uploadedAt: 'Just now',
+                          status: DocStatus.pending,
+                        );
+                      }
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('✓ ${doc.title} replaced and queued for compliance verification')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                  ),
+                  child: const Text('Upload & Submit for Review', style: TextStyle(fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

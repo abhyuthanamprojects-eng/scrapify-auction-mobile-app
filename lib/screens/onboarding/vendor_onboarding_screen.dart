@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/vendor_service.dart';
+import '../../core/utils/file_picker_service.dart';
 
 class VendorOnboardingScreen extends ConsumerStatefulWidget {
   const VendorOnboardingScreen({super.key});
@@ -553,10 +554,21 @@ class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen>
                 ),
               ),
               GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _complianceDocs[e.key] = !uploaded;
-                  });
+                onTap: () async {
+                  final file = await AppFilePicker.showPickerBottomSheet(
+                    context,
+                    title: 'Upload ${e.key}',
+                  );
+                  if (file != null) {
+                    setState(() {
+                      _complianceDocs[e.key] = true;
+                    });
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('✓ ${file.name} attached for ${e.key}')),
+                      );
+                    }
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -576,7 +588,7 @@ class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen>
                           child: Icon(Icons.upload_file, size: 12, color: AppColors.navy.withValues(alpha: 0.6)),
                         ),
                       Text(
-                        uploaded ? 'Uploaded' : 'Upload',
+                        uploaded ? 'Attached' : 'Upload',
                         style: TextStyle(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,

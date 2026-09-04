@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -5,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../widgets/shared/app_button.dart';
+import '../../core/utils/file_picker_service.dart';
 
 class CreateAuctionScreen extends StatefulWidget {
   const CreateAuctionScreen({super.key});
@@ -17,6 +19,7 @@ class _CreateAuctionScreenState extends State<CreateAuctionScreen> {
   int _step = 0;
   String? _selectedCategory;
   String _auctionType = 'normal';
+  final List<PickedAttachment> _auctionPhotos = [];
 
   @override
   Widget build(BuildContext context) {
@@ -168,21 +171,93 @@ class _CreateAuctionScreenState extends State<CreateAuctionScreen> {
         const SizedBox(height: 8),
         const TextField(decoration: InputDecoration(hintText: 'Inspection location')),
         const SizedBox(height: 16),
-        Text('Photos', style: AppTextStyles.labelMedium),
-        const SizedBox(height: 8),
         Row(
-          children: List.generate(3, (idx) => Expanded(
-            child: Container(
-              height: 80,
-              margin: EdgeInsets.only(right: idx < 2 ? 8 : 0),
-              decoration: BoxDecoration(
-                color: AppColors.navyWithOpacity(0.05),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.blackWithOpacity(0.1), style: BorderStyle.solid),
-              ),
-              child: Icon(Icons.add_a_photo, color: AppColors.navyWithOpacity(0.3)),
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Lot & Inspection Photos (${_auctionPhotos.length}/6)', style: AppTextStyles.labelMedium),
+            TextButton.icon(
+              onPressed: () async {
+                final photos = await AppFilePicker.pickMultiImages();
+                if (photos.isNotEmpty) {
+                  setState(() {
+                    _auctionPhotos.addAll(photos);
+                    if (_auctionPhotos.length > 6) {
+                      _auctionPhotos.removeRange(6, _auctionPhotos.length);
+                    }
+                  });
+                }
+              },
+              icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: AppColors.auction),
+              label: const Text('Add Photos', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.auction)),
             ),
-          )),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 90,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              ..._auctionPhotos.map((p) => Stack(
+                children: [
+                  Container(
+                    width: 90,
+                    height: 90,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: p.path != null
+                        ? Image.file(File(p.path!), fit: BoxFit.cover)
+                        : const Center(child: Icon(Icons.image, color: AppColors.navy)),
+                  ),
+                  Positioned(
+                    top: 4,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _auctionPhotos.remove(p)),
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              )),
+              if (_auctionPhotos.length < 6)
+                GestureDetector(
+                  onTap: () async {
+                    final photo = await AppFilePicker.showPickerBottomSheet(context, title: 'Add Auction Photo');
+                    if (photo != null) {
+                      setState(() => _auctionPhotos.add(photo));
+                    }
+                  },
+                  child: Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      color: AppColors.navyWithOpacity(0.04),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(color: AppColors.navyWithOpacity(0.15), style: BorderStyle.solid),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.navyWithOpacity(0.5)),
+                        const SizedBox(height: 4),
+                        Text('Add Photo', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.navyWithOpacity(0.6))),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         Text('Guidelines', style: AppTextStyles.labelMedium),
