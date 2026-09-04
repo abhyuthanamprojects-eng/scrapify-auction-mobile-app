@@ -22,15 +22,17 @@ abstract final class AppTheme {
       ),
       textTheme: GoogleFonts.manropeTextTheme(),
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.navy,
+        foregroundColor: AppColors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        iconTheme: IconThemeData(color: AppColors.navy),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: const IconThemeData(color: AppColors.white),
+        actionsIconTheme: const IconThemeData(color: AppColors.white),
         titleTextStyle: GoogleFonts.sora(
           fontSize: 18,
           fontWeight: FontWeight.w700,
-          color: AppColors.navy,
+          color: AppColors.white,
         ),
       ),
       cardTheme: CardThemeData(
