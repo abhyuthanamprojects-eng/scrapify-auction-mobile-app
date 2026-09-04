@@ -548,27 +548,34 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                     final item = _bidFeed[i];
                     final isMe = item['isMe'] as bool;
                     return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Icon(
-                              isMe ? Icons.person_pin : Icons.shield_outlined,
-                              size: 14,
-                              color: isMe ? AppColors.success : AppColors.white.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              item['bidder'] as String,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isMe ? FontWeight.w800 : FontWeight.w500,
-                                color: isMe ? AppColors.success : AppColors.white.withValues(alpha: 0.85),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Icon(
+                                isMe ? Icons.person_pin : Icons.shield_outlined,
+                                size: 14,
+                                color: isMe ? AppColors.success : AppColors.white.withValues(alpha: 0.5),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  item['bidder'] as String,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: isMe ? FontWeight.w800 : FontWeight.w500,
+                                    color: isMe ? AppColors.success : AppColors.white.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               Formatters.formatINR((item['amount'] as num).toDouble()),
