@@ -66,11 +66,12 @@ class ListSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: List.generate(count, (i) => const Padding(
-        padding: EdgeInsets.only(bottom: 12),
-        child: CardSkeleton(),
-      )),
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: count,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (_, __) => const CardSkeleton(),
     );
   }
 }

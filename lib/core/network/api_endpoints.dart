@@ -52,6 +52,10 @@ abstract final class Endpoints {
 
   // Vendor / KYC
   static const vendorRegister = '/vendors/register';
+  static const vendorSaveStep = '/vendors/save-step';
+  static String vendorSubmitKyc(String code) => '/vendors/$code/submit-kyc';
+  static String vendorResubmitKyc(String code) => '/vendors/$code/resubmit-kyc';
+  static String vendorKycStatus(String code) => '/vendors/$code/kyc-status';
   static String vendorDocuments(String code) => '/vendors/$code/documents';
   static String vendorPayment(String code) => '/vendors/$code/registration-payment';
 

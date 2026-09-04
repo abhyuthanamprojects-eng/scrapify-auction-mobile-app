@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/auction.dart';
 import '../../providers/auction_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/shared/status_chip.dart';
 import '../../widgets/shared/price_display.dart';
 import '../../widgets/lot_details/clarifications_sheet.dart';
@@ -80,21 +81,35 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                 expandedHeight: 250,
                 pinned: true,
                 backgroundColor: AppColors.navy,
-                leading: GestureDetector(
-                  onTap: () => context.pop(),
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.white.withValues(alpha: 0.9),
-                      shape: BoxShape.circle,
-                      boxShadow: AppColors.shadowSm,
-                    ),
-                    child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
-                  ),
+                leading: Consumer(
+                  builder: (context, ref, _) {
+                    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+                    return isAuthenticated
+                        ? GestureDetector(
+                            onTap: () => context.pop(),
+                            child: Container(
+                              margin: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.white.withValues(alpha: 0.9),
+                                shape: BoxShape.circle,
+                                boxShadow: AppColors.shadowSm,
+                              ),
+                              child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
+                            ),
+                          )
+                        : const SizedBox.shrink();
+                  },
                 ),
                 actions: [
                   GestureDetector(
-                    onTap: () => ref.read(watchlistProvider.notifier).toggle(auction.code),
+                    onTap: () {
+                      final isAuth = ref.read(authProvider).isAuthenticated;
+                      if (!isAuth) {
+                        _showLoginRequiredDialog(context);
+                        return;
+                      }
+                      ref.read(watchlistProvider.notifier).toggle(auction.code);
+                    },
                     child: Container(
                       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                       width: 38,
@@ -657,7 +672,84 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     );
   }
 
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.lock_outline, color: AppColors.auction, size: 24),
+            const SizedBox(width: 10),
+            const Text('Login Required'),
+          ],
+        ),
+        titleTextStyle: AppTextStyles.heading(size: 18, weight: FontWeight.w800),
+        content: const Text(
+          'Please login or register to proceed with this action. You need an account to bid, accept terms, or participate in auctions.',
+        ),
+        contentTextStyle: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: TextStyle(color: AppColors.navyWithOpacity(0.6))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              context.go('/onboarding');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.auction,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Login / Register'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStickyBottomCTA(BuildContext context, Auction a) {
+    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+
+    if (!isAuthenticated) {
+      return Container(
+        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          border: const Border(top: BorderSide(color: AppColors.cardBorder)),
+          boxShadow: AppColors.shadowLg,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showLoginRequiredDialog(context),
+                  icon: const Icon(Icons.login, size: 18),
+                  label: Text(
+                    'Login to Proceed',
+                    style: AppTextStyles.heading(size: 14.5, weight: FontWeight.w800, color: AppColors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.auction,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final isLive = a.isLive;
 
     String ctaLabel;

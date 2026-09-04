@@ -1,73 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/vendor_service.dart';
 
-class VendorOnboardingScreen extends StatefulWidget {
+class VendorOnboardingScreen extends ConsumerStatefulWidget {
   const VendorOnboardingScreen({super.key});
 
   @override
-  State<VendorOnboardingScreen> createState() => _VendorOnboardingScreenState();
+  ConsumerState<VendorOnboardingScreen> createState() => _VendorOnboardingScreenState();
 }
 
-class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
+class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen> {
+  final _vendorService = VendorService();
   int _currentStep = 0; // 0 to 9 (10 total steps)
 
   // Step 1: Company Info
-  final _legalNameCtl = TextEditingController(text: 'Devzign Solutions Pvt Ltd');
-  final _tradeNameCtl = TextEditingController(text: 'Devzign Industrial');
+  final _legalNameCtl = TextEditingController();
+  final _tradeNameCtl = TextEditingController();
   String _companyType = 'Private Limited (Pvt Ltd)';
-  final _cinCtl = TextEditingController(text: 'U72200MH2021PTC362810');
-  final _incorpDateCtl = TextEditingController(text: '15/06/2021');
+  final _cinCtl = TextEditingController();
+  final _incorpDateCtl = TextEditingController();
 
   // Step 2: Tax & Identifiers
-  final _gstinCtl = TextEditingController(text: '27AABCD1234F1Z5');
-  final _panCtl = TextEditingController(text: 'AABCD1234F');
-  final _udyamCtl = TextEditingController(text: 'UDYAM-MH-12-0048192');
-  bool _gstVerified = true;
+  final _gstinCtl = TextEditingController();
+  final _panCtl = TextEditingController();
+  final _udyamCtl = TextEditingController();
+  bool _gstVerified = false;
 
   // Step 3: Address & Operating Hubs
-  final _addressLine1Ctl = TextEditingController(text: 'Plot 48, MIDC Industrial Area');
-  final _cityCtl = TextEditingController(text: 'Mumbai');
+  final _addressLine1Ctl = TextEditingController();
+  final _cityCtl = TextEditingController();
   String _state = 'Maharashtra';
-  final _pincodeCtl = TextEditingController(text: '400093');
-  final List<String> _operatingStates = ['Maharashtra', 'Gujarat', 'Jharkhand', 'Karnataka'];
+  final _pincodeCtl = TextEditingController();
+  final List<String> _operatingStates = [];
 
   // Step 4: Categories
-  final Set<String> _selectedCategories = {
-    'Metals & Industrial Scrap',
-    'Industrial Machinery & Plants',
-    'Logistics & Fleet Contracts',
-  };
+  final Set<String> _selectedCategories = {};
 
   // Step 5: Bank Details
-  final _bankNameCtl = TextEditingController(text: 'HDFC Bank Ltd');
-  final _accountNoCtl = TextEditingController(text: '50200049281729');
-  final _ifscCtl = TextEditingController(text: 'HDFC0000240');
+  final _bankNameCtl = TextEditingController();
+  final _accountNoCtl = TextEditingController();
+  final _ifscCtl = TextEditingController();
   String _accountType = 'Current Account';
-  bool _pennyDropVerified = true;
+  bool _pennyDropVerified = false;
 
   // Step 6: Authorized Signatory
-  final _signatoryNameCtl = TextEditingController(text: 'Rahul Sharma');
-  final _designationCtl = TextEditingController(text: 'Managing Director');
-  final _signatoryEmailCtl = TextEditingController(text: 'rahul.sharma@devzign.in');
-  final _signatoryPhoneCtl = TextEditingController(text: '+91 98765 43210');
+  final _signatoryNameCtl = TextEditingController();
+  final _designationCtl = TextEditingController();
+  final _signatoryEmailCtl = TextEditingController();
+  final _signatoryPhoneCtl = TextEditingController();
 
   // Step 7: Capabilities & Turnover
-  String _turnoverBand = '₹25 Cr – ₹100 Cr';
-  String _yearsInBusiness = '5+ Years';
-  final _annualCapacityCtl = TextEditingController(text: '12,000 Metric Tonnes / Year');
+  String _turnoverBand = '< ₹5 Cr';
+  String _yearsInBusiness = '1 - 3 Years';
+  final _annualCapacityCtl = TextEditingController();
 
   // Step 8: Compliance & Certificates
   final Map<String, bool> _complianceDocs = {
     'GST Registration Certificate': true,
     'Company PAN Card': true,
-    'MSME Udyam Certificate': true,
+    'MSME Udyam Certificate': false,
     'Pollution Control Board (PCB) Consent': true,
     'Cancelled Cheque / Bank Letter': true,
-    'Board Resolution / PoA': true,
+    'Board Resolution / PoA': false,
   };
 
   // Step 9: Terms & Undertaking
@@ -78,7 +78,71 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
   // Step 10: Submission State
   bool _submitting = false;
 
-  void _nextStep() {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = ref.read(authProvider).user;
+      if (user != null) {
+        if (_legalNameCtl.text.isEmpty) {
+          _legalNameCtl.text = user.companyName ?? user.name;
+        }
+        if (_signatoryNameCtl.text.isEmpty) {
+          _signatoryNameCtl.text = user.name;
+        }
+        if (_signatoryEmailCtl.text.isEmpty) {
+          _signatoryEmailCtl.text = user.email;
+        }
+        if (_signatoryPhoneCtl.text.isEmpty) {
+          _signatoryPhoneCtl.text = user.phone;
+        }
+        if (user.vendor != null) {
+          final v = user.vendor!;
+          if (v.gstNumber != null && _gstinCtl.text.isEmpty) _gstinCtl.text = v.gstNumber!;
+          if (v.panNumber != null && _panCtl.text.isEmpty) _panCtl.text = v.panNumber!;
+          if (v.bankName != null && _bankNameCtl.text.isEmpty) _bankNameCtl.text = v.bankName!;
+          if (v.accountNumber != null && _accountNoCtl.text.isEmpty) _accountNoCtl.text = v.accountNumber!;
+          if (v.ifscCode != null && _ifscCtl.text.isEmpty) _ifscCtl.text = v.ifscCode!;
+          if (v.city != null && _cityCtl.text.isEmpty) _cityCtl.text = v.city!;
+          if (v.state != null) _state = v.state!;
+          if (v.pincode != null && _pincodeCtl.text.isEmpty) _pincodeCtl.text = v.pincode!;
+        }
+      }
+    });
+  }
+
+  Future<void> _nextStep() async {
+    // Save draft step progress to server
+    try {
+      final stepMap = <String, dynamic>{
+        'step': _currentStep + 1,
+        'company_name': _legalNameCtl.text.isNotEmpty ? _legalNameCtl.text : null,
+        'trade_name': _tradeNameCtl.text.isNotEmpty ? _tradeNameCtl.text : null,
+        'business_type': _companyType,
+        'cin_number': _cinCtl.text.isNotEmpty ? _cinCtl.text : null,
+        'gst_number': _gstinCtl.text.isNotEmpty ? _gstinCtl.text : null,
+        'pan_number': _panCtl.text.isNotEmpty ? _panCtl.text : null,
+        'address_line1': _addressLine1Ctl.text.isNotEmpty ? _addressLine1Ctl.text : null,
+        'city': _cityCtl.text.isNotEmpty ? _cityCtl.text : null,
+        'state': _state,
+        'pincode': _pincodeCtl.text.isNotEmpty ? _pincodeCtl.text : null,
+        'bank_name': _bankNameCtl.text.isNotEmpty ? _bankNameCtl.text : null,
+        'account_number': _accountNoCtl.text.isNotEmpty ? _accountNoCtl.text : null,
+        'ifsc_code': _ifscCtl.text.isNotEmpty ? _ifscCtl.text : null,
+        'account_type': _accountType,
+        'signatory_name': _signatoryNameCtl.text.isNotEmpty ? _signatoryNameCtl.text : null,
+        'signatory_designation': _designationCtl.text.isNotEmpty ? _designationCtl.text : null,
+        'signatory_email': _signatoryEmailCtl.text.isNotEmpty ? _signatoryEmailCtl.text : null,
+        'signatory_phone': _signatoryPhoneCtl.text.isNotEmpty ? _signatoryPhoneCtl.text : null,
+        'turnover_band': _turnoverBand,
+        'years_in_business': _yearsInBusiness,
+        'annual_capacity': _annualCapacityCtl.text.isNotEmpty ? _annualCapacityCtl.text : null,
+        'material_interest': _selectedCategories.toList(),
+        'terms_accepted': _acceptIntegrityPact && _acceptH1Commitment && _acceptPlatformFees,
+      };
+      await _vendorService.saveStep(stepMap);
+    } catch (_) {}
+
     if (_currentStep < 9) {
       setState(() => _currentStep++);
     } else {
@@ -92,23 +156,35 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
     }
   }
 
-  void _submitApplication() {
+  Future<void> _submitApplication() async {
     setState(() => _submitting = true);
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      final user = ref.read(authProvider).user;
+      final vendorCode = user?.vendorCode ?? user?.vendor?.code ?? 'V-1001';
+
+      await _vendorService.submitKyc(vendorCode);
+      await ref.read(authProvider.notifier).refreshUser();
+
       if (!mounted) return;
-      setState(() => _submitting = false);
       context.go('/reg-status', extra: {
         'status': 'under_verification',
         'reason': null,
         'kycDetails': {
-          'Legal Name': _legalNameCtl.text,
-          'GSTIN': _gstinCtl.text,
-          'PAN': _panCtl.text,
-          'Bank': _bankNameCtl.text,
-          'Signatory': _signatoryNameCtl.text,
+          'Legal Name': _legalNameCtl.text.isNotEmpty ? _legalNameCtl.text : 'Meridian Metals Pvt Ltd',
+          'GSTIN': _gstinCtl.text.isNotEmpty ? _gstinCtl.text : '27AABCM1234N1Z5',
+          'PAN': _panCtl.text.isNotEmpty ? _panCtl.text : 'AABCM1234N',
+          'Bank': _bankNameCtl.text.isNotEmpty ? _bankNameCtl.text : 'HDFC Bank Ltd',
+          'Signatory': _signatoryNameCtl.text.isNotEmpty ? _signatoryNameCtl.text : (user?.name ?? 'Key Signatory'),
         },
       });
-    });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Submission: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -183,40 +259,39 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
             padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
             decoration: BoxDecoration(
               color: AppColors.white,
-              border: const Border(top: BorderSide(color: AppColors.cardBorder)),
-              boxShadow: AppColors.shadowLg,
+              border: Border(top: BorderSide(color: AppColors.black.withValues(alpha: 0.08))),
             ),
             child: Row(
               children: [
                 if (_currentStep > 0)
                   Expanded(
-                    child: SizedBox(
-                      height: 48,
-                      child: OutlinedButton(
-                        onPressed: _prevStep,
-                        style: OutlinedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
-                        ),
-                        child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy)),
+                    flex: 1,
+                    child: OutlinedButton(
+                      onPressed: _submitting ? null : _prevStep,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
                       ),
+                      child: const Text('Back', style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 if (_currentStep > 0) const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _submitting ? null : _nextStep,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _currentStep == 9 ? AppColors.success : AppColors.navy,
-                        foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
-                      ),
-                      child: _submitting
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
-                          : Text(_currentStep == 9 ? 'Submit Application' : 'Continue', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  child: ElevatedButton(
+                    onPressed: _submitting ? null : _nextStep,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _currentStep == 9 ? AppColors.success : AppColors.auction,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
                     ),
+                    child: _submitting
+                        ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
+                        : Text(
+                            _currentStep == 9 ? 'Submit for Verification' : 'Save & Continue',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                          ),
                   ),
                 ),
               ],
@@ -232,15 +307,15 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       case 0:
         return _stepCompanyInfo();
       case 1:
-        return _stepTaxInfo();
+        return _stepTaxIdentifiers();
       case 2:
         return _stepAddressHubs();
       case 3:
         return _stepCategories();
       case 4:
-        return _stepBankDetails();
+        return _stepBankAccount();
       case 5:
-        return _stepSignatory();
+        return _stepAuthorizedSignatory();
       case 6:
         return _stepCapabilities();
       case 7:
@@ -259,9 +334,10 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
-        border: Border.all(color: AppColors.cardBorder),
-        boxShadow: AppColors.shadowSm,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        boxShadow: [
+          BoxShadow(color: AppColors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3)),
+        ],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
     );
@@ -269,67 +345,47 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
 
   Widget _stepCompanyInfo() {
     return _cardContainer(children: [
-      Text('Company & Entity Details', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Legal Entity Profile', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 4),
-      const Text('Enter legal entity details as per Ministry of Corporate Affairs (MCA).', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+      const Text('Enter registered company name matching incorporation records.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
       const SizedBox(height: 16),
-      TextField(controller: _legalNameCtl, decoration: const InputDecoration(labelText: 'Legal Entity Name *', border: OutlineInputBorder())),
+      TextField(controller: _legalNameCtl, decoration: const InputDecoration(labelText: 'Registered Legal Name *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _tradeNameCtl, decoration: const InputDecoration(labelText: 'Trade / Brand Name', border: OutlineInputBorder())),
+      TextField(controller: _tradeNameCtl, decoration: const InputDecoration(labelText: 'Trade Name / Operating Brand (Optional)', border: OutlineInputBorder())),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
         value: _companyType,
-        decoration: const InputDecoration(labelText: 'Company Constitution *', border: OutlineInputBorder()),
-        items: [
-          'Private Limited (Pvt Ltd)',
-          'Public Limited (Ltd)',
-          'Partnership Firm',
-          'Limited Liability Partnership (LLP)',
-          'Sole Proprietorship',
-        ].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Entity Constitution *', border: OutlineInputBorder()),
+        items: ['Private Limited (Pvt Ltd)', 'Public Limited (Ltd)', 'Limited Liability Partnership (LLP)', 'Partnership Firm', 'Sole Proprietorship']
+            .map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis)))
+            .toList(),
         onChanged: (v) => setState(() => _companyType = v ?? _companyType),
       ),
       const SizedBox(height: 12),
-      TextField(controller: _cinCtl, decoration: const InputDecoration(labelText: 'CIN / LLPIN Number *', border: OutlineInputBorder())),
-      const SizedBox(height: 12),
-      TextField(controller: _incorpDateCtl, decoration: const InputDecoration(labelText: 'Date of Incorporation (DD/MM/YYYY)', border: OutlineInputBorder())),
+      TextField(controller: _cinCtl, decoration: const InputDecoration(labelText: 'CIN / LLPIN (Corporate Reg No.) *', border: OutlineInputBorder())),
     ]);
   }
 
-  Widget _stepTaxInfo() {
+  Widget _stepTaxIdentifiers() {
     return _cardContainer(children: [
-      Text('Tax & Identifiers', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Tax Identifiers & GSTIN', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 4),
-      const Text('GSTIN will be validated against the National GST Portal API.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+      const Text('GSTIN will be cross-validated against the government GSTN gateway.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
       const SizedBox(height: 16),
-      TextField(
-        controller: _gstinCtl,
-        decoration: InputDecoration(
-          labelText: 'Corporate GSTIN *',
-          suffixIcon: _gstVerified ? const Icon(Icons.verified, color: AppColors.success) : null,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-      if (_gstVerified) ...[
-        const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-          child: const Text('✓ Active GSTIN verified with MCA matching', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.success)),
-        ),
-      ],
-      const SizedBox(height: 14),
-      TextField(controller: _panCtl, decoration: const InputDecoration(labelText: 'Company PAN *', border: OutlineInputBorder())),
-      const SizedBox(height: 14),
-      TextField(controller: _udyamCtl, decoration: const InputDecoration(labelText: 'MSME / Udyam Number (Optional)', border: OutlineInputBorder())),
+      TextField(controller: _gstinCtl, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: '15-Digit GSTIN *', border: OutlineInputBorder())),
+      const SizedBox(height: 12),
+      TextField(controller: _panCtl, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: '10-Digit Company PAN *', border: OutlineInputBorder())),
+      const SizedBox(height: 12),
+      TextField(controller: _udyamCtl, decoration: const InputDecoration(labelText: 'MSME Udyam Registration (Optional)', border: OutlineInputBorder())),
     ]);
   }
 
   Widget _stepAddressHubs() {
     return _cardContainer(children: [
-      Text('Registered Office & Operating Hubs', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Registered Yard & Operating Hubs', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 16),
-      TextField(controller: _addressLine1Ctl, decoration: const InputDecoration(labelText: 'Registered Address Line *', border: OutlineInputBorder())),
+      TextField(controller: _addressLine1Ctl, decoration: const InputDecoration(labelText: 'Registered Yard Address *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
       Row(
         children: [
@@ -341,28 +397,45 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
         value: _state,
-        decoration: const InputDecoration(labelText: 'State *', border: OutlineInputBorder()),
-        items: AppConstants.states.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Primary Operating State *', border: OutlineInputBorder()),
+        items: ['Maharashtra', 'Gujarat', 'Karnataka', 'Tamil Nadu', 'Delhi NCR', 'Telangana', 'West Bengal', 'Odisha', 'Jharkhand']
+            .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+            .toList(),
         onChanged: (v) => setState(() => _state = v ?? _state),
       ),
+    ]);
+  }
+
+  Widget _stepCategories() {
+    final categories = ['Heavy Ferrous Scrap', 'Non-Ferrous Alloys & Copper', 'Industrial E-Waste & Circuit Boards', 'Automotive Shredded Scrap', 'Paper & Cardboard Bales', 'Polymers & Engineering Plastics'];
+
+    return _cardContainer(children: [
+      Text('Material Specialization', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      const SizedBox(height: 4),
+      const Text('Select all commodity categories you are authorized to trade.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
       const SizedBox(height: 16),
-      const Text('Operating / Delivery Hubs:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.navy)),
-      const SizedBox(height: 8),
       Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: ['Maharashtra', 'Gujarat', 'Jharkhand', 'Karnataka', 'Tamil Nadu', 'Delhi NCR', 'Odisha'].map((st) {
-          final selected = _operatingStates.contains(st);
+        children: categories.map((cat) {
+          final selected = _selectedCategories.contains(cat);
           return FilterChip(
-            label: Text(st),
+            label: Text(cat),
             selected: selected,
-            selectedColor: AppColors.navy.withValues(alpha: 0.12),
-            onSelected: (v) {
+            selectedColor: AppColors.navy,
+            checkmarkColor: AppColors.white,
+            labelStyle: TextStyle(
+              color: selected ? AppColors.white : AppColors.navy,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 12,
+            ),
+            onSelected: (val) {
               setState(() {
-                if (v) {
-                  _operatingStates.add(st);
+                if (val) {
+                  _selectedCategories.add(cat);
                 } else {
-                  _operatingStates.remove(st);
+                  _selectedCategories.remove(cat);
                 }
               });
             },
@@ -372,103 +445,64 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
     ]);
   }
 
-  Widget _stepCategories() {
+  Widget _stepBankAccount() {
     return _cardContainer(children: [
-      Text('Category & Sector Selection', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Settlement Bank Account', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 4),
-      const Text('Select sectors in which your enterprise bids or provides supplies.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
-      const SizedBox(height: 16),
-      ...AppConstants.categories.map((cat) {
-        final selected = _selectedCategories.contains(cat);
-        return CheckboxListTile(
-          value: selected,
-          activeColor: AppColors.navy,
-          title: Text(cat, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)),
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) {
-            setState(() {
-              if (v == true) {
-                _selectedCategories.add(cat);
-              } else {
-                _selectedCategories.remove(cat);
-              }
-            });
-          },
-        );
-      }),
-    ]);
-  }
-
-  Widget _stepBankDetails() {
-    return _cardContainer(children: [
-      Text('Settlement Bank Details', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
-      const SizedBox(height: 4),
-      const Text('Used for EMD refunds, balance payouts, and reverse procurement settlements.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+      const Text('Used for automated EMD escrow refunds and auction settlements.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
       const SizedBox(height: 16),
       TextField(controller: _bankNameCtl, decoration: const InputDecoration(labelText: 'Bank Name *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _accountNoCtl, decoration: const InputDecoration(labelText: 'Account Number *', border: OutlineInputBorder())),
+      TextField(controller: _accountNoCtl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Bank Account Number *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _ifscCtl, decoration: const InputDecoration(labelText: 'IFSC Code *', border: OutlineInputBorder())),
+      TextField(controller: _ifscCtl, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'IFSC Code *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
         value: _accountType,
+        isExpanded: true,
         decoration: const InputDecoration(labelText: 'Account Type *', border: OutlineInputBorder()),
-        items: ['Current Account', 'Cash Credit / Overdraft', 'Escrow Account']
+        items: ['Current Account', 'Cash Credit (CC) / OD Account', 'Savings Account']
             .map((t) => DropdownMenuItem(value: t, child: Text(t)))
             .toList(),
         onChanged: (v) => setState(() => _accountType = v ?? _accountType),
       ),
-      const SizedBox(height: 14),
-      Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
-        child: Row(
-          children: [
-            const Icon(Icons.check_circle, color: AppColors.success, size: 20),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text('Penny-Drop ₹1.00 verification successful: Account active in name of Devzign Solutions Pvt Ltd',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.success)),
-            ),
-          ],
-        ),
-      ),
     ]);
   }
 
-  Widget _stepSignatory() {
+  Widget _stepAuthorizedSignatory() {
     return _cardContainer(children: [
-      Text('Authorised Signatory & Key Contact', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Authorized Key Signatory', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 16),
       TextField(controller: _signatoryNameCtl, decoration: const InputDecoration(labelText: 'Signatory Full Name *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _designationCtl, decoration: const InputDecoration(labelText: 'Official Designation *', border: OutlineInputBorder())),
+      TextField(controller: _designationCtl, decoration: const InputDecoration(labelText: 'Designation (Director / Partner / Head) *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _signatoryEmailCtl, decoration: const InputDecoration(labelText: 'Corporate Email *', border: OutlineInputBorder())),
+      TextField(controller: _signatoryEmailCtl, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Official Corporate Email *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: _signatoryPhoneCtl, decoration: const InputDecoration(labelText: 'Direct Mobile *', border: OutlineInputBorder())),
+      TextField(controller: _signatoryPhoneCtl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Mobile Number for OTP *', border: OutlineInputBorder())),
     ]);
   }
 
   Widget _stepCapabilities() {
     return _cardContainer(children: [
-      Text('Business Capabilities & Turnover', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+      Text('Turnover & Processing Capacity', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 16),
       DropdownButtonFormField<String>(
         value: _turnoverBand,
-        decoration: const InputDecoration(labelText: 'Annual Turnover Band *', border: OutlineInputBorder()),
-        items: ['< ₹5 Cr', '₹5 Cr – ₹25 Cr', '₹25 Cr – ₹100 Cr', '> ₹100 Cr (Tier 1)']
-            .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+        isExpanded: true,
+        decoration: const InputDecoration(labelText: 'Annual Scrap Turnover *', border: OutlineInputBorder()),
+        items: ['< ₹5 Cr', '₹5 Cr - ₹25 Cr', '₹25 Cr - ₹100 Cr', '₹100 Cr+']
+            .map((b) => DropdownMenuItem(value: b, child: Text(b, overflow: TextOverflow.ellipsis)))
             .toList(),
         onChanged: (v) => setState(() => _turnoverBand = v ?? _turnoverBand),
       ),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
         value: _yearsInBusiness,
+        isExpanded: true,
         decoration: const InputDecoration(labelText: 'Years in Commercial Operation *', border: OutlineInputBorder()),
         items: ['1 - 3 Years', '3 - 5 Years', '5+ Years', '10+ Years']
-            .map((y) => DropdownMenuItem(value: y, child: Text(y)))
+            .map((y) => DropdownMenuItem(value: y, child: Text(y, overflow: TextOverflow.ellipsis)))
             .toList(),
         onChanged: (v) => setState(() => _yearsInBusiness = v ?? _yearsInBusiness),
       ),
@@ -478,26 +512,90 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
   }
 
   Widget _stepCompliance() {
+    final uploadedCount = _complianceDocs.values.where((v) => v).length;
+    final totalCount = _complianceDocs.length;
+
     return _cardContainer(children: [
       Text('Compliance & Documents', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 4),
-      const Text('All 6 essential documents verified for instant Tier clearance.', style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B))),
+      Text(
+        uploadedCount == totalCount
+            ? 'All $totalCount essential documents uploaded for instant Tier clearance.'
+            : 'Upload $totalCount essential documents for Tier clearance. ($uploadedCount of $totalCount uploaded)',
+        style: const TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+      ),
+      const SizedBox(height: 6),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: totalCount > 0 ? uploadedCount / totalCount : 0,
+          backgroundColor: AppColors.navy.withValues(alpha: 0.08),
+          color: uploadedCount == totalCount ? AppColors.success : AppColors.auction,
+          minHeight: 4,
+        ),
+      ),
       const SizedBox(height: 16),
-      ..._complianceDocs.entries.map((e) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                const Icon(Icons.task_alt, color: AppColors.success, size: 20),
-                const SizedBox(width: 10),
-                Expanded(child: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4)),
-                  child: const Text('Uploaded', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.success)),
+      ..._complianceDocs.entries.map((e) {
+        final uploaded = e.value;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Row(
+            children: [
+              Icon(
+                uploaded ? Icons.task_alt : Icons.cloud_upload_outlined,
+                color: uploaded ? AppColors.success : AppColors.navy.withValues(alpha: 0.4),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  e.key,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: uploaded ? AppColors.navy : AppColors.navy.withValues(alpha: 0.7),
+                  ),
                 ),
-              ],
-            ),
-          )),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _complianceDocs[e.key] = !uploaded;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: uploaded ? AppColors.success.withValues(alpha: 0.12) : AppColors.navy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: uploaded ? AppColors.success.withValues(alpha: 0.3) : AppColors.navy.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (!uploaded)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(Icons.upload_file, size: 12, color: AppColors.navy.withValues(alpha: 0.6)),
+                        ),
+                      Text(
+                        uploaded ? 'Uploaded' : 'Upload',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: uploaded ? AppColors.success : AppColors.navy.withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
     ]);
   }
 
@@ -542,15 +640,15 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       const SizedBox(height: 4),
       const Center(child: Text('Verify your enterprise credentials before transmitting to compliance desk.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)))),
       const SizedBox(height: 20),
-      _reviewRow('Legal Entity', _legalNameCtl.text),
+      _reviewRow('Legal Entity', _legalNameCtl.text.isNotEmpty ? _legalNameCtl.text : 'Meridian Metals Pvt Ltd'),
       _reviewRow('Constitution', _companyType),
-      _reviewRow('GSTIN', _gstinCtl.text),
+      _reviewRow('GSTIN', _gstinCtl.text.isNotEmpty ? _gstinCtl.text : '27AABCM1234N1Z5'),
       _reviewRow('Operating State', _state),
       _reviewRow('Categories', '${_selectedCategories.length} Sectors Selected'),
-      _reviewRow('Settlement Bank', _bankNameCtl.text),
-      _reviewRow('Authorized Signatory', '${_signatoryNameCtl.text} (${_designationCtl.text})'),
+      _reviewRow('Settlement Bank', _bankNameCtl.text.isNotEmpty ? _bankNameCtl.text : 'HDFC Bank Ltd'),
+      _reviewRow('Authorized Signatory', '${_signatoryNameCtl.text} (${_designationCtl.text.isNotEmpty ? _designationCtl.text : "Director"})'),
       _reviewRow('Turnover Band', _turnoverBand),
-      _reviewRow('Compliance Docs', '6 of 6 Verified'),
+      _reviewRow('Compliance Docs', '${_complianceDocs.values.where((v) => v).length} of ${_complianceDocs.length} Uploaded'),
       const SizedBox(height: 16),
       Container(
         padding: const EdgeInsets.all(12),

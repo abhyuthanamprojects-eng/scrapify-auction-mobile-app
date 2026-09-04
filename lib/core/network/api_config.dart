@@ -9,6 +9,6 @@ abstract final class ApiConfig {
   static int get reverbPort => AppEnv.instance.reverbPort;
   static String get reverbKey => AppEnv.instance.reverbKey;
 
-  static const connectTimeout = Duration(seconds: 30);
-  static const receiveTimeout = Duration(seconds: 30);
+  static const connectTimeout = Duration(seconds: 60);
+  static const receiveTimeout = Duration(seconds: 60);
 }

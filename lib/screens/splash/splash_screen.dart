@@ -50,13 +50,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
       final auth = ref.read(authProvider);
       if (auth.isAuthenticated) {
-        if (auth.user?.kycVerified == true) {
-          context.go('/home');
-        } else {
-          context.go('/reg-status');
-        }
+        context.go('/home');
       } else {
-        context.go('/onboarding');
+        context.go('/auctions');
       }
     });
   }

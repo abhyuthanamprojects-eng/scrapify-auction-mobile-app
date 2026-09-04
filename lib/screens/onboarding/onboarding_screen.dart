@@ -70,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header: SCRAPIFY dot + Skip
+            // Header: SCRAPIFY logo + Skip
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenPaddingH,
@@ -137,72 +137,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 children: [
                   // Dot indicators
-                  Row(children: List.generate(_slides.length, _buildDot)),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_slides.length, _buildDot),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.xxl),
 
-                  // Next / Get Started button row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: _next,
-                          child: Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(
-                                AppSpacing.radiusXl,
-                              ),
-                              border: Border.all(
-                                color: AppColors.blackWithOpacity(0.05),
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.blackWithOpacity(0.04),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              isLast ? 'Get Started' : 'Next',
-                              style: AppTextStyles.body(
-                                size: 15,
-                                weight: FontWeight.w700,
-                                color: AppColors.navy,
-                              ),
-                            ),
-                          ),
+                  // Full-width Next / Get Started button with arrow
+                  GestureDetector(
+                    onTap: _next,
+                    child: Container(
+                      width: double.infinity,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.auction,
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXl,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: _next,
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            color: AppColors.auction,
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusXl,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.auctionWithOpacity(0.4),
-                                blurRadius: 16,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.auctionWithOpacity(0.4),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
                           ),
-                          child: const Icon(
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            isLast ? 'Get Started' : 'Next',
+                            style: AppTextStyles.body(
+                              size: 15,
+                              weight: FontWeight.w700,
+                              color: AppColors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
                             Icons.arrow_forward_rounded,
                             color: AppColors.white,
                             size: 20,
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
 
@@ -238,7 +219,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         horizontal: AppSpacing.screenPaddingH,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Card with gradient background, tag badges, and icon placeholder
           Container(
@@ -368,6 +349,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Title
           Text(
             slide.title,
+            textAlign: TextAlign.center,
             style: AppTextStyles.heading(
               size: 26,
               weight: FontWeight.w900,
@@ -379,6 +361,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // Body text
           Text(
             slide.body,
+            textAlign: TextAlign.justify,
             style: AppTextStyles.body(
               size: 14,
               color: AppColors.navyWithOpacity(0.6),
@@ -392,9 +375,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildDot(int index) {
     final isActive = index == _currentPage;
+    final isLast = index == _slides.length - 1;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.only(right: 6),
+      margin: EdgeInsets.only(right: isLast ? 0 : 6),
       width: isActive ? 32 : 6,
       height: 6,
       decoration: BoxDecoration(

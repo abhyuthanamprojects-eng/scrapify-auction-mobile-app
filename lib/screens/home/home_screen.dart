@@ -41,6 +41,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       backgroundColor: AppColors.appBg,
       body: RefreshIndicator(
         onRefresh: () async {
+          await ref.read(authProvider.notifier).refreshUser();
           ref.invalidate(liveAuctionsProvider);
           ref.invalidate(upcomingAuctionsProvider);
           ref.invalidate(walletBalanceProvider);
@@ -55,6 +56,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               balance: walletAsync.valueOrNull?.balanceInr ?? 42850,
               kycVerified: user?.kycVerified ?? true,
             ),
+            if (user?.isKycPending == true)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: _buildKycPendingBanner(context),
+                ),
+              ),
+            if (user?.isKycRejected == true)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                  child: _buildKycRejectedBanner(context, user?.rejectionReason),
+                ),
+              ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -297,42 +312,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.account_balance_wallet_outlined, size: 14, color: AppColors.white),
-                          const SizedBox(width: 5),
-                          Text(
-                            'EMD WALLET BALANCE',
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.white.withValues(alpha: 0.85),
-                              letterSpacing: 0.8,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet_outlined, size: 14, color: AppColors.white),
+                            const SizedBox(width: 5),
+                            Text(
+                              'EMD WALLET BALANCE',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.white.withValues(alpha: 0.85),
+                                letterSpacing: 0.8,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        Formatters.formatINR(balance),
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.white,
-                          letterSpacing: -0.5,
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Security available for 4 live auctions',
-                        style: TextStyle(fontSize: 10.5, color: AppColors.white.withValues(alpha: 0.8)),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          Formatters.formatINR(balance),
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Security available for 4 live auctions',
+                          style: TextStyle(fontSize: 10.5, color: AppColors.white.withValues(alpha: 0.8)),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   ElevatedButton.icon(
                     onPressed: () => context.push('/wallet'),
                     icon: const Icon(Icons.add, size: 16),
@@ -341,6 +360,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       backgroundColor: AppColors.navy,
                       foregroundColor: AppColors.white,
                       elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       ),
@@ -601,6 +621,106 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildKycPendingBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.auction.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        border: Border.all(color: AppColors.auction.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.auction.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.hourglass_top_rounded, color: AppColors.auction, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Verification Pending',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.navy),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Your KYC and submitted documents are currently under review by our verification team (usually 24–48 hours). Once verified, full auction bidding is activated.',
+                  style: TextStyle(fontSize: 12, color: AppColors.navy.withValues(alpha: 0.75), height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => context.push('/reg-status'),
+                  child: const Text(
+                    'Track Verification Status →',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.auction),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKycRejectedBanner(BuildContext context, String? reason) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.destructive.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.destructive.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.warning_amber_rounded, color: AppColors.destructive, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Verification Requires Changes',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.destructive),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  reason != null && reason.isNotEmpty
+                      ? 'Compliance Remarks: $reason'
+                      : 'Your KYC application was not approved. Please review the remarks and resubmit.',
+                  style: TextStyle(fontSize: 12, color: AppColors.navy.withValues(alpha: 0.75), height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => context.push('/vendor-onboarding'),
+                  child: const Text(
+                    'Edit & Resubmit KYC →',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.destructive),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

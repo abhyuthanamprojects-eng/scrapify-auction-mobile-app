@@ -161,7 +161,7 @@ abstract final class AppRouter {
             status: extra['status'] as String? ?? 'pending',
             reason: extra['reason'] as String?,
             kycDetails: (extra['kycDetails'] as Map<String, String>?) ?? {},
-            onBack: () => ctx.pop(),
+            onBack: () => ctx.go('/onboarding'),
           );
         },
       ),

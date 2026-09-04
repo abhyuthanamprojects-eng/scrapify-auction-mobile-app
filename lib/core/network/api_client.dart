@@ -52,19 +52,36 @@ class ApiClient {
     handler.next(options);
   }
 
+  static const _encoder = JsonEncoder.withIndent('  ');
+
+  void _prettyLog(String tag, Map<String, dynamic> data) {
+    try {
+      final pretty = _encoder.convert(data);
+      debugPrint('\n╔══════════════════════════════════════════');
+      debugPrint('║ $tag');
+      debugPrint('╠══════════════════════════════════════════');
+      for (final line in pretty.split('\n')) {
+        debugPrint('║ $line');
+      }
+      debugPrint('╚══════════════════════════════════════════\n');
+    } catch (e) {
+      debugPrint('\n[$tag] (log encoding failed: $e)');
+      debugPrint('Raw data: $data\n');
+    }
+  }
+
   void _logRequest(RequestOptions options) {
     final headers = Map<String, dynamic>.from(options.headers);
-    // Mask the authorization token for security
-    if (headers.containsKey('Authorization')) {
-      final authHeader = headers['Authorization'] as String;
-      if (authHeader.startsWith('Bearer ')) {
-        final token = authHeader.substring(7);
-        final maskedToken = token.length > 4 ? '***${token.substring(token.length - 4)}' : '***';
-        headers['Authorization'] = 'Bearer $maskedToken';
-      }
+    final authHeader = headers['Authorization'];
+    if (authHeader is String && authHeader.startsWith('Bearer ')) {
+      final token = authHeader.substring(7);
+      final maskedToken = token.length > 4 ? '***${token.substring(token.length - 4)}' : '***';
+      headers['Authorization'] = 'Bearer $maskedToken';
+    } else if (authHeader == null) {
+      headers.remove('Authorization');
     }
 
-    final logData = {
+    final logData = <String, dynamic>{
       'timestamp': DateTime.now().toIso8601String(),
       'method': options.method,
       'url': '${options.baseUrl}${options.path}',
@@ -73,7 +90,7 @@ class ApiClient {
       if (options.data != null) 'body': options.data,
     };
 
-    debugPrint('[API_REQUEST] ${jsonEncode(logData)}');
+    _prettyLog('API REQUEST → ${options.method} ${options.path}', logData);
   }
 
   Future<void> _onResponse(
@@ -81,20 +98,28 @@ class ApiClient {
     ResponseInterceptorHandler handler,
   ) async {
     if (kDebugMode) {
-      _logResponse(response);
+      try {
+        _logResponse(response);
+      } catch (e) {
+        debugPrint('[API_RESPONSE_LOG_ERROR] $e');
+        debugPrint('[API_RESPONSE_RAW] statusCode=${response.statusCode} path=${response.requestOptions.path}');
+        debugPrint('[API_RESPONSE_RAW] dataType=${response.data.runtimeType}');
+        debugPrint('[API_RESPONSE_RAW] data=${response.data}');
+      }
     }
     handler.next(response);
   }
 
   void _logResponse(Response response) {
-    final logData = {
+    final logData = <String, dynamic>{
       'timestamp': DateTime.now().toIso8601String(),
       'statusCode': response.statusCode,
-      'url': response.requestOptions.path,
+      'method': response.requestOptions.method,
+      'url': '${response.requestOptions.baseUrl}${response.requestOptions.path}',
       'body': response.data,
     };
 
-    debugPrint('[API_RESPONSE] ${jsonEncode(logData)}');
+    _prettyLog('API RESPONSE ← ${response.statusCode} ${response.requestOptions.path}', logData);
   }
 
   Future<void> _onError(
@@ -113,16 +138,20 @@ class ApiClient {
   }
 
   void _logError(DioException error) {
-    final logData = {
+    final logData = <String, dynamic>{
       'timestamp': DateTime.now().toIso8601String(),
       'type': error.type.toString(),
       'statusCode': error.response?.statusCode,
-      'url': error.requestOptions.path,
+      'method': error.requestOptions.method,
+      'url': '${error.requestOptions.baseUrl}${error.requestOptions.path}',
       'message': error.message,
+      'error': error.error?.toString(),
+      'errorType': error.error?.runtimeType.toString(),
+      if (error.requestOptions.data != null) 'requestBody': error.requestOptions.data,
       if (error.response?.data != null) 'responseBody': error.response?.data,
     };
 
-    debugPrint('[API_ERROR] ${jsonEncode(logData)}');
+    _prettyLog('API ERROR ✗ ${error.requestOptions.method} ${error.requestOptions.path}', logData);
   }
 
   Future<Map<String, dynamic>> get(
@@ -216,8 +245,9 @@ class ApiClient {
         statusCode: status,
         message: e.message ?? 'Request failed',
       );
+    } on ApiException {
+      rethrow;
     } catch (e) {
-      // Catch any other exception and wrap it
       throw ApiException(
         statusCode: 0,
         message: 'An unexpected error occurred: ${e.toString()}',

@@ -274,6 +274,7 @@ class RegStatusScreen extends StatelessWidget {
   }
 
   Widget _kvRow(String label, String value) {
+    final isPending = value == '—' || value.isEmpty;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
@@ -283,10 +284,22 @@ class RegStatusScreen extends StatelessWidget {
             label,
             style: AppTextStyles.body(size: 12, color: AppColors.navyWithOpacity(0.6)),
           ),
-          Text(
-            value,
-            style: AppTextStyles.body(size: 13, weight: FontWeight.w600, color: AppColors.navy),
-          ),
+          isPending
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.auctionWithOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Pending',
+                    style: AppTextStyles.body(size: 11, weight: FontWeight.w700, color: AppColors.auction),
+                  ),
+                )
+              : Text(
+                  value,
+                  style: AppTextStyles.body(size: 13, weight: FontWeight.w600, color: AppColors.navy),
+                ),
         ],
       ),
     );

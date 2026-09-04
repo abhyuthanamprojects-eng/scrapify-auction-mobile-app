@@ -6,6 +6,22 @@ import '../core/network/api_endpoints.dart';
 class VendorService {
   final _api = ApiClient();
 
+  Future<Map<String, dynamic>> saveStep(Map<String, dynamic> data) async {
+    return await _api.post(Endpoints.vendorSaveStep, data: data);
+  }
+
+  Future<Map<String, dynamic>> submitKyc(String vendorCode) async {
+    return await _api.post(Endpoints.vendorSubmitKyc(vendorCode));
+  }
+
+  Future<Map<String, dynamic>> resubmitKyc(String vendorCode) async {
+    return await _api.post(Endpoints.vendorResubmitKyc(vendorCode));
+  }
+
+  Future<Map<String, dynamic>> getKycStatus(String vendorCode) async {
+    return await _api.get(Endpoints.vendorKycStatus(vendorCode));
+  }
+
   Future<Map<String, dynamic>> register({
     required String companyName,
     required String contactName,

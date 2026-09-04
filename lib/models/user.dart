@@ -72,9 +72,13 @@ class AppUser {
   String? get companyName =>
       vendor?.companyName ?? organization?.companyName;
 
-  bool get kycVerified => vendor?.status == 'approved';
-  bool get canBid => vendor?.canBid ?? false;
+  String get kycStatus => vendor?.status ?? (isAdmin ? 'approved' : 'draft');
+  bool get kycVerified => vendor?.status == 'approved' || isAdmin;
+  bool get isKycPending => vendor?.status == 'pending' || vendor?.status == 'under_verification' || vendor?.status == 'draft';
+  bool get isKycRejected => vendor?.status == 'rejected';
+  bool get canBid => (vendor?.canBid ?? false) || isAdmin;
   String? get vendorCode => vendor?.code;
+  String? get rejectionReason => vendor?.rejectionReason;
 
   bool hasPerm(String perm) => permissions.contains(perm) || permissions.contains('*');
 }
@@ -84,19 +88,59 @@ class VendorInfo {
   final String companyName;
   final String status;
   final bool canBid;
+  final String? rejectionReason;
+  final int registrationStep;
+  final String? gstNumber;
+  final String? panNumber;
+  final String? bankName;
+  final String? accountNumber;
+  final String? ifscCode;
+  final String? accountHolderName;
+  final String? addressLine1;
+  final String? city;
+  final String? state;
+  final String? pincode;
 
   const VendorInfo({
     required this.code,
     required this.companyName,
     required this.status,
     this.canBid = false,
+    this.rejectionReason,
+    this.registrationStep = 1,
+    this.gstNumber,
+    this.panNumber,
+    this.bankName,
+    this.accountNumber,
+    this.ifscCode,
+    this.accountHolderName,
+    this.addressLine1,
+    this.city,
+    this.state,
+    this.pincode,
   });
 
+  bool get isPending => status == 'pending' || status == 'under_verification' || status == 'draft';
+  bool get isApproved => status == 'approved';
+  bool get isRejected => status == 'rejected';
+
   factory VendorInfo.fromJson(Map<String, dynamic> json) => VendorInfo(
-        code: json['id'] as String? ?? json['code'] as String? ?? '',
+        code: json['code'] as String? ?? json['id'] as String? ?? '',
         companyName: json['company_name'] as String? ?? '',
         status: json['status'] as String? ?? 'pending',
-        canBid: json['can_bid'] as bool? ?? false,
+        canBid: json['can_bid'] as bool? ?? (json['status'] == 'approved'),
+        rejectionReason: json['rejection_reason'] as String?,
+        registrationStep: (json['registration_step'] as num?)?.toInt() ?? 1,
+        gstNumber: json['gst_number'] as String?,
+        panNumber: json['pan_number'] as String?,
+        bankName: json['bank_name'] as String?,
+        accountNumber: json['account_number'] as String?,
+        ifscCode: json['ifsc_code'] as String?,
+        accountHolderName: json['account_holder_name'] as String?,
+        addressLine1: json['address_line1'] as String? ?? json['address'] as String?,
+        city: json['city'] as String?,
+        state: json['state'] as String?,
+        pincode: json['pincode'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -105,6 +149,18 @@ class VendorInfo {
         'company_name': companyName,
         'status': status,
         'can_bid': canBid,
+        'rejection_reason': rejectionReason,
+        'registration_step': registrationStep,
+        'gst_number': gstNumber,
+        'pan_number': panNumber,
+        'bank_name': bankName,
+        'account_number': accountNumber,
+        'ifsc_code': ifscCode,
+        'account_holder_name': accountHolderName,
+        'address_line1': addressLine1,
+        'city': city,
+        'state': state,
+        'pincode': pincode,
       };
 }
 
