@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -35,7 +36,17 @@ class WalletScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Wallet', style: AppTextStyles.titleLarge),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.navy),
+                        onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                        padding: const EdgeInsets.only(right: 8),
+                        constraints: const BoxConstraints(),
+                      ),
+                      Text('Wallet', style: AppTextStyles.titleLarge),
+                    ],
+                  ),
                   const SizedBox(height: 16),
                   balanceAsync.when(
                     data: (wallet) => WalletCard(balance: wallet.balanceInr, compact: false),

@@ -79,13 +79,21 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
           children: [
             // Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 20, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Explore Auctions',
-                    style: AppTextStyles.heading(size: 22, weight: FontWeight.w900),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.navy),
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                    padding: const EdgeInsets.all(4),
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Explore Auctions',
+                      style: AppTextStyles.heading(size: 22, weight: FontWeight.w900),
+                    ),
                   ),
                   GestureDetector(
                     onTap: _openFilters,
