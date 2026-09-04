@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
               Icons.verified_user_outlined,
               'KYC & Company Verification',
               () => context.push('/vendor-onboarding'),
-              trailing: _kycBadge(user?.kycVerified ?? true),
+              trailing: _kycBadge(user?.kycStatus ?? 'pending', user?.kycVerified ?? false, user?.isKycRejected ?? false),
             ),
             _menuItem(Icons.security_outlined, 'Security & Trusted Devices', () => context.push('/trusted-devices')),
             _menuItem(Icons.notifications_none_outlined, 'Notifications', () => context.push('/notifications')),
@@ -63,50 +63,122 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildProfileHeader(BuildContext context, dynamic user) {
-    return GestureDetector(
-      onTap: () => context.push('/profile/edit'),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
-          border: Border.all(color: AppColors.cardBorder),
-          boxShadow: AppColors.shadowSm,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 54,
-              height: 54,
-              decoration: BoxDecoration(
-                gradient: AppColors.gradientGold,
-                shape: BoxShape.circle,
-                boxShadow: AppColors.shadowSm,
-              ),
-              child: Center(
-                child: Text(
-                  (user?.name ?? 'Rahul')[0],
-                  style: AppTextStyles.heading(size: 22, color: AppColors.white),
+    final kycStatus = user?.kycStatus ?? 'pending';
+    final isApproved = user?.kycVerified ?? false;
+    final isRejected = user?.isKycRejected ?? false;
+    final isPending = user?.isKycPending ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: AppColors.shadowSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: isApproved ? AppColors.gradientGold : AppColors.gradientNoir,
+                  shape: BoxShape.circle,
+                  boxShadow: AppColors.shadowSm,
+                ),
+                child: Center(
+                  child: Text(
+                    (user?.name != null && user.name.isNotEmpty ? user.name[0] : 'U').toUpperCase(),
+                    style: AppTextStyles.heading(size: 22, color: AppColors.white),
+                  ),
                 ),
               ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user?.name != null && user.name.isNotEmpty ? user.name : 'Registered User',
+                      style: AppTextStyles.heading(size: 16, weight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user?.companyName != null && user.companyName.isNotEmpty ? user.companyName : (user?.roleLabel ?? 'Account Holder'),
+                      style: AppTextStyles.captionMuted,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      user?.email ?? '',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              _kycBadge(kycStatus, isApproved, isRejected),
+            ],
+          ),
+          if (user?.vendor != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(height: 1, color: Color(0xFFF1F5F9)),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _miniDetail('Role', user?.roleLabel ?? 'Buyer'),
+                _miniDetail('Vendor Code', user?.vendorCode ?? 'Pending'),
+                _miniDetail('GSTIN', user?.vendor?.gstNumber != null && user.vendor.gstNumber.isNotEmpty ? user.vendor.gstNumber : 'Not Linked'),
+              ],
+            ),
+          ],
+          if (isRejected && user?.rejectionReason != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.destructive.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+              ),
+              child: Row(
                 children: [
-                  Text(user?.name ?? 'Rahul Sharma', style: AppTextStyles.heading(size: 16, weight: FontWeight.w800)),
-                  const SizedBox(height: 2),
-                  Text(user?.companyName ?? 'Devzign Solutions Pvt Ltd', style: AppTextStyles.captionMuted),
-                  const SizedBox(height: 2),
-                  Text(user?.email ?? 'rahul.sharma@devzign.in', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                  const Icon(Icons.error_outline, color: AppColors.destructive, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('KYC Action Required', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.destructive)),
+                        const SizedBox(height: 2),
+                        Text(user.rejectionReason!, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => context.push('/vendor-onboarding'),
+                    child: const Text('Fix Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.destructive)),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF64748B)),
           ],
-        ),
+        ],
       ),
+    );
+  }
+
+  Widget _miniDetail(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8))),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.navy)),
+      ],
     );
   }
 
@@ -153,16 +225,32 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _kycBadge(bool verified) {
+  Widget _kycBadge(String status, bool isApproved, bool isRejected) {
+    Color bg = AppColors.auction.withValues(alpha: 0.12);
+    Color fg = AppColors.auction;
+    String label = 'Under Review';
+
+    if (isApproved) {
+      bg = AppColors.success.withValues(alpha: 0.12);
+      fg = AppColors.success;
+      label = 'Verified';
+    } else if (isRejected) {
+      bg = AppColors.destructive.withValues(alpha: 0.12);
+      fg = AppColors.destructive;
+      label = 'Action Required';
+    } else if (status == 'draft') {
+      label = 'Draft (Incomplete)';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: verified ? AppColors.success.withValues(alpha: 0.12) : AppColors.auction.withValues(alpha: 0.12),
+        color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        verified ? 'Verified (4/4)' : 'Pending',
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: verified ? AppColors.success : AppColors.auction),
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
       ),
     );
   }
