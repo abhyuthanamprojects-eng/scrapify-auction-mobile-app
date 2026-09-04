@@ -14,6 +14,10 @@ class EditProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final isLocked = user?.isKycPending ?? false;
+    final name = user?.name ?? '';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
+    final gstin = user?.vendor?.gstNumber;
+    final pan = user?.vendor?.panNumber;
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -58,7 +62,7 @@ class EditProfileScreen extends ConsumerWidget {
                         ),
                         child: Center(
                           child: Text(
-                            (user?.name != null && user!.name.isNotEmpty ? user.name[0] : 'U').toUpperCase(),
+                            initial,
                             style: AppTextStyles.heading(size: 32, color: AppColors.white),
                           ),
                         ),
@@ -75,15 +79,15 @@ class EditProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _field('Full Name', user?.name ?? ''),
+                _field('Full Name', name),
                 _field('Email', user?.email ?? '', readOnly: true),
                 _field('Phone', user?.phone ?? ''),
                 _field('Company Name', user?.companyName ?? '', readOnly: isLocked),
                 _field('Vendor Code', user?.vendorCode ?? 'Pending Assignment', readOnly: true),
-                if (user?.vendor?.gstNumber != null)
-                  _field('GSTIN', user!.vendor!.gstNumber!, readOnly: true),
-                if (user?.vendor?.panNumber != null)
-                  _field('PAN', user!.vendor!.panNumber!, readOnly: true),
+                if (gstin != null && gstin.isNotEmpty)
+                  _field('GSTIN', gstin, readOnly: true),
+                if (pan != null && pan.isNotEmpty)
+                  _field('PAN', pan, readOnly: true),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity, height: AppSpacing.buttonXl,

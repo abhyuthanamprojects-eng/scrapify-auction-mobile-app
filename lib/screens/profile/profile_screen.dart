@@ -70,11 +70,13 @@ class ProfileScreen extends ConsumerWidget {
     final userName = user?.name ?? '';
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
     final displayName = userName.isNotEmpty ? userName : 'Registered User';
-    final companyName = (user?.companyName != null && user!.companyName!.isNotEmpty)
-        ? user.companyName!
+    final userCompany = user?.companyName;
+    final companyName = (userCompany != null && userCompany.isNotEmpty)
+        ? userCompany
         : (user?.roleLabel ?? 'Account Holder');
-    final gstin = (user?.vendor?.gstNumber != null && user!.vendor!.gstNumber!.isNotEmpty)
-        ? user.vendor!.gstNumber!
+    final vendorGst = user?.vendor?.gstNumber;
+    final gstin = (vendorGst != null && vendorGst.isNotEmpty)
+        ? vendorGst
         : 'Not Linked';
     final rejectionReason = user?.rejectionReason;
 
