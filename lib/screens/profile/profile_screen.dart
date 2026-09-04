@@ -51,7 +51,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             _menuItem(Icons.security_outlined, 'Security & Trusted Devices', () => context.push('/trusted-devices')),
             _menuItem(Icons.notifications_none_outlined, 'Notifications', () => context.push('/notifications')),
-            _menuItem(Icons.support_agent_outlined, 'Help Centre & Support Tickets', () => context.push('/support')),
+            _menuItem(Icons.support_agent_outlined, 'Help Centre & Support Desk', () => _showHelpSheet(context)),
           ]),
 
           const SizedBox(height: 20),
@@ -293,6 +293,65 @@ class ProfileScreen extends ConsumerWidget {
           Text('${AppConstants.appName} Enterprise v2.4.0', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
           const SizedBox(height: 2),
           const Text('Secure Multi-Category Auction & Procurement Platform', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text('Support & Help Desk', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            _helpRow('Toll-Free Auction Helpline', '1800 200 4890 (Mon-Sat, 9AM-8PM)'),
+            _helpRow('Enterprise Support Email', 'support@scrapify.io'),
+            _helpRow('Arbitration Desk', 'disputes@scrapify.io'),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.push('/support');
+                },
+                icon: const Icon(Icons.confirmation_number_outlined, size: 16),
+                label: const Text('View / Raise Support Tickets'),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _helpRow(String k, String v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(k, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+          Text(v, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
         ],
       ),
     );
