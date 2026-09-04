@@ -37,19 +37,21 @@ class AuctionCard extends StatelessWidget {
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildImage(isReverse),
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: EdgeInsets.all(compact ? 10 : 14),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildTagsRow(),
                   const SizedBox(height: 6),
                   Text(
                     auction.title,
-                    style: AppTextStyles.heading(size: 15, weight: FontWeight.w700),
+                    style: AppTextStyles.heading(size: compact ? 14 : 15, weight: FontWeight.w700),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -74,7 +76,7 @@ class AuctionCard extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: compact ? 8 : 12),
                   _buildPriceAndStatusRow(isReverse),
                 ],
               ),
@@ -89,7 +91,7 @@ class AuctionCard extends StatelessWidget {
     return Stack(
       children: [
         Container(
-          height: compact ? 130 : 155,
+          height: compact ? 120 : 155,
           width: double.infinity,
           color: AppColors.navyWithOpacity(0.06),
           child: auction.photos.isNotEmpty

@@ -600,7 +600,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildHorizontalLiveCarousel(BuildContext context, List<Auction> auctions) {
     return SizedBox(
-      height: 295,
+      height: 320,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -609,7 +609,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         itemBuilder: (ctx, i) {
           final a = auctions[i];
           return SizedBox(
-            width: 270,
+            width: 275,
             child: AuctionCard(
               auction: a,
               compact: true,
