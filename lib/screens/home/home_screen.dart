@@ -36,6 +36,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final awards = ref.watch(awardsProvider);
 
     final pendingAwardCount = awards.where((a) => a.status == AwardStatus.offered || a.status == AwardStatus.fallbackOffered).length;
+    final featuredAuction = liveAsync.valueOrNull?.where((a) => a.isLotWise).firstOrNull ??
+        liveAsync.valueOrNull?.firstOrNull ??
+        upcomingAsync.valueOrNull?.firstOrNull;
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -83,12 +86,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: _buildActionRequiredBanner(context, pendingAwardCount),
                 ),
               ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: _buildFeaturedMultiLotCard(context),
+            if (featuredAuction != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: _buildFeaturedMultiLotCard(context, featuredAuction),
+                ),
               ),
-            ),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: 18),
@@ -453,9 +457,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildFeaturedMultiLotCard(BuildContext context) {
+  Widget _buildFeaturedMultiLotCard(BuildContext context, Auction auction) {
+    final isMultiLot = auction.isLotWise;
+    final highest = auction.currentHighestInr > 0 ? auction.currentHighestInr : auction.startingPriceInr;
+    final leadText = auction.currentHighestInr > 0 ? 'Lead: ${Formatters.formatINR(highest)}' : 'Starts: ${Formatters.formatINR(highest)}';
+
     return GestureDetector(
-      onTap: () => context.push('/lot/BP-FWD-2026-1055'),
+      onTap: () => context.push(
+        auction.direction == 'reverse'
+            ? '/live-reverse/${auction.code}'
+            : (auction.isLive ? '/live/${auction.code}' : '/lot/${auction.code}'),
+      ),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -479,36 +491,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: AppColors.auction.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
-                    'FEATURED • MULTI-LOT',
-                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: AppColors.goldSoft),
+                  child: Text(
+                    isMultiLot ? 'FEATURED • MULTI-LOT' : 'FEATURED AUCTION',
+                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: AppColors.goldSoft),
                   ),
                 ),
-                StatusChip.live(),
+                auction.isLive ? StatusChip.live() : StatusChip.fromStatus(auction.status.name),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Larsen Engineering • 5 CNC Milling Centers',
+              auction.company.isNotEmpty ? '${auction.company} • ${auction.title}' : auction.title,
               style: AppTextStyles.heading(size: 15, weight: FontWeight.w800, color: AppColors.white),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 2),
             Text(
-              'Bid on individual sub-lots or complete manufacturing unit',
+              isMultiLot
+                  ? 'Bid on individual sub-lots or complete lot bundle'
+                  : (auction.category ?? 'High-value industrial materials'),
               style: TextStyle(fontSize: 11.5, color: AppColors.white.withValues(alpha: 0.7)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Lead: ₹71,50,000  •  19 Bidders',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
+                Text(
+                  '$leadText  •  ${auction.bidders} Bids',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
                 ),
                 Row(
                   children: [
                     Text(
-                      'Enter Event',
+                      auction.isLive ? 'Enter Live' : 'View Details',
                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.white.withValues(alpha: 0.9)),
                     ),
                     const SizedBox(width: 4),

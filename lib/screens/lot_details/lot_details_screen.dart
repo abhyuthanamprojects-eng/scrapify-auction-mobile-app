@@ -44,23 +44,54 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
 
     return auctionAsync.when(
       data: (auction) => _buildBody(context, auction, isWatchlisted),
-      loading: () => const Scaffold(
+      loading: () => Scaffold(
         backgroundColor: AppColors.appBg,
-        body: Center(child: CircularProgressIndicator(color: AppColors.auction)),
+        appBar: AppBar(
+          leading: const BackButton(),
+          title: Text(widget.lotId, style: AppTextStyles.titleMedium),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: AppColors.auction)),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.appBg,
+        appBar: AppBar(
+          leading: const BackButton(),
+          title: Text(widget.lotId, style: AppTextStyles.titleMedium),
+        ),
         body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Failed to load auction: $e', style: AppTextStyles.caption),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(auctionDetailProvider(widget.lotId)),
-                child: const Text('Retry'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.destructive),
+                const SizedBox(height: 14),
+                Text('Auction Not Found', style: AppTextStyles.heading(size: 18, weight: FontWeight.w800)),
+                const SizedBox(height: 6),
+                Text(
+                  'The requested auction "${widget.lotId}" could not be found or has ended.',
+                  style: AppTextStyles.body(size: 13, color: AppColors.navyWithOpacity(0.6)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back, size: 16),
+                      label: const Text('Go Back'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(auctionDetailProvider(widget.lotId)),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

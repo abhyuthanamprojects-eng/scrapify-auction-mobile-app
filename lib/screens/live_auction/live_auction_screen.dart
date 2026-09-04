@@ -275,13 +275,51 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
     if (_loadError != null) {
       return Scaffold(
         backgroundColor: AppColors.navyDark,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.white),
+            onPressed: () => context.pop(),
+          ),
+          title: Text(widget.lotId, style: const TextStyle(color: AppColors.white, fontSize: 16)),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(
-              _loadError!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.white),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.goldSoft),
+                const SizedBox(height: 14),
+                Text(
+                  _loadError!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppColors.white, fontSize: 14),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(foregroundColor: AppColors.white),
+                      onPressed: () => context.pop(),
+                      child: const Text('Go Back'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _loading = true;
+                          _loadError = null;
+                        });
+                        _loadAuction();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),
