@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -20,8 +21,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Discover',
       title: 'Discover Opportunities',
-      body:
-          'Participate in verified auctions from leading enterprises across metals, machinery, IT assets, vehicles, logistics & services.',
+      body: 'Participate in verified auctions from leading enterprises across metals, machinery, IT assets, vehicles, logistics & services.',
       imagePath: AssetPaths.onboardFind,
       icon: Icons.search_rounded,
       iconColor: Color(0xFF1565C0),
@@ -29,8 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Live Bidding',
       title: 'Bid in Real Time',
-      body:
-          'Securely participate in forward & reverse auctions with real-time ranking, anti-snipe timer extensions, and auto-bid proxy.',
+      body: 'Securely participate in forward & reverse auctions with real-time ranking, anti-snipe timer extensions, and auto-bid proxy.',
       imagePath: AssetPaths.onboardBid,
       icon: Icons.gavel_rounded,
       iconColor: Color(0xFFF97316),
@@ -38,8 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Full Lifecycle',
       title: 'Manage Everything',
-      body:
-          'Track EMD security, digital gate passes, awards, payments, evidence capture, and fulfilment from one seamless app.',
+      body: 'Track EMD security, digital gate passes, awards, payments, evidence capture, and fulfilment from one seamless app.',
       imagePath: AssetPaths.onboardSecure,
       icon: Icons.verified_user_rounded,
       iconColor: Color(0xFF22C55E),
@@ -83,18 +81,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: AppColors.auction,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.auctionWithOpacity(0.6),
-                              blurRadius: 10,
-                            ),
-                          ],
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: Image.asset(
+                          AssetPaths.appIcon,
+                          width: 24,
+                          height: 24,
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -144,9 +137,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 children: [
                   // Dot indicators
-                  Row(
-                    children: List.generate(_slides.length, _buildDot),
-                  ),
+                  Row(children: List.generate(_slides.length, _buildDot)),
                   const SizedBox(height: AppSpacing.xxl),
 
                   // Next / Get Started button row
@@ -159,8 +150,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             height: 56,
                             decoration: BoxDecoration(
                               color: AppColors.white,
-                              borderRadius:
-                                  BorderRadius.circular(AppSpacing.radiusXl),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusXl,
+                              ),
                               border: Border.all(
                                 color: AppColors.blackWithOpacity(0.05),
                               ),
@@ -192,8 +184,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           height: 56,
                           decoration: BoxDecoration(
                             color: AppColors.auction,
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.radiusXl),
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusXl,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.auctionWithOpacity(0.4),
@@ -217,8 +210,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   GestureDetector(
                     onTap: () => context.go('/home'),
                     child: Padding(
-                      padding:
-                          const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.md,
+                      ),
                       child: Text(
                         'Browse auctions without signing in →',
                         style: AppTextStyles.body(
@@ -240,8 +234,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildSlide(_SlideData slide) {
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenPaddingH,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -249,6 +244,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Container(
             width: double.infinity,
             height: 340,
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
               gradient: const LinearGradient(
@@ -270,12 +266,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   top: 12,
                   left: 12,
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.whiteWithOpacity(0.95),
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusFull),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusFull,
+                      ),
                     ),
                     child: Text(
                       slide.tag.toUpperCase(),
@@ -292,12 +291,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding:
-                        const EdgeInsets.only(left: 8, right: 12, top: 6, bottom: 6),
+                    padding: const EdgeInsets.only(
+                      left: 8,
+                      right: 12,
+                      top: 6,
+                      bottom: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.navy,
-                      borderRadius:
-                          BorderRadius.circular(AppSpacing.radiusFull),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusFull,
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -329,7 +333,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     borderRadius: BorderRadius.circular(28),
                     child: Image.asset(
                       slide.imagePath,
-                      fit: BoxFit.contain,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Center(
                         child: Container(
                           width: 120,

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+
 import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/asset_paths.dart';
 import '../../providers/auth_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -84,15 +88,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       width: 110,
                       height: 110,
                       decoration: BoxDecoration(
-                        gradient: AppColors.gradientGold,
+                        color: AppColors.white,
                         borderRadius: BorderRadius.circular(30),
                         boxShadow: AppColors.shadowGold,
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.gavel_rounded,
-                          size: 54,
-                          color: AppColors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.asset(
+                          AssetPaths.appIcon,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

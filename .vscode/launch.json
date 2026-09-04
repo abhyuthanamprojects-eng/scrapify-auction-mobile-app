@@ -2,81 +2,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Dev - iOS Simulator",
+      "name": "Dev",
       "type": "dart",
       "request": "launch",
       "program": "lib/main_dev.dart",
-      "flutterMode": "debug",
-      "deviceId": "iphone",
       "args": ["--flavor", "dev"]
     },
     {
-      "name": "Staging - iOS Simulator",
+      "name": "Staging",
       "type": "dart",
       "request": "launch",
       "program": "lib/main_staging.dart",
-      "flutterMode": "debug",
-      "deviceId": "iphone",
       "args": ["--flavor", "staging"]
     },
     {
-      "name": "Prod - iOS Simulator",
+      "name": "Prod",
       "type": "dart",
       "request": "launch",
       "program": "lib/main_prod.dart",
-      "flutterMode": "debug",
-      "deviceId": "iphone",
-      "args": ["--flavor", "prod"]
-    },
-    {
-      "name": "Dev - Android",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_dev.dart",
-      "flutterMode": "debug",
-      "deviceId": "android",
-      "args": ["--flavor", "dev"]
-    },
-    {
-      "name": "Staging - Android",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_staging.dart",
-      "flutterMode": "debug",
-      "deviceId": "android",
-      "args": ["--flavor", "staging"]
-    },
-    {
-      "name": "Prod - Android",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_prod.dart",
-      "flutterMode": "debug",
-      "deviceId": "android",
-      "args": ["--flavor", "prod"]
-    },
-    {
-      "name": "Dev - Release",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_dev.dart",
-      "flutterMode": "release",
-      "args": ["--flavor", "dev"]
-    },
-    {
-      "name": "Staging - Release",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_staging.dart",
-      "flutterMode": "release",
-      "args": ["--flavor", "staging"]
-    },
-    {
-      "name": "Prod - Release",
-      "type": "dart",
-      "request": "launch",
-      "program": "lib/main_prod.dart",
-      "flutterMode": "release",
       "args": ["--flavor", "prod"]
     }
   ]

@@ -5,6 +5,13 @@ import 'core/config/app_env.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 
+/// Default Android Studio entrypoint. Use the flavor-specific entrypoints for
+/// Dev, Staging, and Production configurations.
+void main() {
+  AppEnv.dev();
+  bootstrap();
+}
+
 void bootstrap() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
