@@ -21,11 +21,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final fulfilments = ref.watch(fulfilmentsProvider);
-    final order = fulfilments.firstWhere(
-      (f) => f.orderId == widget.orderId,
-      orElse: () => fulfilments.isNotEmpty ? fulfilments.first : _fallbackOrder(),
-    );
 
+    return fulfilments.when(
+      data: (data) {
+        final order = data.firstWhere(
+          (f) => f.orderId == widget.orderId,
+          orElse: () => data.isNotEmpty ? data.first : _fallbackOrder(),
+        );
+        return _buildOrderDetail(context, order);
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Scaffold(
+        body: Center(child: Text('Error: $err')),
+      ),
+    );
+  }
+
+  Widget _buildOrderDetail(BuildContext context, FulfilmentRecord order) {
     return Scaffold(
       backgroundColor: AppColors.appBg,
       appBar: AppBar(
@@ -187,7 +201,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 orderId: order.orderId,
                 stage: order.currentStage,
                 onEvidenceCaptured: (ev) {
-                  ref.read(evidenceListProvider.notifier).capture(ev);
+                  ref.read(evidenceListProvider.notifier).capture(
+                    order.orderId,
+                    {
+                      'type': ev.type,
+                      'file': ev.localPath ?? ev.fileUrl,
+                      'timestamp': ev.timestamp,
+                    },
+                  );
                   setState(() {});
                 },
               );

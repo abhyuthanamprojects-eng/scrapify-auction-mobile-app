@@ -11,7 +11,7 @@ class PerformanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final perf = ref.watch(performanceProvider);
+    final perfAsync = ref.watch(performanceProvider);
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -21,10 +21,11 @@ class PerformanceScreen extends ConsumerWidget {
         foregroundColor: AppColors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
+      body: perfAsync.when(
+        data: (perf) => SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
             // Master Platinum Tier Badge Banner
             Container(
               padding: const EdgeInsets.all(20),
@@ -140,6 +141,9 @@ class PerformanceScreen extends ConsumerWidget {
             ),
           ],
         ),
+        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }

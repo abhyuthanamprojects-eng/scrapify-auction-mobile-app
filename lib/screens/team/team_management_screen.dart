@@ -84,7 +84,13 @@ class TeamManagementScreen extends ConsumerWidget {
                       isActive: true,
                       allowedCategories: const ['All Categories'],
                     );
-                    ref.read(teamMembersProvider.notifier).addMember(member);
+                    ref.read(teamMembersProvider.notifier).addMember({
+                      'email': member.email,
+                      'name': member.name,
+                      'role': member.role.toString().split('.').last,
+                      'max_bidding_limit_inr': member.maxBiddingLimitInr,
+                      'is_active': member.isActive,
+                    });
                     Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('✓ Team member authorization updated')),

@@ -30,7 +30,33 @@ android {
         versionName = flutter.versionName
     }
 
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            resValue("string", "app_name", "Scrapify Auctions Dev")
+            resValue("string", "api_base_url", "https://api.scrapifyauctions.com/api/v1")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            resValue("string", "app_name", "Scrapify Auctions Staging")
+            resValue("string", "api_base_url", "https://staging-api.scrapifyauctions.com/api/v1")
+        }
+        create("prod") {
+            dimension = "environment"
+            applicationIdSuffix = ""
+            resValue("string", "app_name", "Scrapify Auctions")
+            resValue("string", "api_base_url", "https://api.scrapifyauctions.com/api/v1")
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.

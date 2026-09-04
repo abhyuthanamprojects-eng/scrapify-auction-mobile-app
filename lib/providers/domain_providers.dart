@@ -49,7 +49,7 @@ final fulfilmentsProvider = FutureProvider<List<FulfilmentRecord>>((ref) async {
   final data = await OrderService().list();
   return data.map((o) => FulfilmentRecord(
     id: o.code,
-    orderId: o.id.toString(),
+    orderId: o.code,
     auctionCode: o.code,
     title: 'Order ${o.code}',
     type: FulfilmentType.materialPickup,

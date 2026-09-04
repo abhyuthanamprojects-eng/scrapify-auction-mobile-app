@@ -24,23 +24,27 @@ class OrdersScreen extends ConsumerWidget {
         foregroundColor: AppColors.white,
         elevation: 0,
       ),
-      body: fulfilments.isEmpty
-          ? Center(
-              child: EmptyState(
-                icon: Icons.local_shipping_outlined,
-                title: 'No active fulfilment orders',
-                subtitle: 'Won auctions and contracted services will be tracked here through gate pass and lifting.',
+      body: fulfilments.when(
+        data: (data) => data.isEmpty
+            ? Center(
+                child: EmptyState(
+                  icon: Icons.local_shipping_outlined,
+                  title: 'No active fulfilment orders',
+                  subtitle: 'Won auctions and contracted services will be tracked here through gate pass and lifting.',
+                ),
+              )
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
+                itemCount: data.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (ctx, i) {
+                  final f = data[i];
+                  return _buildFulfilmentCard(context, f);
+                },
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
-              itemCount: fulfilments.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 14),
-              itemBuilder: (ctx, i) {
-                final f = fulfilments[i];
-                return _buildFulfilmentCard(context, f);
-              },
-            ),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
     );
   }
 
