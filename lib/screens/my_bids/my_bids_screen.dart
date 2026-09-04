@@ -6,7 +6,6 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../models/bid_receipt.dart';
-import '../../providers/auction_provider.dart';
 import '../../widgets/shared/empty_state.dart';
 
 class MyBidsScreen extends ConsumerStatefulWidget {

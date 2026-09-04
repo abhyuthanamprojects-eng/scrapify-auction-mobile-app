@@ -5,7 +5,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
-import '../../models/award.dart';
 import '../../providers/domain_providers.dart';
 
 class FallbackOfferScreen extends ConsumerStatefulWidget {

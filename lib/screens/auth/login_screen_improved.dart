@@ -61,11 +61,11 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
     final authState = ref.watch(authProvider);
 
     // Show full-screen error display if there's an error
-    if (authState.hasError && authState.error != null) {
+    if (authState.hasError) {
       return Scaffold(
         backgroundColor: AppColors.appBg,
         body: ErrorDisplay(
-          error: ApiException(statusCode: 0, message: authState.error!),
+          error: ApiException(statusCode: 0, message: authState.error),
           onRetry: _login,
           showRetryButton: true,
         ),

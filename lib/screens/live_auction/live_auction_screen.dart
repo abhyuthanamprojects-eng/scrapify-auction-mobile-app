@@ -25,7 +25,6 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
   late double _currentHighest;
   late int _secondsRemaining;
   late int _bidders;
-  double? _myLastBid;
   int _myRank = 2;
   bool _isAutoBidEnabled = false;
   double _autoBidCeiling = 3000000;
@@ -75,7 +74,6 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
         _currentHighest = auction.currentHighestInr;
         _secondsRemaining = auction.secondsRemaining;
         _bidders = auction.bidders;
-        _myLastBid = auction.myLastBidInr;
         _bidFeed
           ..clear()
           ..addAll(bids.map((bid) => {
@@ -108,7 +106,6 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
       if (!mounted) return;
       setState(() {
       _currentHighest = result.currentHighest;
-      _myLastBid = amount;
       _myRank = 1; // Leading
       _bannerNotice = isAuto ? '⚡ Auto-Bid placed successfully' : '✓ Bid Accepted! You are currently Rank #1 (Leading)';
       _bidFeed.insert(0, {

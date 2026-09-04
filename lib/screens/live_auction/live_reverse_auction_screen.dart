@@ -25,10 +25,7 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   late double _currentL1;
   late int _secondsRemaining;
   late int _bidders;
-  double? _myLastOffer;
   int _myRank = 2;
-  bool _isAutoBidEnabled = false;
-  double _autoBidFloor = 850000;
   bool _isPaused = false;
   String? _bannerNotice;
   Timer? _tickerTimer;
@@ -73,7 +70,6 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
         _currentL1 = auction.currentHighestInr;
         _secondsRemaining = auction.secondsRemaining;
         _bidders = auction.bidders;
-        _myLastOffer = auction.myLastBidInr;
         _offerFeed
           ..clear()
           ..addAll(bids.map((bid) => {
@@ -106,7 +102,6 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
       if (!mounted) return;
       setState(() {
       _currentL1 = result.currentHighest;
-      _myLastOffer = amount;
       _myRank = 1; // Now L1
       _bannerNotice = isAuto ? '⚡ Auto-Offer matched at L1' : '✓ Offer Accepted! You are currently Rank #1 (L1 Lowest)';
       _offerFeed.insert(0, {

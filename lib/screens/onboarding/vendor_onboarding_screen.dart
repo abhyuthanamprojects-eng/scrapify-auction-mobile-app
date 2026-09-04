@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/constants/app_constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/vendor_service.dart';
 
@@ -24,20 +23,17 @@ class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen>
   final _tradeNameCtl = TextEditingController();
   String _companyType = 'Private Limited (Pvt Ltd)';
   final _cinCtl = TextEditingController();
-  final _incorpDateCtl = TextEditingController();
 
   // Step 2: Tax & Identifiers
   final _gstinCtl = TextEditingController();
   final _panCtl = TextEditingController();
   final _udyamCtl = TextEditingController();
-  bool _gstVerified = false;
 
   // Step 3: Address & Operating Hubs
   final _addressLine1Ctl = TextEditingController();
   final _cityCtl = TextEditingController();
   String _state = 'Maharashtra';
   final _pincodeCtl = TextEditingController();
-  final List<String> _operatingStates = [];
 
   // Step 4: Categories
   final Set<String> _selectedCategories = {};
@@ -47,7 +43,6 @@ class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen>
   final _accountNoCtl = TextEditingController();
   final _ifscCtl = TextEditingController();
   String _accountType = 'Current Account';
-  bool _pennyDropVerified = false;
 
   // Step 6: Authorized Signatory
   final _signatoryNameCtl = TextEditingController();

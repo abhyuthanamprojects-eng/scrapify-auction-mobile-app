@@ -139,7 +139,6 @@ class DisputesScreen extends ConsumerWidget {
         break;
       case DisputeStatus.rejected:
       case DisputeStatus.closed:
-      default:
         bg = AppColors.destructive.withValues(alpha: 0.12);
         fg = AppColors.destructive;
         label = st.label;
