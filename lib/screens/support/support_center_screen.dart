@@ -232,7 +232,7 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> with SingleTi
     return ListView.separated(
       padding: const EdgeInsets.all(20),
       itemCount: _tickets.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
         final t = _tickets[i];
         final isResolved = t['status'] == 'Resolved';

@@ -11,12 +11,12 @@ class ErrorDisplay extends StatelessWidget {
   final bool showRetryButton;
 
   const ErrorDisplay({
-    Key? key,
+    super.key,
     required this.error,
     this.onRetry,
     this.padding = const EdgeInsets.all(AppSpacing.screenPaddingH),
     this.showRetryButton = true,
-  }) : super(key: key);
+  });
 
   IconData _getIconForError() {
     if (error.isNetwork) return Icons.wifi_off_rounded;
@@ -130,7 +130,7 @@ class ErrorDisplay extends StatelessWidget {
                           ],
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
@@ -167,10 +167,10 @@ class FieldError extends StatelessWidget {
   final EdgeInsets padding;
 
   const FieldError({
-    Key? key,
+    super.key,
     this.error,
     this.padding = const EdgeInsets.only(top: 6),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

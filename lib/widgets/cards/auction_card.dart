@@ -96,7 +96,7 @@ class AuctionCard extends StatelessWidget {
               ? Image.network(
                   auction.photos.first,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _imagePlaceholder(),
+                  errorBuilder: (_, _, _) => _imagePlaceholder(),
                 )
               : _imagePlaceholder(),
         ),

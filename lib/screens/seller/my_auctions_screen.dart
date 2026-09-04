@@ -45,7 +45,7 @@ class _SellerMyAuctionsScreenState extends ConsumerState<SellerMyAuctionsScreen>
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenPaddingH),
               itemCount: filters.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (_, i) {
                 final f = filters[i];
                 final isActive = _filter == f;
@@ -84,7 +84,7 @@ class _SellerMyAuctionsScreenState extends ConsumerState<SellerMyAuctionsScreen>
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 12, AppSpacing.screenPaddingH, AppSpacing.bottomNavPadding),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (_, i) => _auctionCard(filtered[i]),
                 );
               },

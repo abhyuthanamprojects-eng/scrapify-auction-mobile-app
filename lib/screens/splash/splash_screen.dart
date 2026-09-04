@@ -72,7 +72,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         child: Center(
           child: AnimatedBuilder(
             animation: _controller,
-            builder: (_, __) => Opacity(
+            builder: (_, _) => Opacity(
               opacity: _fadeIn.value,
               child: Transform.scale(
                 scale: _scaleUp.value,
@@ -167,7 +167,7 @@ class _LoadingDotsState extends State<_LoadingDots>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _ctrl,
-      builder: (_, __) => Row(
+      builder: (_, _) => Row(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(3, (i) {
           final delay = i * 0.25;

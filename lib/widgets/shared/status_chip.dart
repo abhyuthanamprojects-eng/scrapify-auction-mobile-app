@@ -204,7 +204,7 @@ class _LiveDotState extends State<_LiveDot> with SingleTickerProviderStateMixin 
           if (widget.animate)
             AnimatedBuilder(
               animation: _controller,
-              builder: (_, __) => Opacity(
+              builder: (_, _) => Opacity(
                 opacity: 1 - _controller.value,
                 child: Transform.scale(
                   scale: 1 + _controller.value,

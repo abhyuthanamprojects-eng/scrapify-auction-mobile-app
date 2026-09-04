@@ -132,7 +132,7 @@ class TeamManagementScreen extends ConsumerWidget {
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
         itemCount: members.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (ctx, i) {
           final m = members[i];
           return Container(
