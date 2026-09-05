@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/vendor_service.dart';
+import '../../services/pincode_service.dart';
 import '../../core/utils/file_picker_service.dart';
 
 class VendorOnboardingScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,8 @@ class VendorOnboardingScreen extends ConsumerStatefulWidget {
 
 class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen> {
   final _vendorService = VendorService();
+  final _pincodeService = PincodeService();
+  bool _pincodeLookupLoading = false;
   int _currentStep = 0; // 0 to 9 (10 total steps)
 
   // Step 1: Company Info
@@ -377,28 +380,55 @@ class _VendorOnboardingScreenState extends ConsumerState<VendorOnboardingScreen>
     ]);
   }
 
+  Future<void> _onPincodeChanged(String value) async {
+    if (value.length != 6) return;
+    setState(() => _pincodeLookupLoading = true);
+    try {
+      final result = await _pincodeService.lookup(value);
+      if (result != null && mounted) {
+        setState(() {
+          _cityCtl.text = result.city;
+          _state = result.state;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _pincodeLookupLoading = false);
+    }
+  }
+
   Widget _stepAddressHubs() {
     return _cardContainer(children: [
       Text('Registered Yard & Operating Hubs', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
       const SizedBox(height: 16),
       TextField(controller: _addressLine1Ctl, decoration: const InputDecoration(labelText: 'Registered Yard Address *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
+      TextField(
+        controller: _pincodeCtl,
+        keyboardType: TextInputType.number,
+        maxLength: 6,
+        decoration: InputDecoration(
+          labelText: 'PIN Code *',
+          border: const OutlineInputBorder(),
+          counterText: '',
+          suffixIcon: _pincodeLookupLoading
+              ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)))
+              : null,
+        ),
+        onChanged: _onPincodeChanged,
+      ),
+      const SizedBox(height: 12),
       Row(
         children: [
           Expanded(child: TextField(controller: _cityCtl, decoration: const InputDecoration(labelText: 'City *', border: OutlineInputBorder()))),
           const SizedBox(width: 12),
-          Expanded(child: TextField(controller: _pincodeCtl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'PIN Code *', border: OutlineInputBorder()))),
+          Expanded(
+            child: TextField(
+              readOnly: true,
+              decoration: InputDecoration(labelText: 'State *', border: const OutlineInputBorder()),
+              controller: TextEditingController(text: _state),
+            ),
+          ),
         ],
-      ),
-      const SizedBox(height: 12),
-      DropdownButtonFormField<String>(
-        value: _state,
-        isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Primary Operating State *', border: OutlineInputBorder()),
-        items: ['Maharashtra', 'Gujarat', 'Karnataka', 'Tamil Nadu', 'Delhi NCR', 'Telangana', 'West Bengal', 'Odisha', 'Jharkhand']
-            .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-            .toList(),
-        onChanged: (v) => setState(() => _state = v ?? _state),
       ),
     ]);
   }
