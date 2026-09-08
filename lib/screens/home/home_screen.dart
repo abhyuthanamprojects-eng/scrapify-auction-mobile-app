@@ -35,8 +35,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final walletAsync = ref.watch(walletBalanceProvider);
     final awards = ref.watch(awardsProvider);
 
-    final pendingAwardCount = awards.where((a) => a.status == AwardStatus.offered || a.status == AwardStatus.fallbackOffered).length;
-    final featuredAuction = liveAsync.valueOrNull?.where((a) => a.isLotWise).firstOrNull ??
+    final pendingAwardCount = awards
+        .where(
+          (a) =>
+              a.status == AwardStatus.offered ||
+              a.status == AwardStatus.fallbackOffered,
+        )
+        .length;
+    final featuredAuction =
+        liveAsync.valueOrNull?.where((a) => a.isLotWise).firstOrNull ??
         liveAsync.valueOrNull?.firstOrNull ??
         upcomingAsync.valueOrNull?.firstOrNull;
 
@@ -70,7 +77,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                  child: _buildKycRejectedBanner(context, user?.rejectionReason),
+                  child: _buildKycRejectedBanner(
+                    context,
+                    user?.rejectionReason,
+                  ),
                 ),
               ),
             SliverToBoxAdapter(
@@ -110,15 +120,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               data: (auctions) {
                 final filtered = _selectedCategory == null
                     ? auctions
-                    : auctions.where((a) => a.category == _selectedCategory).toList();
+                    : auctions
+                          .where((a) => a.category == _selectedCategory)
+                          .toList();
                 if (filtered.isEmpty) {
                   return SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       child: EmptyState(
                         icon: Icons.gavel_rounded,
                         title: 'No live auctions right now',
-                        subtitle: 'Check back in a few minutes or browse upcoming events',
+                        subtitle:
+                            'Check back in a few minutes or browse upcoming events',
                       ),
                     ),
                   );
@@ -128,9 +144,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
               loading: () => const SliverToBoxAdapter(
-                child: Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: CardSkeleton()),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: CardSkeleton(),
+                ),
               ),
-              error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              error: (_, __) =>
+                  const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
             SliverToBoxAdapter(
               child: _buildSectionHeader(
@@ -142,15 +162,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               data: (auctions) {
                 final filtered = _selectedCategory == null
                     ? auctions
-                    : auctions.where((a) => a.category == _selectedCategory).toList();
+                    : auctions
+                          .where((a) => a.category == _selectedCategory)
+                          .toList();
                 if (filtered.isEmpty) {
                   return SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       child: EmptyState(
                         icon: Icons.calendar_today_outlined,
                         title: 'No upcoming events',
-                        subtitle: 'You are all caught up with scheduled auctions',
+                        subtitle:
+                            'You are all caught up with scheduled auctions',
                       ),
                     ),
                   );
@@ -176,9 +202,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
               loading: () => const SliverToBoxAdapter(
-                child: Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: ListSkeleton(count: 2)),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: ListSkeleton(count: 2),
+                ),
               ),
-              error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              error: (_, __) =>
+                  const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
@@ -228,11 +258,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 2),
                     Text(
                       name,
-                      style: AppTextStyles.heading(size: 21, weight: FontWeight.w800, color: AppColors.white),
+                      style: AppTextStyles.heading(
+                        size: 21,
+                        weight: FontWeight.w800,
+                        color: AppColors.white,
+                      ),
                     ),
                     Text(
                       company,
-                      style: TextStyle(fontSize: 11.5, color: AppColors.white.withValues(alpha: 0.65)),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.white.withValues(alpha: 0.65),
+                      ),
                     ),
                   ],
                 ),
@@ -244,12 +281,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                      border: Border.all(color: AppColors.white.withValues(alpha: 0.12)),
+                      border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.12),
+                      ),
                     ),
                     child: Stack(
                       children: [
                         const Center(
-                          child: Icon(Icons.notifications_outlined, color: AppColors.white, size: 22),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.white,
+                            size: 22,
+                          ),
                         ),
                         Positioned(
                           top: 10,
@@ -273,7 +316,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             GestureDetector(
               onTap: () => context.push('/reg-status'),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: kycVerified
                       ? AppColors.success.withValues(alpha: 0.15)
@@ -291,15 +337,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Icon(
                       kycVerified ? Icons.verified : Icons.hourglass_top,
                       size: 13,
-                      color: kycVerified ? AppColors.success : AppColors.goldSoft,
+                      color: kycVerified
+                          ? AppColors.success
+                          : AppColors.goldSoft,
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      kycVerified ? 'KYC — Verified (4/4 Docs)' : 'KYC — Verification Pending',
+                      kycVerified
+                          ? 'KYC — Verified (4/4 Docs)'
+                          : 'KYC — Verification Pending',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: kycVerified ? AppColors.success : AppColors.goldSoft,
+                        color: kycVerified
+                            ? AppColors.success
+                            : AppColors.goldSoft,
                       ),
                     ),
                   ],
@@ -324,7 +376,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.account_balance_wallet_outlined, size: 14, color: AppColors.white),
+                            const Icon(
+                              Icons.account_balance_wallet_outlined,
+                              size: 14,
+                              color: AppColors.white,
+                            ),
                             const SizedBox(width: 5),
                             Text(
                               'EMD WALLET BALANCE',
@@ -350,23 +406,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         const SizedBox(height: 2),
                         Text(
                           'Security available for 4 live auctions',
-                          style: TextStyle(fontSize: 10.5, color: AppColors.white.withValues(alpha: 0.8)),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.white.withValues(alpha: 0.8),
+                          ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: () => context.push('/wallet'),
-                    icon: const Icon(Icons.add, size: 16),
-                    label: const Text('Add Money'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.navy,
-                      foregroundColor: AppColors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  SizedBox(
+                    width: 120,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/wallet'),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Add Money'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navy,
+                        foregroundColor: AppColors.white,
+                        elevation: 0,
+                        minimumSize: const Size(120, 40),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusLg,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -397,7 +465,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(width: 10),
             Text(
               'Search auctions, lots, categories, cities...',
-              style: TextStyle(fontSize: 13.5, color: AppColors.navyWithOpacity(0.45)),
+              style: TextStyle(
+                fontSize: 13.5,
+                color: AppColors.navyWithOpacity(0.45),
+              ),
             ),
           ],
         ),
@@ -421,7 +492,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.warning.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.gavel_rounded, color: AppColors.warning, size: 18),
+            child: const Icon(
+              Icons.gavel_rounded,
+              color: AppColors.warning,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -430,11 +505,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 const Text(
                   'Action Required: Award Acceptance',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.navy),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                  ),
                 ),
                 Text(
                   'You have $pendingCount winning award(s) awaiting acceptance.',
-                  style: TextStyle(fontSize: 11, color: AppColors.navy.withValues(alpha: 0.7)),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.navy.withValues(alpha: 0.7),
+                  ),
                 ),
               ],
             ),
@@ -450,7 +532,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
             ),
-            child: const Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Review',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -459,14 +544,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildFeaturedMultiLotCard(BuildContext context, Auction auction) {
     final isMultiLot = auction.isLotWise;
-    final highest = auction.currentHighestInr > 0 ? auction.currentHighestInr : auction.startingPriceInr;
-    final leadText = auction.currentHighestInr > 0 ? 'Lead: ${Formatters.formatINR(highest)}' : 'Starts: ${Formatters.formatINR(highest)}';
+    final highest = auction.currentHighestInr > 0
+        ? auction.currentHighestInr
+        : auction.startingPriceInr;
+    final leadText = auction.currentHighestInr > 0
+        ? 'Lead: ${Formatters.formatINR(highest)}'
+        : 'Starts: ${Formatters.formatINR(highest)}';
 
     return GestureDetector(
       onTap: () => context.push(
         auction.direction == 'reverse'
             ? '/live-reverse/${auction.code}'
-            : (auction.isLive ? '/live/${auction.code}' : '/lot/${auction.code}'),
+            : (auction.isLive
+                  ? '/live/${auction.code}'
+                  : '/lot/${auction.code}'),
       ),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -486,23 +577,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.auction.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     isMultiLot ? 'FEATURED • MULTI-LOT' : 'FEATURED AUCTION',
-                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: AppColors.goldSoft),
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.goldSoft,
+                    ),
                   ),
                 ),
-                auction.isLive ? StatusChip.live() : StatusChip.fromStatus(auction.status.name),
+                auction.isLive
+                    ? StatusChip.live()
+                    : StatusChip.fromStatus(auction.status.name),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              auction.company.isNotEmpty ? '${auction.company} • ${auction.title}' : auction.title,
-              style: AppTextStyles.heading(size: 15, weight: FontWeight.w800, color: AppColors.white),
+              auction.company.isNotEmpty
+                  ? '${auction.company} • ${auction.title}'
+                  : auction.title,
+              style: AppTextStyles.heading(
+                size: 15,
+                weight: FontWeight.w800,
+                color: AppColors.white,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -511,7 +617,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               isMultiLot
                   ? 'Bid on individual sub-lots or complete lot bundle'
                   : (auction.category ?? 'High-value industrial materials'),
-              style: TextStyle(fontSize: 11.5, color: AppColors.white.withValues(alpha: 0.7)),
+              style: TextStyle(
+                fontSize: 11.5,
+                color: AppColors.white.withValues(alpha: 0.7),
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -521,16 +630,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text(
                   '$leadText  •  ${auction.bidders} Bids',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.goldSoft,
+                  ),
                 ),
                 Row(
                   children: [
                     Text(
                       auction.isLive ? 'Enter Live' : 'View Details',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.white.withValues(alpha: 0.9)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white.withValues(alpha: 0.9),
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward, size: 14, color: AppColors.white),
+                    const Icon(
+                      Icons.arrow_forward,
+                      size: 14,
+                      color: AppColors.white,
+                    ),
                   ],
                 ),
               ],
@@ -552,7 +673,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         itemBuilder: (ctx, i) {
           final cat = AppConstants.categories[i];
           final isAll = cat == 'All Categories';
-          final isSelected = isAll ? _selectedCategory == null : _selectedCategory == cat;
+          final isSelected = isAll
+              ? _selectedCategory == null
+              : _selectedCategory == cat;
           return GestureDetector(
             onTap: () => setState(() => _selectedCategory = isAll ? null : cat),
             child: AnimatedContainer(
@@ -561,7 +684,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.navy : AppColors.white,
                 borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: isSelected ? AppColors.navy : AppColors.cardBorder),
+                border: Border.all(
+                  color: isSelected ? AppColors.navy : AppColors.cardBorder,
+                ),
                 boxShadow: isSelected ? AppColors.shadowSm : null,
               ),
               child: Center(
@@ -593,11 +718,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           Row(
             children: [
-              Text(title, style: AppTextStyles.heading(size: 16, weight: FontWeight.w800)),
-              if (badge != null) ...[
-                const SizedBox(width: 8),
-                badge,
-              ],
+              Text(
+                title,
+                style: AppTextStyles.heading(size: 16, weight: FontWeight.w800),
+              ),
+              if (badge != null) ...[const SizedBox(width: 8), badge],
             ],
           ),
           GestureDetector(
@@ -616,7 +741,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHorizontalLiveCarousel(BuildContext context, List<Auction> auctions) {
+  Widget _buildHorizontalLiveCarousel(
+    BuildContext context,
+    List<Auction> auctions,
+  ) {
     return SizedBox(
       height: 320,
       child: ListView.separated(
@@ -660,7 +788,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.auction.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.hourglass_top_rounded, color: AppColors.auction, size: 20),
+            child: const Icon(
+              Icons.hourglass_top_rounded,
+              color: AppColors.auction,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -669,19 +801,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 const Text(
                   'Verification Pending',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.navy),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.navy,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'Your KYC and submitted documents are currently under review by our verification team (usually 24–48 hours). Once verified, full auction bidding is activated.',
-                  style: TextStyle(fontSize: 12, color: AppColors.navy.withValues(alpha: 0.75), height: 1.35),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.navy.withValues(alpha: 0.75),
+                    height: 1.35,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => context.push('/reg-status'),
                   child: const Text(
                     'Track Verification Status →',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.auction),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.auction,
+                    ),
                   ),
                 ),
               ],
@@ -698,7 +842,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       decoration: BoxDecoration(
         color: AppColors.destructive.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-        border: Border.all(color: AppColors.destructive.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: AppColors.destructive.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,7 +855,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: AppColors.destructive.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.warning_amber_rounded, color: AppColors.destructive, size: 20),
+            child: const Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.destructive,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -718,21 +868,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 const Text(
                   'Verification Requires Changes',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.destructive),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.destructive,
+                  ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   reason != null && reason.isNotEmpty
                       ? 'Compliance Remarks: $reason'
                       : 'Your KYC application was not approved. Please review the remarks and resubmit.',
-                  style: TextStyle(fontSize: 12, color: AppColors.navy.withValues(alpha: 0.75), height: 1.35),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.navy.withValues(alpha: 0.75),
+                    height: 1.35,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => context.push('/vendor-onboarding'),
                   child: const Text(
                     'Edit & Resubmit KYC →',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.destructive),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.destructive,
+                    ),
                   ),
                 ),
               ],

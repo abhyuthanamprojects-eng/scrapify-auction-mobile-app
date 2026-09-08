@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
             _menuItem(
               Icons.verified_user_outlined,
               'KYC & Company Verification',
-              () => context.push('/vendor-onboarding'),
+              () => context.push('/business-verification'),
               trailing: _kycBadge(user?.kycStatus ?? 'pending', user?.kycVerified ?? false, user?.isKycRejected ?? false),
             ),
             _menuItem(Icons.security_outlined, 'Security & Trusted Devices', () => context.push('/trusted-devices')),
@@ -171,7 +171,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.push('/vendor-onboarding'),
+                    onPressed: () => context.push('/business-verification'),
                     child: const Text('Fix Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.destructive)),
                   ),
                 ],

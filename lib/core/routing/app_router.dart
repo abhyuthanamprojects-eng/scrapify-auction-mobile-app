@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import '../../screens/splash/splash_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/onboarding/vendor_onboarding_screen.dart';
+import '../../screens/profile/business_verification_screen.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/auth/role_screen.dart';
@@ -55,6 +56,7 @@ abstract final class AppRouter {
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
       GoRoute(path: '/vendor-onboarding', builder: (_, __) => const VendorOnboardingScreen()),
+      GoRoute(path: '/business-verification', builder: (_, __) => const BusinessVerificationScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/otp',

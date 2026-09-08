@@ -22,6 +22,12 @@ class VendorService {
     return await _api.get(Endpoints.vendorKycStatus(vendorCode));
   }
 
+  Future<Map<String, dynamic>> getBusinessVerification() => _api.get(Endpoints.kybStatus);
+  Future<Map<String, dynamic>> getBusinessVerificationHistory() => _api.get(Endpoints.kybHistory);
+  Future<Map<String, dynamic>> verifyGstin(String gstin, {String? businessName}) => _api.post(Endpoints.kybVerifyGstin, data: {'gstin': gstin, if (businessName != null && businessName.isNotEmpty) 'business_name': businessName});
+  Future<Map<String, dynamic>> verifyBank({required String account, required String confirmation, required String ifsc, String? name, String? phone}) => _api.post(Endpoints.kybVerifyBank, data: {'bank_account': account, 'bank_account_confirmation': confirmation, 'ifsc': ifsc, if (name != null && name.isNotEmpty) 'name': name, if (phone != null && phone.isNotEmpty) 'phone': phone});
+  Future<Map<String, dynamic>> requestBusinessReverification() => _api.post(Endpoints.kybReverify);
+
   Future<Map<String, dynamic>> register({
     required String companyName,
     required String contactName,

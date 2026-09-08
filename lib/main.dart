@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_env.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
+import 'widgets/web_security_gate.dart';
 
 /// Default Android Studio entrypoint. Use the flavor-specific entrypoints for
 /// Dev, Staging, and Production configurations.
@@ -35,15 +36,18 @@ class ScrapifyApp extends StatelessWidget {
       theme: AppTheme.light,
       routerConfig: AppRouter.router,
       builder: (context, child) {
+        final gatedChild = WebSecurityGate(
+          child: child ?? const SizedBox.shrink(),
+        );
         if (!AppEnv.isProd) {
           return Banner(
             location: BannerLocation.topStart,
             message: AppEnv.isDev ? 'DEV' : 'STG',
             color: AppEnv.isDev ? Colors.green : Colors.orange,
-            child: child ?? const SizedBox.shrink(),
+            child: gatedChild,
           );
         }
-        return child ?? const SizedBox.shrink();
+        return gatedChild;
       },
     );
   }

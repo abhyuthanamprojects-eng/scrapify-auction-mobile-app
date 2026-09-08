@@ -59,6 +59,13 @@ abstract final class Endpoints {
   static String vendorDocuments(String code) => '/vendors/$code/documents';
   static String vendorPayment(String code) => '/vendors/$code/registration-payment';
 
+  // Business verification (provider credentials remain server-side)
+  static const kybStatus = '/kyb/status';
+  static const kybHistory = '/kyb/history';
+  static const kybVerifyGstin = '/kyb/gstin/verify';
+  static const kybVerifyBank = '/kyb/bank/verify';
+  static const kybReverify = '/kyb/reverify';
+
   // Notifications
   static const notifications = '/notifications';
   static String notificationRead(int id) => '/notifications/$id/read';
