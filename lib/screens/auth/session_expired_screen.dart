@@ -11,7 +11,8 @@ class SessionExpiredScreen extends ConsumerStatefulWidget {
   const SessionExpiredScreen({super.key, this.returnPath});
 
   @override
-  ConsumerState<SessionExpiredScreen> createState() => _SessionExpiredScreenState();
+  ConsumerState<SessionExpiredScreen> createState() =>
+      _SessionExpiredScreenState();
 }
 
 class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
@@ -64,21 +65,38 @@ class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
                     color: AppColors.destructive.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.timer_off_outlined, color: AppColors.destructive, size: 34),
+                  child: const Icon(
+                    Icons.timer_off_outlined,
+                    color: AppColors.destructive,
+                    size: 34,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                Text('Session Timed Out', style: AppTextStyles.heading(size: 20, weight: FontWeight.w900)),
+                Text(
+                  'Session Timed Out',
+                  style: AppTextStyles.heading(
+                    size: 20,
+                    weight: FontWeight.w900,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 const Text(
                   'Your corporate session expired due to 15 minutes of inactivity. Please re-authenticate to continue.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 20),
 
                 // User Chip
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.appBg,
                     borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
@@ -89,15 +107,27 @@ class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
                       CircleAvatar(
                         radius: 18,
                         backgroundColor: AppColors.navy,
-                        child: Text((user?.name ?? 'R')[0], style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w700)),
+                        child: Text(
+                          (user?.name ?? 'R')[0],
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user?.name ?? 'Rahul Sharma', style: AppTextStyles.labelMedium),
-                            Text(user?.email ?? 'rahul.sharma@devzign.in', style: AppTextStyles.captionMuted),
+                            Text(
+                              user?.name ?? '',
+                              style: AppTextStyles.labelMedium,
+                            ),
+                            Text(
+                              user?.email ?? 'Session account unavailable',
+                              style: AppTextStyles.captionMuted,
+                            ),
                           ],
                         ),
                       ),
@@ -125,11 +155,25 @@ class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
                       foregroundColor: AppColors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXl,
+                        ),
+                      ),
                     ),
                     child: _loading
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: AppColors.white, strokeWidth: 2))
-                        : const Text('Unlock Session', style: TextStyle(fontWeight: FontWeight.w800)),
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: AppColors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            'Unlock Session',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -139,10 +183,24 @@ class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
                   height: 48,
                   child: OutlinedButton.icon(
                     onPressed: _loading ? null : _biometricRelogin,
-                    icon: const Icon(Icons.fingerprint, color: AppColors.auction, size: 22),
-                    label: const Text('Fast Biometric Unlock', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy)),
+                    icon: const Icon(
+                      Icons.fingerprint,
+                      color: AppColors.auction,
+                      size: 22,
+                    ),
+                    label: const Text(
+                      'Fast Biometric Unlock',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.navy,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXl,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -150,7 +208,14 @@ class _SessionExpiredScreenState extends ConsumerState<SessionExpiredScreen> {
 
                 TextButton(
                   onPressed: () => context.go('/login'),
-                  child: const Text('Sign in with a different account', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+                  child: const Text(
+                    'Sign in with a different account',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ),
               ],
             ),

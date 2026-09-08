@@ -63,7 +63,10 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     }
   }
 
-  Future<({String? debugCode})> requestOtp(String identifier, {String purpose = 'login'}) async {
+  Future<({String? debugCode})> requestOtp(
+    String identifier, {
+    String purpose = 'login',
+  }) async {
     try {
       final result = await _authService.requestOtp(
         identifier: identifier,
@@ -157,16 +160,16 @@ class AuthStateData {
     AppUser? user,
     bool? onboardingComplete,
     String? error,
-  }) =>
-      AuthStateData(
-        authState: authState ?? this.authState,
-        user: user ?? this.user,
-        onboardingComplete: onboardingComplete ?? this.onboardingComplete,
-        error: error ?? this.error,
-      );
+  }) => AuthStateData(
+    authState: authState ?? this.authState,
+    user: user ?? this.user,
+    onboardingComplete: onboardingComplete ?? this.onboardingComplete,
+    error: error ?? this.error,
+  );
 
   bool get isAuthenticated => authState == AuthState.authenticated;
   bool get isSeller => user?.isSeller ?? false;
+  bool get isAdmin => user?.isAdmin ?? false;
   bool get hasError => error.isNotEmpty;
 }
 

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,7 +18,6 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
-  Timer? _navigationTimer;
   late AnimationController _controller;
   late Animation<double> _fadeIn;
   late Animation<double> _scaleUp;
@@ -46,20 +43,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
     _controller.forward();
 
-    _navigationTimer = Timer(const Duration(milliseconds: 2400), () {
-      if (!mounted) return;
-      final auth = ref.read(authProvider);
-      if (auth.isAuthenticated) {
-        context.go('/home');
-      } else {
-        context.go('/onboarding');
-      }
-    });
+    _restoreSessionAndNavigate();
+  }
+
+  Future<void> _restoreSessionAndNavigate() async {
+    await Future.wait([
+      ref.read(authProvider.notifier).checkSession(),
+      Future<void>.delayed(const Duration(milliseconds: 2400)),
+    ]);
+    if (!mounted) return;
+    context.go(
+      ref.read(authProvider).isAuthenticated ? '/home' : '/onboarding',
+    );
   }
 
   @override
   void dispose() {
-    _navigationTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

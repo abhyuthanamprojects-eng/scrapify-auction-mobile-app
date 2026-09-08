@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -23,22 +22,14 @@ class DisputesScreen extends ConsumerWidget {
         backgroundColor: AppColors.navy,
         foregroundColor: AppColors.white,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Raise Dispute',
-            onPressed: () => context.push('/new-dispute/ORD-2026-1048'),
-          ),
-        ],
       ),
       body: disputes.isEmpty
           ? Center(
               child: EmptyState(
                 icon: Icons.shield_outlined,
                 title: 'No disputes filed',
-                subtitle: 'All orders and contracts are proceeding without active claims.',
-                actionLabel: 'File a Claim',
-                onAction: () => context.push('/new-dispute/ORD-2026-1048'),
+                subtitle:
+                    'All orders and contracts are proceeding without active claims.',
               ),
             )
           : ListView.separated(
@@ -73,14 +64,26 @@ class DisputesScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text(d.title ?? (d.category is DisputeCategory ? (d.category as DisputeCategory).label : d.category?.toString() ?? 'Commercial Dispute'),
-              style: AppTextStyles.heading(size: 15, weight: FontWeight.w800)),
+          Text(
+            d.title ??
+                (d.category is DisputeCategory
+                    ? (d.category as DisputeCategory).label
+                    : d.category?.toString() ?? 'Commercial Dispute'),
+            style: AppTextStyles.heading(size: 15, weight: FontWeight.w800),
+          ),
           const SizedBox(height: 4),
-          Text('Order: ${d.orderId ?? d.orderNumber} • Claim: ${Formatters.formatINR(d.claimedAmountInr ?? 0)}', style: AppTextStyles.captionMuted),
+          Text(
+            'Order: ${d.orderId ?? d.orderNumber} • Claim: ${Formatters.formatINR(d.claimedAmountInr ?? 0)}',
+            style: AppTextStyles.captionMuted,
+          ),
           const SizedBox(height: 10),
           Text(
             d.description,
-            style: AppTextStyles.body(size: 12.5, color: AppColors.navy.withValues(alpha: 0.8), height: 1.4),
+            style: AppTextStyles.body(
+              size: 12.5,
+              color: AppColors.navy.withValues(alpha: 0.8),
+              height: 1.4,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -94,12 +97,20 @@ class DisputesScreen extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.comment_outlined, size: 14, color: AppColors.accentBlue),
+                  const Icon(
+                    Icons.comment_outlined,
+                    size: 14,
+                    color: AppColors.accentBlue,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '${d.timeline.last.author}: ${d.timeline.last.message}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.navy),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -147,8 +158,14 @@ class DisputesScreen extends ConsumerWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: fg)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: fg),
+      ),
     );
   }
 }

@@ -12,26 +12,21 @@ class InspectionBookingScreen extends ConsumerStatefulWidget {
   const InspectionBookingScreen({super.key, required this.auctionCode});
 
   @override
-  ConsumerState<InspectionBookingScreen> createState() => _InspectionBookingScreenState();
+  ConsumerState<InspectionBookingScreen> createState() =>
+      _InspectionBookingScreenState();
 }
 
-class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScreen> {
-  String _selectedDate = '28 Aug 2026';
-  String _selectedSlot = '11:30 AM – 12:30 PM';
+class _InspectionBookingScreenState
+    extends ConsumerState<InspectionBookingScreen> {
+  String _selectedDate = '';
+  String _selectedSlot = '';
 
-  final _nameCtl = TextEditingController(text: 'Rahul Sharma');
-  final _mobileCtl = TextEditingController(text: '+91 98765 43210');
-  final _govtIdCtl = TextEditingController(text: 'PAN: ABCDE1234F');
-  final _vehicleCtl = TextEditingController(text: 'JH-05-AB-1234');
-  int _visitorsCount = 2;
+  final _nameCtl = TextEditingController();
+  final _mobileCtl = TextEditingController();
+  final _govtIdCtl = TextEditingController();
+  final _vehicleCtl = TextEditingController();
+  int _visitorsCount = 1;
   bool _submitting = false;
-
-  final _slots = const [
-    '10:00 AM – 11:00 AM',
-    '11:30 AM – 12:30 PM',
-    '02:00 PM – 03:00 PM',
-    '03:30 PM – 04:30 PM',
-  ];
 
   @override
   void dispose() {
@@ -75,29 +70,47 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.auction.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text('PHYSICAL INSPECTION',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.auction)),
+                          child: const Text(
+                            'PHYSICAL INSPECTION',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.auction,
+                            ),
+                          ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.location_on, color: AppColors.auction, size: 16),
+                        const Icon(
+                          Icons.location_on,
+                          color: AppColors.auction,
+                          size: 16,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(auction.title, style: AppTextStyles.labelLarge),
                     const SizedBox(height: 4),
                     Text(
-                      auction.inspectionLocation ?? 'Main Factory Gate 3, Plant Site',
+                      auction.inspectionLocation ??
+                          'Inspection location will be provided by the seller.',
                       style: AppTextStyles.captionMuted,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Contact: ${auction.inspectionContact ?? "Site Security Officer"}',
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.navy),
+                      'Contact: ${auction.inspectionContact ?? "Contact details will be provided by the seller."}',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.navy,
+                      ),
                     ),
                   ],
                 ),
@@ -107,73 +120,118 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
               // Date Selection
               _sectionHeader('Select Inspection Date'),
               const SizedBox(height: 8),
-              Row(
-                children: ['28 Aug 2026', '29 Aug 2026', '30 Aug 2026'].map((d) {
-                  final sel = _selectedDate == d;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedDate = d),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: sel ? AppColors.navy : AppColors.white,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                          border: Border.all(color: sel ? AppColors.navy : AppColors.cardBorder),
-                          boxShadow: sel ? AppColors.shadowSm : null,
-                        ),
-                        child: Center(
-                          child: Text(
-                            d,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: sel ? AppColors.white : AppColors.navy,
+              Builder(
+                builder: (context) {
+                  final dates = auction.inspectionDate?.isNotEmpty == true
+                      ? [auction.inspectionDate!]
+                      : const <String>[];
+                  if (dates.isEmpty) {
+                    return const Text(
+                      'No inspection dates are currently published for this auction.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    );
+                  }
+                  return Row(
+                    children: dates.map((d) {
+                      final sel = _selectedDate == d;
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() => _selectedDate = d),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: sel ? AppColors.navy : AppColors.white,
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusLg,
+                              ),
+                              border: Border.all(
+                                color: sel
+                                    ? AppColors.navy
+                                    : AppColors.cardBorder,
+                              ),
+                              boxShadow: sel ? AppColors.shadowSm : null,
+                            ),
+                            child: Center(
+                              child: Text(
+                                d,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: sel ? AppColors.white : AppColors.navy,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               ),
               const SizedBox(height: 20),
 
               // Time Slot Selection
               _sectionHeader('Available Time Slots'),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: _slots.map((s) {
-                  final sel = _selectedSlot == s;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedSlot = s),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: sel ? AppColors.auction : AppColors.white,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                        border: Border.all(color: sel ? AppColors.auction : AppColors.cardBorder),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.schedule, size: 14, color: sel ? AppColors.white : AppColors.navy),
-                          const SizedBox(width: 6),
-                          Text(
-                            s,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: sel ? AppColors.white : AppColors.navy,
+              Builder(
+                builder: (context) {
+                  final slots = auction.inspectionTime?.isNotEmpty == true
+                      ? [auction.inspectionTime!]
+                      : const <String>[];
+                  if (slots.isEmpty) {
+                    return const Text(
+                      'No inspection time slots are currently published for this auction.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    );
+                  }
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: slots.map((s) {
+                      final sel = _selectedSlot == s;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedSlot = s),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: sel ? AppColors.auction : AppColors.white,
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
+                            ),
+                            border: Border.all(
+                              color: sel
+                                  ? AppColors.auction
+                                  : AppColors.cardBorder,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                size: 14,
+                                color: sel ? AppColors.white : AppColors.navy,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                s,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: sel ? AppColors.white : AppColors.navy,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   );
-                }).toList(),
+                },
               ),
               const SizedBox(height: 24),
 
@@ -182,8 +240,16 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
               const SizedBox(height: 10),
               _field('Lead Visitor Name', _nameCtl, Icons.person_outline),
               _field('Mobile Number', _mobileCtl, Icons.phone_outlined),
-              _field('Govt ID (PAN / Aadhaar / DL)', _govtIdCtl, Icons.badge_outlined),
-              _field('Vehicle Registration Number', _vehicleCtl, Icons.directions_car_outlined),
+              _field(
+                'Govt ID (PAN / Aadhaar / DL)',
+                _govtIdCtl,
+                Icons.badge_outlined,
+              ),
+              _field(
+                'Vehicle Registration Number',
+                _vehicleCtl,
+                Icons.directions_car_outlined,
+              ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,12 +259,16 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
                     children: [
                       IconButton(
                         icon: const Icon(Icons.remove_circle_outline),
-                        onPressed: _visitorsCount > 1 ? () => setState(() => _visitorsCount--) : null,
+                        onPressed: _visitorsCount > 1
+                            ? () => setState(() => _visitorsCount--)
+                            : null,
                       ),
                       Text('$_visitorsCount', style: AppTextStyles.labelLarge),
                       IconButton(
                         icon: const Icon(Icons.add_circle_outline),
-                        onPressed: _visitorsCount < 5 ? () => setState(() => _visitorsCount++) : null,
+                        onPressed: _visitorsCount < 5
+                            ? () => setState(() => _visitorsCount++)
+                            : null,
                       ),
                     ],
                   ),
@@ -211,7 +281,12 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
       bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
         decoration: BoxDecoration(
           color: AppColors.white,
           border: const Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -223,19 +298,36 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
             onPressed: _submitting
                 ? null
                 : () async {
+                    if (_selectedDate.isEmpty ||
+                        _selectedSlot.isEmpty ||
+                        _nameCtl.text.trim().isEmpty ||
+                        _mobileCtl.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Complete the published inspection date, time slot, name and mobile number first.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     setState(() => _submitting = true);
                     try {
-                      await ref.read(inspectionBookingsProvider.notifier).book(widget.auctionCode, {
-                        'visitor_name': _nameCtl.text.trim(),
-                        'visitor_mobile': _mobileCtl.text.trim(),
-                        'visitor_govt_id': _govtIdCtl.text.trim(),
-                        'vehicle_number': _vehicleCtl.text.trim(),
-                        'number_of_visitors': _visitorsCount,
-                        'slot': _selectedSlot,
-                        'date': _selectedDate,
-                      });
+                      await ref
+                          .read(inspectionBookingsProvider.notifier)
+                          .book(widget.auctionCode, {
+                            'visitor_name': _nameCtl.text.trim(),
+                            'visitor_mobile': _mobileCtl.text.trim(),
+                            'visitor_govt_id': _govtIdCtl.text.trim(),
+                            'vehicle_number': _vehicleCtl.text.trim(),
+                            'number_of_visitors': _visitorsCount,
+                            'slot': _selectedSlot,
+                            'date': _selectedDate,
+                          });
                       if (mounted) {
-                        context.pushReplacement('/gate-pass/${widget.auctionCode}');
+                        context.pushReplacement(
+                          '/gate-pass/${widget.auctionCode}',
+                        );
                       }
                     } catch (e) {
                       if (mounted) {
@@ -249,12 +341,19 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
             icon: const Icon(Icons.qr_code_2_rounded),
             label: _submitting
                 ? const CircularProgressIndicator(color: AppColors.white)
-                : const Text('Confirm Booking & Issue Gate Pass',
-                    style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                : const Text(
+                    'Confirm Booking & Issue Gate Pass',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.auction,
               foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              ),
               elevation: 0,
             ),
           ),
@@ -266,7 +365,12 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
   Widget _sectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.3),
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF64748B),
+        letterSpacing: 0.3,
+      ),
     );
   }
 
@@ -276,7 +380,14 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.navy)),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
+          ),
           const SizedBox(height: 4),
           Container(
             decoration: BoxDecoration(
@@ -286,11 +397,22 @@ class _InspectionBookingScreenState extends ConsumerState<InspectionBookingScree
             ),
             child: TextField(
               controller: ctl,
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.navy),
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.navy,
+              ),
               decoration: InputDecoration(
-                prefixIcon: Icon(icon, size: 18, color: const Color(0xFF64748B)),
+                prefixIcon: Icon(
+                  icon,
+                  size: 18,
+                  color: const Color(0xFF64748B),
+                ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
               ),
             ),
           ),

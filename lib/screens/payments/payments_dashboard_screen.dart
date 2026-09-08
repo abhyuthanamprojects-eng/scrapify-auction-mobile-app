@@ -8,15 +8,18 @@ import '../../core/utils/formatters.dart';
 import '../../providers/wallet_provider.dart';
 import '../../providers/domain_providers.dart';
 import '../../models/award.dart';
+import '../../models/transaction.dart';
 
 class PaymentsDashboardScreen extends ConsumerStatefulWidget {
   const PaymentsDashboardScreen({super.key});
 
   @override
-  ConsumerState<PaymentsDashboardScreen> createState() => _PaymentsDashboardScreenState();
+  ConsumerState<PaymentsDashboardScreen> createState() =>
+      _PaymentsDashboardScreenState();
 }
 
-class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScreen>
+class _PaymentsDashboardScreenState
+    extends ConsumerState<PaymentsDashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -42,7 +45,12 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => Container(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
           decoration: const BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -55,22 +63,38 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                 child: Container(
                   width: 40,
                   height: 4,
-                  decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Settle Balance Invoice', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+                  Text(
+                    'Settle Balance Invoice',
+                    style: AppTextStyles.heading(
+                      size: 17,
+                      weight: FontWeight.w800,
+                    ),
+                  ),
                   Text(
                     Formatters.formatINR(award.balanceDueInr),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.destructive),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.destructive,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              Text('Invoice: ${award.id} • ${award.sellerCompany}', style: AppTextStyles.captionMuted),
+              Text(
+                'Invoice: ${award.id} • ${award.sellerCompany}',
+                style: AppTextStyles.captionMuted,
+              ),
               const SizedBox(height: 16),
 
               // Payment Method Options
@@ -110,13 +134,20 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('VIRTUAL ESCROW ACCOUNT DETAILS',
-                          style: TextStyle(fontFamily: 'monospace', fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                      const Text(
+                        'VIRTUAL ESCROW ACCOUNT DETAILS',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
                       const SizedBox(height: 6),
-                      _miniRow('Beneficiary', 'Scrapify Escrow Client A/C'),
-                      _miniRow('Account No', '9920261048881'),
-                      _miniRow('IFSC Code', 'HDFC0000240'),
-                      _miniRow('Bank', 'HDFC Bank, Corporate Branch'),
+                      const Text(
+                        'Escrow account instructions are supplied by the payment API for the selected award.',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.navy),
+                      ),
                     ],
                   ),
                 ),
@@ -137,19 +168,28 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                 height: 50,
                 child: ElevatedButton(
                   onPressed: () async {
-                    Navigator.of(ctx).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('✓ Payment successful! Dispatch Gate Pass unlocked.')),
+                      const SnackBar(
+                        content: Text(
+                          'Payment processing is unavailable until the settlement API is enabled.',
+                        ),
+                      ),
                     );
-                    context.push('/orders');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.auction,
                     foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    ),
                   ),
-                  child: Text('Pay ${Formatters.formatINR(award.balanceDueInr)}',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  child: Text(
+                    'Pay ${Formatters.formatINR(award.balanceDueInr)}',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -159,20 +199,14 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
     );
   }
 
-  Widget _miniRow(String k, String v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(k, style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
-          Text(v, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
-        ],
-      ),
-    );
-  }
-
-  Widget _payOption(String title, String desc, IconData icon, String val, String selected, VoidCallback onTap) {
+  Widget _payOption(
+    String title,
+    String desc,
+    IconData icon,
+    String val,
+    String selected,
+    VoidCallback onTap,
+  ) {
     final isSel = val == selected;
     return GestureDetector(
       onTap: onTap,
@@ -180,19 +214,35 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSel ? AppColors.navy.withValues(alpha: 0.04) : AppColors.white,
+          color: isSel
+              ? AppColors.navy.withValues(alpha: 0.04)
+              : AppColors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: isSel ? AppColors.navy : AppColors.cardBorder, width: isSel ? 1.5 : 1),
+          border: Border.all(
+            color: isSel ? AppColors.navy : AppColors.cardBorder,
+            width: isSel ? 1.5 : 1,
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: isSel ? AppColors.auction : const Color(0xFF64748B), size: 22),
+            Icon(
+              icon,
+              color: isSel ? AppColors.auction : const Color(0xFF64748B),
+              size: 22,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 12.5, fontWeight: isSel ? FontWeight.w800 : FontWeight.w600, color: AppColors.navy)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: isSel ? FontWeight.w800 : FontWeight.w600,
+                      color: AppColors.navy,
+                    ),
+                  ),
                   Text(desc, style: AppTextStyles.captionMuted),
                 ],
               ),
@@ -213,6 +263,7 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
   Widget build(BuildContext context) {
     final wallet = ref.watch(walletBalanceProvider).valueOrNull;
     final awards = ref.watch(awardsProvider);
+    final transactionsAsync = ref.watch(transactionsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -250,8 +301,12 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          Formatters.formatINR(wallet?.balanceInr ?? 42850),
-                          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.white),
+                          Formatters.formatINR(wallet?.balanceInr ?? 0),
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -262,7 +317,11 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.auction,
                         foregroundColor: AppColors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusLg,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -277,8 +336,14 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _headerStat('Locked in Live', Formatters.formatINR(50000)),
-                      _headerStat('Available', Formatters.formatINR(42850)),
+                      _headerStat(
+                        'Locked in Live',
+                        Formatters.formatINR(wallet?.lockedInr ?? 0),
+                      ),
+                      _headerStat(
+                        'Available',
+                        Formatters.formatINR(wallet?.availableInr ?? 0),
+                      ),
                       _headerStat('Refund Due', '₹0'),
                     ],
                   ),
@@ -300,15 +365,25 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                 controller: _tabController,
                 labelColor: AppColors.white,
                 unselectedLabelColor: AppColors.navyWithOpacity(0.65),
-                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                labelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
                 indicator: BoxDecoration(
                   color: AppColors.navy,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerHeight: 0,
-                tabs: const [Tab(text: 'Pay Balance'), Tab(text: 'EMD Ledger'), Tab(text: 'Invoices')],
+                tabs: const [
+                  Tab(text: 'Pay Balance'),
+                  Tab(text: 'EMD Ledger'),
+                  Tab(text: 'Invoices'),
+                ],
               ),
             ),
           ),
@@ -329,7 +404,9 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radius2xl,
+                        ),
                         border: Border.all(color: AppColors.cardBorder),
                         boxShadow: AppColors.shadowSm,
                       ),
@@ -342,14 +419,21 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                               Text(a.id, style: AppTextStyles.mono),
                               Text(
                                 Formatters.formatINR(a.balanceDueInr),
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.destructive),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.destructive,
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(a.auctionTitle, style: AppTextStyles.labelLarge),
                           const SizedBox(height: 4),
-                          Text('Seller: ${a.sellerCompany} • Net Balance', style: AppTextStyles.captionMuted),
+                          Text(
+                            'Seller: ${a.sellerCompany} • Net Balance',
+                            style: AppTextStyles.captionMuted,
+                          ),
                           const SizedBox(height: 12),
                           SizedBox(
                             width: double.infinity,
@@ -358,9 +442,16 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.navy,
                                 foregroundColor: AppColors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusLg,
+                                  ),
+                                ),
                               ),
-                              child: const Text('Pay Net Balance', style: TextStyle(fontWeight: FontWeight.w700)),
+                              child: const Text(
+                                'Pay Net Balance',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
                             ),
                           ),
                         ],
@@ -369,24 +460,12 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
                   },
                 ),
 
-                // EMD Ledger Tab
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
-                  children: [
-                    _ledgerTile('BP-FWD-2026-1048', 'Tata Copper Lot 1', 50000, 'HELD IN ESCROW', AppColors.auction),
-                    _ledgerTile('BP-REV-2026-0872', 'Logistics Freight RFP', 25000, 'RELEASED & REFUNDED', AppColors.success),
-                    _ledgerTile('BP-FWD-2026-0914', 'BHEL Scrap Turning', 30000, 'RELEASED & REFUNDED', AppColors.success),
-                  ],
-                ),
+                // EMD Ledger Tab: render only wallet transactions returned by the API.
+                _transactionTab(transactionsAsync),
 
-                // Invoices & Tax GST Tab
-                ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
-                  children: [
-                    _invoiceTile('INV-2026-08819', 'Tata Power Works', '24 Aug 2026', 2480000),
-                    _invoiceTile('INV-2026-07412', 'Reliance Industries', '12 Aug 2026', 920000),
-                  ],
-                ),
+                // Invoice records are not exposed by the current mobile API contract.
+                // Keep this state explicit instead of presenting fabricated invoices.
+                _emptyTab('No invoices are available yet.'),
               ],
             ),
           ),
@@ -395,17 +474,93 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
     );
   }
 
+  Widget _transactionTab(AsyncValue<List<Transaction>> transactionsAsync) {
+    return transactionsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) =>
+          Center(child: Text('Unable to load EMD ledger: $error')),
+      data: (transactions) {
+        final emdTransactions = transactions
+            .where(
+              (transaction) =>
+                  transaction.type == TransactionType.emdLock ||
+                  transaction.type == TransactionType.emdRelease ||
+                  transaction.type == TransactionType.refund,
+            )
+            .toList();
+        if (emdTransactions.isEmpty) {
+          return _emptyTab('No EMD transactions are available yet.');
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
+          itemCount: emdTransactions.length,
+          itemBuilder: (_, index) => _transactionTile(emdTransactions[index]),
+        );
+      },
+    );
+  }
+
+  Widget _emptyTab(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTextStyles.captionMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _transactionTile(Transaction transaction) {
+    final isRelease =
+        transaction.type == TransactionType.emdRelease ||
+        transaction.type == TransactionType.refund;
+    final color = isRelease ? AppColors.success : AppColors.auction;
+    final reference = transaction.reference ?? 'Transaction #${transaction.id}';
+    final title = transaction.note ?? transaction.title;
+    final date =
+        '${transaction.at.day.toString().padLeft(2, '0')}/${transaction.at.month.toString().padLeft(2, '0')}/${transaction.at.year}';
+    return _ledgerTile(
+      reference,
+      '$title • $date',
+      transaction.amountInr.abs(),
+      transaction.status.toUpperCase(),
+      color,
+    );
+  }
+
   Widget _headerStat(String label, String val) {
     return Column(
       children: [
-        Text(label, style: TextStyle(fontSize: 10, color: AppColors.white.withValues(alpha: 0.7))),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.white.withValues(alpha: 0.7),
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.goldSoft)),
+        Text(
+          val,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: AppColors.goldSoft,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _ledgerTile(String code, String title, double amount, String status, Color color) {
+  Widget _ledgerTile(
+    String code,
+    String title,
+    double amount,
+    String status,
+    Color color,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
@@ -424,48 +579,17 @@ class _PaymentsDashboardScreenState extends ConsumerState<PaymentsDashboardScree
               const SizedBox(height: 2),
               Text(title, style: AppTextStyles.labelMedium),
               const SizedBox(height: 2),
-              Text(status, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color)),
-            ],
-          ),
-          Text(Formatters.formatINR(amount), style: AppTextStyles.labelLarge),
-        ],
-      ),
-    );
-  }
-
-  Widget _invoiceTile(String invNumber, String client, String date, double amount) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.picture_as_pdf, color: AppColors.destructive, size: 28),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(invNumber, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.navy)),
-                  Text('$client • $date', style: AppTextStyles.captionMuted),
-                ],
+              Text(
+                status,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
               ),
             ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(Formatters.formatINR(amount), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.navy)),
-              const SizedBox(height: 2),
-              const Icon(Icons.download_rounded, size: 16, color: AppColors.navy),
-            ],
-          ),
+          Text(Formatters.formatINR(amount), style: AppTextStyles.labelLarge),
         ],
       ),
     );

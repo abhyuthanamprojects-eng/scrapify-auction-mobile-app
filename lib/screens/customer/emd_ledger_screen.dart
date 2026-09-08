@@ -46,11 +46,7 @@ class EmdLedgerScreen extends StatelessWidget {
         .fold<double>(0, (sum, e) => sum + e.emdAmount);
     final confirmedCount = entries.where((e) => e.status == 'confirmed').length;
 
-    final documents = [
-      'Account statement — Jul 2026',
-      'Account statement — Jun 2026',
-      'GST invoice INV-2026-0421',
-    ];
+    final documents = <String>[];
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -113,71 +109,86 @@ class EmdLedgerScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _sectionHeader('Per auction'),
-                      ...entries.map((e) => Column(
-                        children: [
-                          Divider(height: 1, thickness: 1, color: AppColors.blackWithOpacity(0.05)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.navyWithOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                      ...entries.map(
+                        (e) => Column(
+                          children: [
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: AppColors.blackWithOpacity(0.05),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.navyWithOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(
+                                        AppSpacing.radiusLg,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.currency_rupee,
+                                      size: 16,
+                                      color: AppColors.navy,
+                                    ),
                                   ),
-                                  child: const Icon(
-                                    Icons.currency_rupee,
-                                    size: 16,
-                                    color: AppColors.navy,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          e.auctionTitle,
+                                          style: AppTextStyles.body(
+                                            size: 13,
+                                            weight: FontWeight.w700,
+                                            color: AppColors.navy,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        Text(
+                                          e.auctionId,
+                                          style: AppTextStyles.mono,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        e.auctionTitle,
+                                        Formatters.formatINR(e.emdAmount),
                                         style: AppTextStyles.body(
                                           size: 13,
-                                          weight: FontWeight.w700,
+                                          weight: FontWeight.w800,
                                           color: AppColors.navy,
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      Text(e.auctionId, style: AppTextStyles.mono),
+                                      Text(
+                                        _statusLabels[e.status] ?? e.status,
+                                        style: AppTextStyles.body(
+                                          size: 10,
+                                          weight: FontWeight.w700,
+                                          color: AppColors.navyWithOpacity(0.5),
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      Formatters.formatINR(e.emdAmount),
-                                      style: AppTextStyles.body(
-                                        size: 13,
-                                        weight: FontWeight.w800,
-                                        color: AppColors.navy,
-                                      ),
-                                    ),
-                                    Text(
-                                      _statusLabels[e.status] ?? e.status,
-                                      style: AppTextStyles.body(
-                                        size: 10,
-                                        weight: FontWeight.w700,
-                                        color: AppColors.navyWithOpacity(0.5),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      )),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -188,34 +199,65 @@ class EmdLedgerScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       _sectionHeader('Documents'),
-                      ...documents.map((d) => Column(
-                        children: [
-                          Divider(height: 1, thickness: 1, color: AppColors.blackWithOpacity(0.05)),
-                          GestureDetector(
-                            onTap: () => onDownloadDocument?.call(d),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.description, size: 16, color: AppColors.navy),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      d,
-                                      style: AppTextStyles.body(
-                                        size: 13,
-                                        weight: FontWeight.w600,
-                                        color: AppColors.navy,
-                                      ),
-                                    ),
-                                  ),
-                                  Icon(Icons.download, size: 15, color: AppColors.accentBlue),
-                                ],
+                      if (documents.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'No statements or invoices are available.',
+                              style: AppTextStyles.body(
+                                size: 12,
+                                color: AppColors.navyWithOpacity(0.55),
                               ),
                             ),
                           ),
-                        ],
-                      )),
+                        ),
+                      ...documents.map(
+                        (d) => Column(
+                          children: [
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: AppColors.blackWithOpacity(0.05),
+                            ),
+                            GestureDetector(
+                              onTap: () => onDownloadDocument?.call(d),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.description,
+                                      size: 16,
+                                      color: AppColors.navy,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        d,
+                                        style: AppTextStyles.body(
+                                          size: 13,
+                                          weight: FontWeight.w600,
+                                          color: AppColors.navy,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.download,
+                                      size: 15,
+                                      color: AppColors.accentBlue,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),

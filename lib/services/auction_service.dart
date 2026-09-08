@@ -13,20 +13,26 @@ class AuctionService {
     String? segment,
     String? search,
     String? direction,
+    bool mine = false,
     int perPage = 25,
     int page = 1,
   }) async {
-    final data = await _api.get(Endpoints.auctions, queryParameters: {
-      if (status != null) 'status': status,
-      if (category != null) 'category': category,
-      if (segment != null) 'segment': segment,
-      if (search != null) 'search': search,
-      if (direction != null) 'direction': direction,
-      'per_page': perPage,
-      'page': page,
-    });
+    final data = await _api.get(
+      Endpoints.auctions,
+      queryParameters: {
+        if (status != null) 'status': status,
+        if (category != null) 'category': category,
+        if (segment != null) 'segment': segment,
+        if (search != null) 'search': search,
+        if (direction != null) 'direction': direction,
+        if (mine) 'mine': true,
+        'per_page': perPage,
+        'page': page,
+      },
+    );
 
-    final list = (data['data'] as List?)
+    final list =
+        (data['data'] as List?)
             ?.map((e) => Auction.fromJson(e as Map<String, dynamic>))
             .toList() ??
         [];
@@ -112,10 +118,10 @@ class AuctionService {
 
   // Bids for an auction
   Future<List<Bid>> bids(String code, {String? lot, int perPage = 50}) async {
-    final data = await _api.get(Endpoints.auctionBids(code), queryParameters: {
-      if (lot != null) 'lot': lot,
-      'per_page': perPage,
-    });
+    final data = await _api.get(
+      Endpoints.auctionBids(code),
+      queryParameters: {if (lot != null) 'lot': lot, 'per_page': perPage},
+    );
     return (data['data'] as List?)
             ?.map((e) => Bid.fromJson(e as Map<String, dynamic>))
             .toList() ??
@@ -127,7 +133,10 @@ class AuctionService {
     return await _api.get(Endpoints.auctionInspections(code));
   }
 
-  Future<Map<String, dynamic>> bookInspection(String code, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> bookInspection(
+    String code,
+    Map<String, dynamic> body,
+  ) async {
     return await _api.post(Endpoints.auctionInspections(code), data: body);
   }
 
@@ -144,8 +153,15 @@ class AuctionService {
     return await _api.get(Endpoints.auctionRfx(code));
   }
 
-  Future<Map<String, dynamic>> submitRfx(String code, int packageId, Map<String, dynamic> answers) async {
-    return await _api.post(Endpoints.submitRfx(code, packageId), data: {'answers': answers});
+  Future<Map<String, dynamic>> submitRfx(
+    String code,
+    int packageId,
+    Map<String, dynamic> answers,
+  ) async {
+    return await _api.post(
+      Endpoints.submitRfx(code, packageId),
+      data: {'answers': answers},
+    );
   }
 
   // Clarifications & Addenda
@@ -153,15 +169,26 @@ class AuctionService {
     return await _api.get(Endpoints.auctionClarifications(code));
   }
 
-  Future<Map<String, dynamic>> askClarification(String code, String question, {String? section, bool isPublic = true}) async {
-    return await _api.post(Endpoints.auctionClarifications(code), data: {
-      'question': question,
-      'section': section ?? 'Commercial Terms',
-      'is_public': isPublic,
-    });
+  Future<Map<String, dynamic>> askClarification(
+    String code,
+    String question, {
+    String? section,
+    bool isPublic = true,
+  }) async {
+    return await _api.post(
+      Endpoints.auctionClarifications(code),
+      data: {
+        'question': question,
+        'section': section ?? 'Commercial Terms',
+        'is_public': isPublic,
+      },
+    );
   }
 
-  Future<Map<String, dynamic>> acknowledgeAddendum(String code, int addendumId) async {
+  Future<Map<String, dynamic>> acknowledgeAddendum(
+    String code,
+    int addendumId,
+  ) async {
     return await _api.post(Endpoints.acknowledgeAddendum(code, addendumId));
   }
 
@@ -175,7 +202,10 @@ class AuctionService {
   }
 
   Future<Map<String, dynamic>> declineAward(int awardId, String reason) async {
-    return await _api.post(Endpoints.acceptAward(awardId), data: {'status': 'declined', 'reason': reason});
+    return await _api.post(
+      Endpoints.acceptAward(awardId),
+      data: {'status': 'declined', 'reason': reason},
+    );
   }
 
   // Disputes & Arbitration
@@ -183,11 +213,20 @@ class AuctionService {
     return await _api.post(Endpoints.disputes, data: body);
   }
 
-  Future<Map<String, dynamic>> addDisputeMessage(String code, String message) async {
-    return await _api.post(Endpoints.disputeMessage(code), data: {'message': message});
+  Future<Map<String, dynamic>> addDisputeMessage(
+    String code,
+    String message,
+  ) async {
+    return await _api.post(
+      Endpoints.disputeMessage(code),
+      data: {'message': message},
+    );
   }
 
-  Future<Map<String, dynamic>> uploadDisputeEvidence(String code, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> uploadDisputeEvidence(
+    String code,
+    Map<String, dynamic> body,
+  ) async {
     return await _api.post(Endpoints.disputeEvidence(code), data: body);
   }
 
@@ -201,7 +240,10 @@ class AuctionService {
     return await _api.post(Endpoints.teamMembers, data: body);
   }
 
-  Future<Map<String, dynamic>> updateTeamMember(dynamic id, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> updateTeamMember(
+    dynamic id,
+    Map<String, dynamic> body,
+  ) async {
     return await _api.patch(Endpoints.teamMember(id), data: body);
   }
 

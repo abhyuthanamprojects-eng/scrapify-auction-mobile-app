@@ -1,7 +1,7 @@
 abstract final class AppConstants {
   static const appName = 'Scrapify Auctions';
-  static const appTagline = 'Enterprise Auction & Strategic Sourcing Marketplace';
-  static const mockDelay = Duration(milliseconds: 400);
+  static const appTagline =
+      'Enterprise Auction & Strategic Sourcing Marketplace';
   static const currencySymbol = '₹';
   static const locale = 'en_IN';
 
@@ -56,17 +56,20 @@ abstract final class AppConstants {
   static const onboardingSlides = [
     (
       title: 'Discover Opportunities',
-      subtitle: 'Participate in verified forward & reverse auctions across diverse enterprise categories.',
+      subtitle:
+          'Participate in verified forward & reverse auctions across diverse enterprise categories.',
       icon: '🔍',
     ),
     (
       title: 'Bid in Real Time',
-      subtitle: 'Secure live bidding with auto-bid proxy, anti-snipe extensions, and instant outbid alerts.',
+      subtitle:
+          'Secure live bidding with auto-bid proxy, anti-snipe extensions, and instant outbid alerts.',
       icon: '⚡',
     ),
     (
       title: 'Manage Full Lifecycle',
-      subtitle: 'Track EMD security, digital gate passes, awards, fulfilment evidence, and payments in one place.',
+      subtitle:
+          'Track EMD security, digital gate passes, awards, fulfilment evidence, and payments in one place.',
       icon: '🔒',
     ),
   ];
@@ -77,4 +80,3 @@ abstract final class AppConstants {
   // Add Money Quick Amounts
   static const quickAmounts = [10000, 25000, 50000, 100000];
 }
-

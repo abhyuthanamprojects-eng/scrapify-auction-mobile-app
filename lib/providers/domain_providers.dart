@@ -12,7 +12,9 @@ import '../services/auction_service.dart';
 import '../services/order_service.dart';
 
 // Awards
-final awardsProvider = StateNotifierProvider<AwardsNotifier, List<Award>>((ref) {
+final awardsProvider = StateNotifierProvider<AwardsNotifier, List<Award>>((
+  ref,
+) {
   return AwardsNotifier();
 });
 
@@ -21,12 +23,20 @@ class AwardsNotifier extends StateNotifier<List<Award>> {
 
   Future<void> accept(String id) async {
     await AuctionService().acceptAward(int.parse(id));
-    state = state.map((a) => a.id == id ? a.copyWith(status: AwardStatus.accepted) : a).toList();
+    state = state
+        .map((a) => a.id == id ? a.copyWith(status: AwardStatus.accepted) : a)
+        .toList();
   }
 
   Future<void> decline(String id, String reason) async {
     await AuctionService().declineAward(int.parse(id), reason);
-    state = state.map((a) => a.id == id ? a.copyWith(status: AwardStatus.declined, declinedReason: reason) : a).toList();
+    state = state
+        .map(
+          (a) => a.id == id
+              ? a.copyWith(status: AwardStatus.declined, declinedReason: reason)
+              : a,
+        )
+        .toList();
   }
 }
 
@@ -47,21 +57,26 @@ final ordersProvider = FutureProvider<List<Order>>((ref) {
 // Fulfilment
 final fulfilmentsProvider = FutureProvider<List<FulfilmentRecord>>((ref) async {
   final data = await OrderService().list();
-  return data.map((o) => FulfilmentRecord(
-    id: o.code,
-    orderId: o.code,
-    auctionCode: o.code,
-    title: 'Order ${o.code}',
-    type: FulfilmentType.materialPickup,
-    currentStageIndex: 0,
-    stages: [],
-  )).toList();
+  return data
+      .map(
+        (o) => FulfilmentRecord(
+          id: o.code,
+          orderId: o.code,
+          auctionCode: o.code,
+          title: 'Order ${o.code}',
+          type: FulfilmentType.materialPickup,
+          currentStageIndex: 0,
+          stages: [],
+        ),
+      )
+      .toList();
 });
 
 // Disputes
-final disputesProvider = StateNotifierProvider<DisputesNotifier, List<DisputeItem>>((ref) {
-  return DisputesNotifier();
-});
+final disputesProvider =
+    StateNotifierProvider<DisputesNotifier, List<DisputeItem>>((ref) {
+      return DisputesNotifier();
+    });
 
 class DisputesNotifier extends StateNotifier<List<DisputeItem>> {
   DisputesNotifier() : super(const []);
@@ -83,9 +98,10 @@ class DisputesNotifier extends StateNotifier<List<DisputeItem>> {
 }
 
 // Team Members
-final teamMembersProvider = StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
-  return TeamNotifier();
-});
+final teamMembersProvider =
+    StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
+      return TeamNotifier();
+    });
 
 class TeamNotifier extends StateNotifier<List<TeamMember>> {
   TeamNotifier() : super(const []) {
@@ -100,32 +116,52 @@ class TeamNotifier extends StateNotifier<List<TeamMember>> {
   }
 
   TeamMember _mapToMember(Map<String, dynamic> json) {
-    final roleStr = (json['role'] ?? json['role_label'] ?? 'authorized_bidder').toString().toLowerCase();
+    final roleStr = (json['role'] ?? json['role_label'] ?? 'authorized_bidder')
+        .toString()
+        .toLowerCase();
     final role = switch (roleStr) {
-      'bidder' || 'authorized_bidder' || 'authorizedbidder' || 'buyer' => TeamRole.authorizedBidder,
-      'inspector' || 'field_inspector' || 'fieldinspector' || 'technical_evaluator' => TeamRole.fieldInspector,
-      'finance' || 'finance_approver' || 'financeapprover' || 'finance_manager' => TeamRole.financeApprover,
+      'bidder' ||
+      'authorized_bidder' ||
+      'authorizedbidder' ||
+      'buyer' => TeamRole.authorizedBidder,
+      'inspector' ||
+      'field_inspector' ||
+      'fieldinspector' ||
+      'technical_evaluator' => TeamRole.fieldInspector,
+      'finance' ||
+      'finance_approver' ||
+      'financeapprover' ||
+      'finance_manager' => TeamRole.financeApprover,
       _ => TeamRole.vendorAdmin,
     };
 
-    final isAct = json['status'] == null ? (json['is_active'] ?? true) : (json['status'] == 'active');
+    final isAct = json['status'] == null
+        ? (json['is_active'] ?? true)
+        : (json['status'] == 'active');
 
     return TeamMember(
-      id: json['id']?.toString() ?? 'TM-${DateTime.now().millisecondsSinceEpoch % 1000}',
+      id:
+          json['id']?.toString() ??
+          'TM-${DateTime.now().millisecondsSinceEpoch % 1000}',
       name: json['name'] ?? '',
       email: json['email'] ?? '',
       mobile: json['phone'] ?? json['mobile'] ?? '',
       role: role,
-      maxBiddingLimitInr: (json['max_bidding_limit_inr'] as num?)?.toDouble() ?? 5000000.0,
+      maxBiddingLimitInr:
+          (json['max_bidding_limit_inr'] as num?)?.toDouble() ?? 5000000.0,
       isActive: isAct,
-      joinedAt: json['created_at'] ?? json['joined_at'] ?? '2026-08-01',
-      allowedCategories: (json['allowed_categories'] as List?)?.cast<String>() ?? const ['All Categories'],
+      joinedAt: json['created_at'] ?? json['joined_at'] ?? '',
+      allowedCategories:
+          (json['allowed_categories'] as List?)?.cast<String>() ??
+          const ['All Categories'],
     );
   }
 
   Future<void> addMember(Map<String, dynamic> body) async {
     final res = await AuctionService().addTeamMember(body);
-    final rawData = res['data'] is Map<String, dynamic> ? res['data'] as Map<String, dynamic> : res;
+    final rawData = res['data'] is Map<String, dynamic>
+        ? res['data'] as Map<String, dynamic>
+        : res;
     final tm = _mapToMember(rawData);
     state = [tm, ...state];
   }
@@ -133,7 +169,9 @@ class TeamNotifier extends StateNotifier<List<TeamMember>> {
   Future<void> toggleStatus(String id) async {
     final member = state.firstWhere((m) => m.id == id);
     try {
-      await AuctionService().updateTeamMember(id, {'is_active': !member.isActive});
+      await AuctionService().updateTeamMember(id, {
+        'is_active': !member.isActive,
+      });
     } catch (_) {}
     state = state
         .map(
@@ -157,37 +195,16 @@ class TeamNotifier extends StateNotifier<List<TeamMember>> {
 
 // Performance
 final performanceProvider = FutureProvider<VendorPerformance>((ref) async {
-  try {
-    return const VendorPerformance(
-      totalAuctionsParticipated: 12,
-      totalWins: 8,
-      winRatePercentage: 66.67,
-      totalAwardValueInr: 4500000,
-      onTimeFulfilmentRate: 95,
-      complianceScore: 98,
-      totalDisputes: 1,
-      resolvedDisputes: 1,
-      tierBadge: 'Gold',
-      rankInCategory: 3,
-    );
-  } catch (_) {
-    return const VendorPerformance(
-      totalAuctionsParticipated: 0,
-      totalWins: 0,
-      winRatePercentage: 0,
-      totalAwardValueInr: 0,
-      onTimeFulfilmentRate: 0,
-      complianceScore: 0,
-      totalDisputes: 0,
-      resolvedDisputes: 0,
-      tierBadge: 'Verified',
-      rankInCategory: 0,
-    );
-  }
+  // The mobile API does not currently expose a scorecard endpoint. Do not
+  // render fabricated performance values while that contract is absent.
+  return const VendorPerformance();
 });
 
 // RFx
-final rfxProvider = FutureProvider.family<RfxPackage?, String>((ref, code) async {
+final rfxProvider = FutureProvider.family<RfxPackage?, String>((
+  ref,
+  code,
+) async {
   final response = await AuctionService().getRfx(code);
   final rows = response['data'] as List? ?? const [];
   if (rows.isEmpty) return null;
@@ -220,17 +237,20 @@ RfxQuestion _questionFromJson(Map<String, dynamic> json) {
   return RfxQuestion(
     id: '${json['id'] ?? ''}',
     section: json['section'] as String? ?? 'General',
-    questionText: json['title'] as String? ?? json['question_text'] as String? ?? '',
+    questionText:
+        json['title'] as String? ?? json['question_text'] as String? ?? '',
     type: type,
-    isRequired: json['mandatory'] as bool? ?? json['is_required'] as bool? ?? true,
+    isRequired:
+        json['mandatory'] as bool? ?? json['is_required'] as bool? ?? true,
     options: (json['options'] as List?)?.map((e) => '$e').toList() ?? const [],
   );
 }
 
 // Inspection
-final inspectionBookingsProvider = StateNotifierProvider<InspectionNotifier, List<InspectionBooking>>((ref) {
-  return InspectionNotifier();
-});
+final inspectionBookingsProvider =
+    StateNotifierProvider<InspectionNotifier, List<InspectionBooking>>((ref) {
+      return InspectionNotifier();
+    });
 
 class InspectionNotifier extends StateNotifier<List<InspectionBooking>> {
   InspectionNotifier() : super(const []);
@@ -238,7 +258,9 @@ class InspectionNotifier extends StateNotifier<List<InspectionBooking>> {
   Future<void> book(String auctionCode, Map<String, dynamic> body) async {
     final result = await AuctionService().bookInspection(auctionCode, body);
     final booking = InspectionBooking(
-      bookingId: result['id']?.toString() ?? 'INS-${DateTime.now().millisecondsSinceEpoch}',
+      bookingId:
+          result['id']?.toString() ??
+          'INS-${DateTime.now().millisecondsSinceEpoch}',
       auctionCode: auctionCode,
       auctionTitle: result['auction_title'] ?? '',
       facilityAddress: result['facility_address'] ?? '',
@@ -259,17 +281,21 @@ class InspectionNotifier extends StateNotifier<List<InspectionBooking>> {
 }
 
 // Evidence
-final evidenceListProvider = StateNotifierProvider<EvidenceNotifier, List<CapturedEvidence>>((ref) {
-  return EvidenceNotifier();
-});
+final evidenceListProvider =
+    StateNotifierProvider<EvidenceNotifier, List<CapturedEvidence>>((ref) {
+      return EvidenceNotifier();
+    });
 
 class EvidenceNotifier extends StateNotifier<List<CapturedEvidence>> {
   EvidenceNotifier() : super(const []);
 
   Future<void> capture(String disputeCode, Map<String, dynamic> body) async {
-    final result = await AuctionService().uploadDisputeEvidence(disputeCode, body);
+    final result = await AuctionService().uploadDisputeEvidence(
+      disputeCode,
+      body,
+    );
     final typeStr = (body['type'] ?? 'photo').toString().toLowerCase();
-    final type = switch(typeStr) {
+    final type = switch (typeStr) {
       'weighbridge' || 'weighbridgeslip' => EvidenceType.weighbridgeSlip,
       'serial' || 'serialnumberscan' => EvidenceType.serialNumberScan,
       'pdf' || 'documentpdf' => EvidenceType.documentPdf,
@@ -277,7 +303,9 @@ class EvidenceNotifier extends StateNotifier<List<CapturedEvidence>> {
       _ => EvidenceType.photo,
     };
     final ev = CapturedEvidence(
-      id: result['id']?.toString() ?? 'EV-${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          result['id']?.toString() ??
+          'EV-${DateTime.now().millisecondsSinceEpoch}',
       type: type,
       title: '${type.name.toUpperCase()} Evidence',
       fileUrl: result['file_url'],

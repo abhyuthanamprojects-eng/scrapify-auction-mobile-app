@@ -23,7 +23,14 @@ class LotDetailsScreen extends ConsumerStatefulWidget {
 class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final _tabs = const ['Overview', 'Lots / Items', 'Commercial', 'Eligibility', 'Timeline', 'Docs'];
+  final _tabs = const [
+    'Overview',
+    'Lots / Items',
+    'Commercial',
+    'Eligibility',
+    'Timeline',
+    'Docs',
+  ];
 
   @override
   void initState() {
@@ -50,7 +57,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
           leading: const BackButton(),
           title: Text(widget.lotId, style: AppTextStyles.titleMedium),
         ),
-        body: const Center(child: CircularProgressIndicator(color: AppColors.auction)),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.auction),
+        ),
       ),
       error: (e, _) => Scaffold(
         backgroundColor: AppColors.appBg,
@@ -64,13 +73,26 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline_rounded, size: 52, color: AppColors.destructive),
+                const Icon(
+                  Icons.error_outline_rounded,
+                  size: 52,
+                  color: AppColors.destructive,
+                ),
                 const SizedBox(height: 14),
-                Text('Auction Not Found', style: AppTextStyles.heading(size: 18, weight: FontWeight.w800)),
+                Text(
+                  'Auction Not Found',
+                  style: AppTextStyles.heading(
+                    size: 18,
+                    weight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'The requested auction "${widget.lotId}" could not be found or has ended.',
-                  style: AppTextStyles.body(size: 13, color: AppColors.navyWithOpacity(0.6)),
+                  style: AppTextStyles.body(
+                    size: 13,
+                    color: AppColors.navyWithOpacity(0.6),
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
@@ -84,7 +106,8 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton.icon(
-                      onPressed: () => ref.invalidate(auctionDetailProvider(widget.lotId)),
+                      onPressed: () =>
+                          ref.invalidate(auctionDetailProvider(widget.lotId)),
                       icon: const Icon(Icons.refresh, size: 16),
                       label: const Text('Retry'),
                     ),
@@ -114,7 +137,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                 backgroundColor: AppColors.navy,
                 leading: Consumer(
                   builder: (context, ref, _) {
-                    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+                    final isAuthenticated = ref
+                        .watch(authProvider)
+                        .isAuthenticated;
                     return isAuthenticated
                         ? GestureDetector(
                             onTap: () => context.pop(),
@@ -125,7 +150,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                                 shape: BoxShape.circle,
                                 boxShadow: AppColors.shadowSm,
                               ),
-                              child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
+                              child: const Icon(
+                                Icons.arrow_back,
+                                size: 18,
+                                color: AppColors.navy,
+                              ),
                             ),
                           )
                         : const SizedBox.shrink();
@@ -142,7 +171,10 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                       ref.read(watchlistProvider.notifier).toggle(auction.code);
                     },
                     child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 4,
+                      ),
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
@@ -152,25 +184,38 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                       child: Icon(
                         isWatchlisted ? Icons.bookmark : Icons.bookmark_border,
                         size: 18,
-                        color: isWatchlisted ? AppColors.auction : AppColors.navy,
+                        color: isWatchlisted
+                            ? AppColors.auction
+                            : AppColors.navy,
                       ),
                     ),
                   ),
                   GestureDetector(
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Auction link copied: ${auction.code}')),
+                        SnackBar(
+                          content: Text('Auction link copied: ${auction.code}'),
+                        ),
                       );
                     },
                     child: Container(
-                      margin: const EdgeInsets.only(top: 8, bottom: 8, right: 14, left: 4),
+                      margin: const EdgeInsets.only(
+                        top: 8,
+                        bottom: 8,
+                        right: 14,
+                        left: 4,
+                      ),
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
                         color: AppColors.white.withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.share_outlined, size: 18, color: AppColors.navy),
+                      child: const Icon(
+                        Icons.share_outlined,
+                        size: 18,
+                        color: AppColors.navy,
+                      ),
                     ),
                   ),
                 ],
@@ -206,12 +251,18 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.white.withValues(alpha: 0.95),
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: Text(auction.code, style: AppTextStyles.mono),
+                              child: Text(
+                                auction.code,
+                                style: AppTextStyles.mono,
+                              ),
                             ),
                             AuctionTypeChip(direction: auction.direction),
                           ],
@@ -240,14 +291,21 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                         children: [
                           if (auction.category != null)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.navy.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: Text(
                                 auction.category!,
-                                style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.navy),
+                                style: const TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.navy,
+                                ),
                               ),
                             ),
                           const Spacer(),
@@ -260,19 +318,33 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                       const SizedBox(height: 10),
                       Text(
                         auction.title,
-                        style: AppTextStyles.heading(size: 18, weight: FontWeight.w800),
+                        style: AppTextStyles.heading(
+                          size: 18,
+                          weight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.business, size: 14, color: Color(0xFF64748B)),
+                          const Icon(
+                            Icons.business,
+                            size: 14,
+                            color: Color(0xFF64748B),
+                          ),
                           const SizedBox(width: 5),
                           Text(auction.company, style: AppTextStyles.caption),
                           if (auction.location != null) ...[
                             const SizedBox(width: 8),
-                            const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF64748B)),
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: Color(0xFF64748B),
+                            ),
                             const SizedBox(width: 3),
-                            Text(auction.location!, style: AppTextStyles.captionMuted),
+                            Text(
+                              auction.location!,
+                              style: AppTextStyles.captionMuted,
+                            ),
                           ],
                         ],
                       ),
@@ -282,14 +354,20 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: AppColors.appBg,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusLg,
+                          ),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             PriceDisplay(
-                              label: isReverse ? 'CURRENT L1 OFFER' : 'CURRENT HIGHEST BID',
-                              amount: auction.currentHighestInr > 0 ? auction.currentHighestInr : auction.startingPriceInr,
+                              label: isReverse
+                                  ? 'CURRENT L1 OFFER'
+                                  : 'CURRENT HIGHEST BID',
+                              amount: auction.currentHighestInr > 0
+                                  ? auction.currentHighestInr
+                                  : auction.startingPriceInr,
                               isReverse: isReverse,
                             ),
                             Column(
@@ -297,16 +375,30 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                               children: [
                                 const Text(
                                   'CLOSING IN',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF64748B),
+                                  ),
                                 ),
                                 const SizedBox(height: 2),
                                 Row(
                                   children: [
-                                    const Icon(Icons.timer_outlined, size: 14, color: AppColors.auction),
+                                    const Icon(
+                                      Icons.timer_outlined,
+                                      size: 14,
+                                      color: AppColors.auction,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      Formatters.formatCountdown(auction.secondsRemaining),
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: AppColors.auction),
+                                      Formatters.formatCountdown(
+                                        auction.secondsRemaining,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w900,
+                                        color: AppColors.auction,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -335,8 +427,14 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                     tabAlignment: TabAlignment.start,
                     labelColor: AppColors.white,
                     unselectedLabelColor: AppColors.navyWithOpacity(0.6),
-                    labelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700),
-                    unselectedLabelStyle: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600),
+                    labelStyle: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                     indicator: BoxDecoration(
                       color: AppColors.navy,
                       borderRadius: BorderRadius.circular(999),
@@ -416,7 +514,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
           a.description.isNotEmpty
               ? a.description
               : 'Detailed industrial auction lot. Inspection encouraged before participation. Material sold strictly on as-is where-is basis.',
-          style: AppTextStyles.body(size: 13.5, color: AppColors.navy.withValues(alpha: 0.8), height: 1.6),
+          style: AppTextStyles.body(
+            size: 13.5,
+            color: AppColors.navy.withValues(alpha: 0.8),
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 18),
         _tabSectionTitle('Key Parameters'),
@@ -426,8 +528,14 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
         _keyValRow('Auction Format', a.direction.toUpperCase()),
         _keyValRow('Quantity / Unit', '${a.quantity ?? '1'} ${a.uom ?? 'Lot'}'),
         _keyValRow('Plant / Location', a.location ?? 'Pan-India'),
-        _keyValRow('Inspection', a.inspectionRequired ? 'Mandatory Site Inspection' : 'Optional / Online BOQ'),
-        if (a.inspectionDate != null) _keyValRow('Inspection Window', a.inspectionDate!),
+        _keyValRow(
+          'Inspection',
+          a.inspectionRequired
+              ? 'Mandatory Site Inspection'
+              : 'Optional / Online BOQ',
+        ),
+        if (a.inspectionDate != null)
+          _keyValRow('Inspection Window', a.inspectionDate!),
       ],
     );
   }
@@ -447,7 +555,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             ),
             child: Row(
               children: [
-                const Icon(Icons.inventory_2_outlined, color: AppColors.navy, size: 24),
+                const Icon(
+                  Icons.inventory_2_outlined,
+                  color: AppColors.navy,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -455,7 +567,10 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                     children: [
                       Text(a.title, style: AppTextStyles.labelLarge),
                       const SizedBox(height: 2),
-                      Text('Quantity: ${a.quantity ?? '1'} ${a.uom ?? 'Units'}', style: AppTextStyles.captionMuted),
+                      Text(
+                        'Quantity: ${a.quantity ?? '1'} ${a.uom ?? 'Units'}',
+                        style: AppTextStyles.captionMuted,
+                      ),
                     ],
                   ),
                 ),
@@ -471,38 +586,56 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       children: [
         _tabSectionTitle('Sub-Lots Breakdown (${a.subLots.length} Items)'),
         const SizedBox(height: 10),
-        ...a.subLots.map((sl) => Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.appBg,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.navy,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(sl.code, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.white)),
+        ...a.subLots.map(
+          (sl) => Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.appBg,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(sl.name, style: AppTextStyles.labelMedium),
-                        Text('Qty: ${sl.quantity ?? "1"} ${sl.uom ?? "Units"}', style: AppTextStyles.captionMuted),
-                      ],
+                  decoration: BoxDecoration(
+                    color: AppColors.navy,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    sl.code,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.white,
                     ),
                   ),
-                  Text(Formatters.formatINR(sl.currentBidInr), style: AppTextStyles.labelLarge),
-                ],
-              ),
-            )),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sl.name, style: AppTextStyles.labelMedium),
+                      Text(
+                        'Qty: ${sl.quantity ?? "1"} ${sl.uom ?? "Units"}',
+                        style: AppTextStyles.captionMuted,
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  Formatters.formatINR(sl.currentBidInr),
+                  style: AppTextStyles.labelLarge,
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -512,17 +645,33 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _tabSectionTitle(isReverse ? 'Reverse Pricing Structure' : 'Forward Bidding Rules'),
+        _tabSectionTitle(
+          isReverse ? 'Reverse Pricing Structure' : 'Forward Bidding Rules',
+        ),
         const SizedBox(height: 10),
-        _keyValRow(isReverse ? 'Opening Ceiling Price' : 'Starting Price', Formatters.formatINR(a.startingPriceInr)),
-        _keyValRow(isReverse ? 'Minimum Decrement Step' : 'Minimum Increment Step', Formatters.formatINR(isReverse ? a.decrementInr : a.bidIncrementInr)),
-        _keyValRow('EMD Security Deposit', Formatters.formatINR(a.emdAmountInr)),
-        _keyValRow('Reserve / Target Visibility', a.reserveNa ? 'Not Applicable' : 'Confidential (Admin Evaluated)'),
+        _keyValRow(
+          isReverse ? 'Opening Ceiling Price' : 'Starting Price',
+          Formatters.formatINR(a.startingPriceInr),
+        ),
+        _keyValRow(
+          isReverse ? 'Minimum Decrement Step' : 'Minimum Increment Step',
+          Formatters.formatINR(isReverse ? a.decrementInr : a.bidIncrementInr),
+        ),
+        _keyValRow(
+          'EMD Security Deposit',
+          Formatters.formatINR(a.emdAmountInr),
+        ),
+        _keyValRow(
+          'Reserve / Target Visibility',
+          a.reserveNa ? 'Not Applicable' : 'Confidential (Admin Evaluated)',
+        ),
         if (a.landedCosts.isNotEmpty) ...[
           const SizedBox(height: 14),
           _tabSectionTitle('Landed Cost Components'),
           const SizedBox(height: 6),
-          ...a.landedCosts.map((lc) => _keyValRow(lc.label, Formatters.formatINR(lc.amount))),
+          ...a.landedCosts.map(
+            (lc) => _keyValRow(lc.label, Formatters.formatINR(lc.amount)),
+          ),
         ],
       ],
     );
@@ -534,12 +683,36 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       children: [
         _tabSectionTitle('Bidder Qualification Checklist'),
         const SizedBox(height: 12),
-        _eligibilityItem('Company Registration & GST Verified', true, 'Verified via GSTIN Portal'),
-        _eligibilityItem('Category Authorization', true, 'Eligible for ${a.category ?? "General Auctions"}'),
-        _eligibilityItem('Auction Terms & Conditions', a.termsAccepted, a.termsAccepted ? 'Accepted v1.2' : 'Action Required: Acceptance Pending'),
-        _eligibilityItem('EMD Security Escrow', a.emdPaid, a.emdPaid ? 'Locked in Escrow' : 'Deposit required before live bidding'),
+        _eligibilityItem(
+          'Company Registration & GST Verified',
+          true,
+          'Verified via GSTIN Portal',
+        ),
+        _eligibilityItem(
+          'Category Authorization',
+          true,
+          'Eligible for ${a.category ?? "General Auctions"}',
+        ),
+        _eligibilityItem(
+          'Auction Terms & Conditions',
+          a.termsAccepted,
+          a.termsAccepted
+              ? 'Accepted v1.2'
+              : 'Action Required: Acceptance Pending',
+        ),
+        _eligibilityItem(
+          'EMD Security Escrow',
+          a.emdPaid,
+          a.emdPaid
+              ? 'Locked in Escrow'
+              : 'Deposit required before live bidding',
+        ),
         if (a.inspectionRequired)
-          _eligibilityItem('Physical Site Inspection', false, 'Book inspection slot prior to event'),
+          _eligibilityItem(
+            'Physical Site Inspection',
+            false,
+            'Book inspection slot prior to event',
+          ),
       ],
     );
   }
@@ -550,11 +723,31 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       children: [
         _tabSectionTitle('Event Schedule & Deadlines'),
         const SizedBox(height: 12),
-        _timelineStep('Inspection Window', a.inspectionDate ?? '28 Aug 2026', true),
-        _timelineStep('Registration & EMD Cutoff', '2 hours prior to live start', true),
-        _timelineStep('Live Auction Start', a.scheduleStart ?? 'Active Now', a.isLive),
-        _timelineStep('Auction Closure & Sniping Extension', a.scheduleEnd ?? 'In 12 mins', false),
-        _timelineStep('Award Acceptance & 100% Settlement', 'Within 48h of closure', false),
+        _timelineStep(
+          'Inspection Window',
+          a.inspectionDate ?? 'Not scheduled',
+          true,
+        ),
+        _timelineStep(
+          'Registration & EMD Cutoff',
+          '2 hours prior to live start',
+          true,
+        ),
+        _timelineStep(
+          'Live Auction Start',
+          a.scheduleStart ?? 'Not scheduled',
+          a.isLive,
+        ),
+        _timelineStep(
+          'Auction Closure & Sniping Extension',
+          a.scheduleEnd ?? 'Not scheduled',
+          false,
+        ),
+        _timelineStep(
+          'Award Acceptance & 100% Settlement',
+          'Within 48h of closure',
+          false,
+        ),
       ],
     );
   }
@@ -565,45 +758,90 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       children: [
         _tabSectionTitle('Tender Documents & Addenda'),
         const SizedBox(height: 10),
-        _docTile('Full Technical Specification & BOQ.pdf', '2.4 MB • Verified', Icons.picture_as_pdf),
-        _docTile('General Auction Terms & Lifting Policy.pdf', '1.1 MB • Legal Version 1.2', Icons.description),
+        _docTile(
+          'Full Technical Specification & BOQ.pdf',
+          '2.4 MB • Verified',
+          Icons.picture_as_pdf,
+        ),
+        _docTile(
+          'General Auction Terms & Lifting Policy.pdf',
+          '1.1 MB • Legal Version 1.2',
+          Icons.description,
+        ),
         const SizedBox(height: 14),
         OutlinedButton.icon(
-          onPressed: () => ClarificationsSheet.show(context, auctionCode: a.code, auctionTitle: a.title),
-          icon: const Icon(Icons.forum_outlined, size: 18, color: AppColors.navy),
-          label: const Text('Pre-Bid Clarifications & Q&A (2 Published)', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy)),
+          onPressed: () => ClarificationsSheet.show(
+            context,
+            auctionCode: a.code,
+            auctionTitle: a.title,
+          ),
+          icon: const Icon(
+            Icons.forum_outlined,
+            size: 18,
+            color: AppColors.navy,
+          ),
+          label: const Text(
+            'Pre-Bid Clarifications & Q&A (2 Published)',
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
+          ),
           style: OutlinedButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            ),
           ),
         ),
         if (a.addenda.isNotEmpty) ...[
           const SizedBox(height: 14),
           _tabSectionTitle('Addenda & Corrigenda'),
           const SizedBox(height: 6),
-          ...a.addenda.map((ad) => Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                  border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+          ...a.addenda.map(
+            (ad) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, color: AppColors.warning, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Addendum #${ad.number}: ${ad.title}', style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
-                          Text(ad.description, style: const TextStyle(fontSize: 10.5, color: AppColors.navy)),
-                        ],
-                      ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppColors.warning,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Addendum #${ad.number}: ${ad.title}',
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navy,
+                          ),
+                        ),
+                        Text(
+                          ad.description,
+                          style: const TextStyle(
+                            fontSize: 10.5,
+                            color: AppColors.navy,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              )),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ],
     );
@@ -612,7 +850,12 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
   Widget _tabSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.navy.withValues(alpha: 0.7), letterSpacing: 0.4),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        color: AppColors.navy.withValues(alpha: 0.7),
+        letterSpacing: 0.4,
+      ),
     );
   }
 
@@ -622,8 +865,18 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-          Text(value, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navy,
+            ),
+          ),
         ],
       ),
     );
@@ -636,7 +889,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            isComplete ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+            isComplete
+                ? Icons.check_circle_rounded
+                : Icons.radio_button_unchecked,
             color: isComplete ? AppColors.success : AppColors.auction,
             size: 18,
           ),
@@ -665,7 +920,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isDone ? AppColors.success : AppColors.navy.withValues(alpha: 0.3),
+              color: isDone
+                  ? AppColors.success
+                  : AppColors.navy.withValues(alpha: 0.3),
             ),
           ),
           const SizedBox(width: 12),
@@ -692,7 +949,14 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
                 Text(meta, style: AppTextStyles.captionMuted),
               ],
             ),
@@ -715,15 +979,25 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             const Text('Login Required'),
           ],
         ),
-        titleTextStyle: AppTextStyles.heading(size: 18, weight: FontWeight.w800),
+        titleTextStyle: AppTextStyles.heading(
+          size: 18,
+          weight: FontWeight.w800,
+        ),
         content: const Text(
           'Please login or register to proceed with this action. You need an account to bid, accept terms, or participate in auctions.',
         ),
-        contentTextStyle: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
+        contentTextStyle: const TextStyle(
+          fontSize: 14,
+          color: Color(0xFF64748B),
+          height: 1.5,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: Text('Cancel', style: TextStyle(color: AppColors.navyWithOpacity(0.6))),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.navyWithOpacity(0.6)),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -733,7 +1007,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.auction,
               foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Login / Register'),
           ),
@@ -743,11 +1019,17 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
   }
 
   Widget _buildStickyBottomCTA(BuildContext context, Auction a) {
-    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+    final auth = ref.watch(authProvider);
+    final isAuthenticated = auth.isAuthenticated;
 
     if (!isAuthenticated) {
       return Container(
-        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
         decoration: BoxDecoration(
           color: AppColors.white,
           border: const Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -763,7 +1045,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                   icon: const Icon(Icons.login, size: 18),
                   label: Text(
                     'Login to Proceed',
-                    style: AppTextStyles.heading(size: 14.5, weight: FontWeight.w800, color: AppColors.white),
+                    style: AppTextStyles.heading(
+                      size: 14.5,
+                      weight: FontWeight.w800,
+                      color: AppColors.white,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.auction,
@@ -775,6 +1061,37 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (auth.isSeller) {
+      return Container(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          border: const Border(top: BorderSide(color: AppColors.cardBorder)),
+          boxShadow: AppColors.shadowLg,
+        ),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Seller view: participation and bidding actions are unavailable.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton(
+              onPressed: () => context.push('/seller/auctions'),
+              child: const Text('My auctions'),
             ),
           ],
         ),
@@ -801,9 +1118,13 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       buttonColor = AppColors.purple;
       onCta = () => context.push('/rfx/${a.code}');
     } else if (isLive) {
-      ctaLabel = a.isReverse ? 'Enter Live Reverse Auction' : 'Enter Live Bidding Room';
+      ctaLabel = a.isReverse
+          ? 'Enter Live Reverse Auction'
+          : 'Enter Live Bidding Room';
       buttonColor = a.isReverse ? AppColors.accentBlue : AppColors.auction;
-      onCta = () => context.push(a.isReverse ? '/live-reverse/${a.code}' : '/live/${a.code}');
+      onCta = () => context.push(
+        a.isReverse ? '/live-reverse/${a.code}' : '/live/${a.code}',
+      );
     } else {
       ctaLabel = 'View Auction Result';
       buttonColor = AppColors.navy;
@@ -811,7 +1132,12 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     }
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        12,
+        20,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         border: const Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -834,7 +1160,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                 ),
                 child: Text(
                   ctaLabel,
-                  style: AppTextStyles.heading(size: 14.5, weight: FontWeight.w800, color: AppColors.white),
+                  style: AppTextStyles.heading(
+                    size: 14.5,
+                    weight: FontWeight.w800,
+                    color: AppColors.white,
+                  ),
                 ),
               ),
             ),

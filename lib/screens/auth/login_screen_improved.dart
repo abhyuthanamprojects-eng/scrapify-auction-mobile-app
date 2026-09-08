@@ -21,10 +21,8 @@ class LoginScreenImproved extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
-  final _identifierController = TextEditingController(
-    text: 'ankit@novusalloys.com',
-  );
-  final _passwordController = TextEditingController(text: 'password');
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isBuyer = true;
   bool _obscurePassword = true;
 
@@ -315,8 +313,8 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
             child: GestureDetector(
               onTap: () => setState(() {
                 _isBuyer = true;
-                _identifierController.text = 'ankit@novusalloys.com';
-                _passwordController.text = 'password';
+                _identifierController.clear();
+                _passwordController.clear();
               }),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -343,8 +341,8 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
             child: GestureDetector(
               onTap: () => setState(() {
                 _isBuyer = false;
-                _identifierController.text = 'vikram@scrapify.test';
-                _passwordController.text = 'password';
+                _identifierController.clear();
+                _passwordController.clear();
               }),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 12),

@@ -61,10 +61,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           slivers: [
             _buildTopHero(
               context,
-              name: user?.name ?? 'Rahul Sharma',
-              company: user?.companyName ?? 'Devzign Solutions Pvt Ltd',
-              balance: walletAsync.valueOrNull?.balanceInr ?? 42850,
-              kycVerified: user?.kycVerified ?? true,
+              name: user?.name ?? '',
+              company: user?.companyName ?? '',
+              balance: walletAsync.valueOrNull?.balanceInr ?? 0,
+              liveAuctionCount: liveAsync.valueOrNull?.length ?? 0,
+              kycVerified: user?.kycVerified ?? false,
             ),
             if (user?.isKycPending == true)
               SliverToBoxAdapter(
@@ -222,6 +223,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String name,
     required String company,
     required double balance,
+    required int liveAuctionCount,
     required bool kycVerified,
   }) {
     return SliverToBoxAdapter(
@@ -344,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(width: 5),
                     Text(
                       kycVerified
-                          ? 'KYC — Verified (4/4 Docs)'
+                          ? 'KYC — Verified'
                           : 'KYC — Verification Pending',
                       style: TextStyle(
                         fontSize: 11,
@@ -405,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Security available for 4 live auctions',
+                          'Security available for $liveAuctionCount live auction${liveAuctionCount == 1 ? '' : 's'}',
                           style: TextStyle(
                             fontSize: 10.5,
                             color: AppColors.white.withValues(alpha: 0.8),

@@ -48,112 +48,202 @@ import '../../screens/customer/refund_tracker_screen.dart';
 import '../../screens/customer/emd_ledger_screen.dart';
 import '../../screens/wallet/wallet_screen.dart';
 import '../../screens/my_bids/my_bids_screen.dart';
+import '../../widgets/role_guard.dart';
 
 abstract final class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
     routes: [
       GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
-      GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingScreen()),
-      GoRoute(path: '/vendor-onboarding', builder: (_, __) => const VendorOnboardingScreen()),
-      GoRoute(path: '/business-verification', builder: (_, __) => const BusinessVerificationScreen()),
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/vendor-onboarding',
+        builder: (_, __) => const VendorOnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/business-verification',
+        builder: (_, __) => const BusinessVerificationScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/otp',
-        builder: (_, state) => OtpScreen(identifier: state.extra as String? ?? ''),
+        builder: (_, state) =>
+            OtpScreen(identifier: state.extra as String? ?? ''),
       ),
-      GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (_, __) => const ForgotPasswordScreen(),
+      ),
       GoRoute(
         path: '/mfa',
         builder: (_, state) => MfaScreen(redirectPath: state.extra as String?),
       ),
       GoRoute(
         path: '/session-expired',
-        builder: (_, state) => SessionExpiredScreen(returnPath: state.extra as String?),
+        builder: (_, state) =>
+            SessionExpiredScreen(returnPath: state.extra as String?),
       ),
       GoRoute(
         path: '/account-suspended',
         builder: (_, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
           return AccountSuspendedScreen(
-            reason: extra['reason'] as String? ?? 'Annual KYB Re-verification & GSTIN Filing Due',
-            ticketRef: extra['ticketRef'] as String? ?? 'COMP-2026-8812',
+            reason: extra['reason'] as String?,
+            ticketRef: extra['ticketRef'] as String?,
           );
         },
       ),
-      GoRoute(path: '/trusted-devices', builder: (_, __) => const TrustedDevicesScreen()),
-      GoRoute(path: '/documents', builder: (_, __) => const DocumentCentreScreen()),
-      GoRoute(path: '/support', builder: (_, __) => const SupportCenterScreen()),
+      GoRoute(
+        path: '/trusted-devices',
+        builder: (_, __) => const TrustedDevicesScreen(),
+      ),
+      GoRoute(
+        path: '/documents',
+        builder: (_, __) => const DocumentCentreScreen(),
+      ),
+      GoRoute(
+        path: '/support',
+        builder: (_, __) => const SupportCenterScreen(),
+      ),
       GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
       GoRoute(
         path: '/signup',
-        builder: (_, state) => SignupScreen(prefillIdentifier: state.extra as String?),
+        builder: (_, state) =>
+            SignupScreen(prefillIdentifier: state.extra as String?),
       ),
       GoRoute(path: '/home', builder: (_, __) => const AppShell()),
       GoRoute(path: '/auctions', builder: (_, __) => const AuctionsScreen()),
       GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
-      GoRoute(path: '/my-bids', builder: (_, __) => const MyBidsScreen()),
+      GoRoute(
+        path: '/my-bids',
+        builder: (_, __) =>
+            const RoleGuard(allowedRoles: {'buyer'}, child: MyBidsScreen()),
+      ),
       GoRoute(
         path: '/lot/:id',
-        builder: (_, state) => LotDetailsScreen(lotId: state.pathParameters['id']!),
+        builder: (_, state) =>
+            LotDetailsScreen(lotId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/waiting-room/:id',
-        builder: (_, state) => AuctionWaitingRoomScreen(auctionCode: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: AuctionWaitingRoomScreen(
+            auctionCode: state.pathParameters['id']!,
+          ),
+        ),
       ),
       GoRoute(
         path: '/live/:id',
-        builder: (_, state) => LiveAuctionScreen(lotId: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: LiveAuctionScreen(lotId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/live-reverse/:id',
-        builder: (_, state) => LiveReverseAuctionScreen(lotId: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: LiveReverseAuctionScreen(lotId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/terms/:id',
-        builder: (_, state) => TermsConditionsScreen(auctionCode: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: TermsConditionsScreen(
+            auctionCode: state.pathParameters['id']!,
+          ),
+        ),
       ),
       GoRoute(
         path: '/inspection/:id',
-        builder: (_, state) => InspectionBookingScreen(auctionCode: state.pathParameters['id']!),
+        builder: (_, state) =>
+            InspectionBookingScreen(auctionCode: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/gate-pass/:id',
-        builder: (_, state) => GatePassScreen(auctionCode: state.pathParameters['id']!),
+        builder: (_, state) =>
+            GatePassScreen(auctionCode: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/rfx/:id',
-        builder: (_, state) => RfxScreen(auctionCode: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: RfxScreen(auctionCode: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(path: '/won', builder: (_, __) => const WonScreen()),
       GoRoute(path: '/lost', builder: (_, __) => const LostScreen()),
-      GoRoute(path: '/awards', builder: (_, __) => const AwardsScreen()),
+      GoRoute(
+        path: '/awards',
+        builder: (_, __) =>
+            const RoleGuard(allowedRoles: {'buyer'}, child: AwardsScreen()),
+      ),
       GoRoute(
         path: '/award/:id',
-        builder: (_, state) => AwardDetailScreen(awardId: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: AwardDetailScreen(awardId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/fallback-offer/:id',
-        builder: (_, state) => FallbackOfferScreen(offerId: state.pathParameters['id']!),
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: FallbackOfferScreen(offerId: state.pathParameters['id']!),
+        ),
       ),
-      GoRoute(path: '/payments', builder: (_, __) => const PaymentsDashboardScreen()),
+      GoRoute(
+        path: '/payments',
+        builder: (_, __) => const PaymentsDashboardScreen(),
+      ),
       GoRoute(path: '/orders', builder: (_, __) => const OrdersScreen()),
       GoRoute(
         path: '/order/:id',
-        builder: (_, state) => OrderDetailScreen(orderId: state.pathParameters['id']!),
+        builder: (_, state) =>
+            OrderDetailScreen(orderId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/disputes', builder: (_, __) => const DisputesScreen()),
       GoRoute(
         path: '/new-dispute/:id',
-        builder: (_, state) => NewDisputeScreen(orderId: state.pathParameters['id']!),
+        builder: (_, state) =>
+            NewDisputeScreen(orderId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/team', builder: (_, __) => const TeamManagementScreen()),
-      GoRoute(path: '/performance', builder: (_, __) => const PerformanceScreen()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
-      GoRoute(path: '/profile/edit', builder: (_, __) => const EditProfileScreen()),
-      GoRoute(path: '/profile/notif-settings', builder: (_, __) => const NotifSettingsScreen()),
-      GoRoute(path: '/seller/auctions', builder: (_, __) => const SellerMyAuctionsScreen()),
-      GoRoute(path: '/seller/create-auction', builder: (_, __) => const CreateAuctionScreen()),
+      GoRoute(
+        path: '/performance',
+        builder: (_, __) => const PerformanceScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (_, __) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (_, __) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/notif-settings',
+        builder: (_, __) => const NotifSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/seller/auctions',
+        builder: (_, __) => const RoleGuard(
+          allowedRoles: {'seller'},
+          child: SellerMyAuctionsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/seller/create-auction',
+        builder: (_, __) => const RoleGuard(
+          allowedRoles: {'seller'},
+          child: CreateAuctionScreen(),
+        ),
+      ),
       GoRoute(
         path: '/reg-status',
         builder: (ctx, state) {
@@ -170,10 +260,14 @@ abstract final class AppRouter {
         path: '/auction-register',
         builder: (ctx, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return AuctionRegisterScreen(
-            auctions: (extra['auctions'] as List<AuctionParticipation>?) ?? [],
-            isApproved: extra['isApproved'] as bool? ?? false,
-            onBack: () => ctx.pop(),
+          return RoleGuard(
+            allowedRoles: {'buyer'},
+            child: AuctionRegisterScreen(
+              auctions:
+                  (extra['auctions'] as List<AuctionParticipation>?) ?? [],
+              isApproved: extra['isApproved'] as bool? ?? false,
+              onBack: () => ctx.pop(),
+            ),
           );
         },
       ),
@@ -181,11 +275,14 @@ abstract final class AppRouter {
         path: '/payable-summary',
         builder: (ctx, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return PayableSummaryScreen(
-            auctionTitle: extra['auctionTitle'] as String? ?? '',
-            h1Value: (extra['h1Value'] as num?)?.toDouble() ?? 0,
-            emdAmount: (extra['emdAmount'] as num?)?.toDouble() ?? 0,
-            onBack: () => ctx.pop(),
+          return RoleGuard(
+            allowedRoles: {'buyer'},
+            child: PayableSummaryScreen(
+              auctionTitle: extra['auctionTitle'] as String? ?? '',
+              h1Value: (extra['h1Value'] as num?)?.toDouble() ?? 0,
+              emdAmount: (extra['emdAmount'] as num?)?.toDouble() ?? 0,
+              onBack: () => ctx.pop(),
+            ),
           );
         },
       ),
@@ -193,9 +290,12 @@ abstract final class AppRouter {
         path: '/refund-tracker',
         builder: (ctx, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return RefundTrackerScreen(
-            refunds: (extra['refunds'] as List<RefundEntry>?) ?? [],
-            onBack: () => ctx.pop(),
+          return RoleGuard(
+            allowedRoles: {'buyer'},
+            child: RefundTrackerScreen(
+              refunds: (extra['refunds'] as List<RefundEntry>?) ?? [],
+              onBack: () => ctx.pop(),
+            ),
           );
         },
       ),
@@ -203,9 +303,12 @@ abstract final class AppRouter {
         path: '/emd-ledger',
         builder: (ctx, state) {
           final extra = state.extra as Map<String, dynamic>? ?? {};
-          return EmdLedgerScreen(
-            entries: (extra['entries'] as List<EmdLedgerEntry>?) ?? [],
-            onBack: () => ctx.pop(),
+          return RoleGuard(
+            allowedRoles: {'buyer'},
+            child: EmdLedgerScreen(
+              entries: (extra['entries'] as List<EmdLedgerEntry>?) ?? [],
+              onBack: () => ctx.pop(),
+            ),
           );
         },
       ),

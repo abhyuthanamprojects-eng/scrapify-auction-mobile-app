@@ -4,7 +4,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
-import '../../models/team_member.dart';
 import '../../providers/domain_providers.dart';
 
 class TeamManagementScreen extends ConsumerWidget {
@@ -14,7 +13,8 @@ class TeamManagementScreen extends ConsumerWidget {
     final nameCtl = TextEditingController();
     final emailCtl = TextEditingController();
     final mobileCtl = TextEditingController();
-    final limitCtl = TextEditingController(text: '5000000');
+    final passwordCtl = TextEditingController();
+    final limitCtl = TextEditingController();
     String role = 'Authorized Bidder';
 
     showModalBottomSheet(
@@ -23,7 +23,12 @@ class TeamManagementScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) => Container(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
           decoration: const BoxDecoration(
             color: AppColors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -37,32 +42,84 @@ class TeamManagementScreen extends ConsumerWidget {
                   child: Container(
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
-                Text('Add Corporate Bidder', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+                Text(
+                  'Add Corporate Bidder',
+                  style: AppTextStyles.heading(
+                    size: 17,
+                    weight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                const Text('Delegate bidding limits and event access to team members.', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                const Text(
+                  'Delegate bidding limits and event access to team members.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
                 const SizedBox(height: 16),
-                TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder())),
+                TextField(
+                  controller: nameCtl,
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: emailCtl, decoration: const InputDecoration(labelText: 'Corporate Email', border: OutlineInputBorder())),
+                TextField(
+                  controller: emailCtl,
+                  decoration: const InputDecoration(
+                    labelText: 'Corporate Email',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 10),
-                TextField(controller: mobileCtl, decoration: const InputDecoration(labelText: 'Mobile Number', border: OutlineInputBorder())),
+                TextField(
+                  controller: passwordCtl,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Initial Password (8+ characters)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: mobileCtl,
+                  decoration: const InputDecoration(
+                    labelText: 'Mobile Number',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: limitCtl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Max Bidding Limit (₹)', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Max Bidding Limit (₹)',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   value: role,
-                  decoration: const InputDecoration(labelText: 'Role Permission', border: OutlineInputBorder()),
-                  items: ['Administrator', 'Authorized Bidder', 'Viewer / Observer']
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
+                  decoration: const InputDecoration(
+                    labelText: 'Role Permission',
+                    border: OutlineInputBorder(),
+                  ),
+                  items:
+                      [
+                            'Administrator',
+                            'Authorized Bidder',
+                            'Viewer / Observer',
+                          ]
+                          .map(
+                            (r) => DropdownMenuItem(value: r, child: Text(r)),
+                          )
+                          .toList(),
                   onChanged: (v) => setModalState(() => role = v ?? role),
                 ),
                 const SizedBox(height: 18),
@@ -71,9 +128,15 @@ class TeamManagementScreen extends ConsumerWidget {
                   height: 48,
                   child: ElevatedButton(
                     onPressed: () async {
-                      if (nameCtl.text.trim().isEmpty || emailCtl.text.trim().isEmpty) {
+                      if (nameCtl.text.trim().isEmpty ||
+                          emailCtl.text.trim().isEmpty ||
+                          passwordCtl.text.length < 8) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please enter name and corporate email')),
+                          const SnackBar(
+                            content: Text(
+                              'Please enter name, corporate email, and an 8+ character password',
+                            ),
+                          ),
                         );
                         return;
                       }
@@ -90,21 +153,31 @@ class TeamManagementScreen extends ConsumerWidget {
                           'email': emailCtl.text.trim(),
                           'phone': mobileCtl.text.trim(),
                           'mobile': mobileCtl.text.trim(),
+                          'password': passwordCtl.text,
                           'role': roleVal,
-                          'password': 'password123',
-                          'max_bidding_limit_inr': double.tryParse(limitCtl.text.trim()) ?? 5000000,
+                          'max_bidding_limit_inr': limitCtl.text.trim().isEmpty
+                              ? null
+                              : double.tryParse(limitCtl.text.trim()),
                           'is_active': true,
                         });
                         if (context.mounted) {
                           Navigator.of(ctx).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('✓ Team member added & access granted')),
+                            const SnackBar(
+                              content: Text(
+                                '✓ Team member added & access granted',
+                              ),
+                            ),
                           );
                         }
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error adding member: ${e.toString()}')),
+                            SnackBar(
+                              content: Text(
+                                'Error adding member: ${e.toString()}',
+                              ),
+                            ),
                           );
                         }
                       }
@@ -112,9 +185,16 @@ class TeamManagementScreen extends ConsumerWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
                       foregroundColor: AppColors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXl,
+                        ),
+                      ),
                     ),
-                    child: const Text('Add Authorized Member', style: TextStyle(fontWeight: FontWeight.w800)),
+                    child: const Text(
+                      'Add Authorized Member',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ),
               ],
@@ -141,7 +221,10 @@ class TeamManagementScreen extends ConsumerWidget {
         onPressed: () => _addMemberDialog(context, ref),
         backgroundColor: AppColors.auction,
         icon: const Icon(Icons.person_add, color: AppColors.white),
-        label: const Text('Add Member', style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.white)),
+        label: const Text(
+          'Add Member',
+          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.white),
+        ),
       ),
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -163,7 +246,10 @@ class TeamManagementScreen extends ConsumerWidget {
                   backgroundColor: AppColors.navy.withValues(alpha: 0.1),
                   child: Text(
                     m.name.isNotEmpty ? m.name.substring(0, 1) : 'U',
-                    style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.navy),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.navy,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -176,21 +262,38 @@ class TeamManagementScreen extends ConsumerWidget {
                           Text(m.name, style: AppTextStyles.labelLarge),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.navy.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(m.role.label, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: AppColors.navy)),
+                            child: Text(
+                              m.role.label,
+                              style: const TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.navy,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text('${m.email} • ${m.mobile}', style: AppTextStyles.captionMuted),
+                      Text(
+                        '${m.email} • ${m.mobile}',
+                        style: AppTextStyles.captionMuted,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Max Bid Limit: ${Formatters.formatINR(m.maxBiddingLimitInr)}',
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.auction),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.auction,
+                        ),
                       ),
                     ],
                   ),
@@ -198,7 +301,8 @@ class TeamManagementScreen extends ConsumerWidget {
                 Switch.adaptive(
                   value: m.isActive,
                   activeColor: AppColors.success,
-                  onChanged: (_) => ref.read(teamMembersProvider.notifier).toggleStatus(m.id),
+                  onChanged: (_) =>
+                      ref.read(teamMembersProvider.notifier).toggleStatus(m.id),
                 ),
               ],
             ),

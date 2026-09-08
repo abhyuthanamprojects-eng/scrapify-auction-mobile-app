@@ -12,9 +12,9 @@ class WonScreen extends StatelessWidget {
 
   const WonScreen({
     super.key,
-    this.lotTitle = 'Tata Power Heavy Logistics • Industrial Copper Scrap',
-    this.winningBid = 2480000,
-    this.awardId = 'AWD-2026-1048',
+    this.lotTitle = '',
+    this.winningBid = 0,
+    this.awardId = '',
   });
 
   @override
@@ -37,15 +37,29 @@ class WonScreen extends StatelessWidget {
                   boxShadow: AppColors.shadowGold,
                 ),
                 child: const Center(
-                  child: Icon(Icons.emoji_events_rounded, size: 48, color: AppColors.white),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 48,
+                    color: AppColors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-              Text('Winning Bid Confirmed!', style: AppTextStyles.heading(size: 24, weight: FontWeight.w900)),
+              Text(
+                lotTitle.isEmpty
+                    ? 'Award details unavailable'
+                    : 'Winning Bid Confirmed!',
+                style: AppTextStyles.heading(size: 24, weight: FontWeight.w900),
+              ),
               const SizedBox(height: 6),
               Text(
-                'Congratulations! You have emerged as H1 winning bidder.',
-                style: AppTextStyles.body(size: 13, color: AppColors.navyWithOpacity(0.6)),
+                lotTitle.isEmpty
+                    ? 'The award record could not be loaded from the API.'
+                    : 'Congratulations! You have emerged as H1 winning bidder.',
+                style: AppTextStyles.body(
+                  size: 13,
+                  color: AppColors.navyWithOpacity(0.6),
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -60,10 +74,27 @@ class WonScreen extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _infoRow('Event Title', lotTitle),
-                    _infoRow('Winning Amount', Formatters.formatINR(winningBid), isBold: true),
-                    _infoRow('Award Status', 'Issued — Action Required', color: AppColors.auction),
-                    _infoRow('Acceptance Window', '23h 45m remaining', color: AppColors.destructive),
+                    _infoRow('Event Title', lotTitle.isEmpty ? '—' : lotTitle),
+                    _infoRow(
+                      'Winning Amount',
+                      winningBid > 0 ? Formatters.formatINR(winningBid) : '—',
+                      isBold: true,
+                    ),
+                    _infoRow(
+                      'Award Status',
+                      lotTitle.isEmpty
+                          ? 'Unavailable'
+                          : 'Issued — Action Required',
+                      color: lotTitle.isEmpty
+                          ? AppColors.navy
+                          : AppColors.auction,
+                    ),
+                    if (lotTitle.isNotEmpty)
+                      _infoRow(
+                        'Acceptance Window',
+                        'See award record',
+                        color: AppColors.destructive,
+                      ),
                   ],
                 ),
               ),
@@ -79,12 +110,23 @@ class WonScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('FULFILMENT ROADMAP',
-                        style: TextStyle(fontFamily: 'monospace', fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                    const Text(
+                      'FULFILMENT ROADMAP',
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _step(1, 'Accept Award & Contract Terms', true),
                     _step(2, 'Pay Balance Net Invoice (48h)', false),
-                    _step(3, 'Generate Dispatch Gate Pass & Truck Entry', false),
+                    _step(
+                      3,
+                      'Generate Dispatch Gate Pass & Truck Entry',
+                      false,
+                    ),
                     _step(4, 'Weighbridge Evidence & Lifting Closure', false),
                   ],
                 ),
@@ -94,21 +136,32 @@ class WonScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () => context.push('/award/$awardId'),
+                  onPressed: awardId.isEmpty
+                      ? null
+                      : () => context.push('/award/$awardId'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.auction,
                     foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                    ),
                     elevation: 0,
                   ),
-                  child: const Text('Review & Accept Award',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  child: const Text(
+                    'Review & Accept Award',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => context.go('/home'),
-                child: Text('Return to Dashboard', style: AppTextStyles.bodySmall.copyWith(color: AppColors.navyWithOpacity(0.6))),
+                child: Text(
+                  'Return to Dashboard',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.navyWithOpacity(0.6),
+                  ),
+                ),
               ),
             ],
           ),
@@ -117,13 +170,21 @@ class WonScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value, {bool isBold = false, Color? color}) {
+  Widget _infoRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
           Text(
             value,
             style: TextStyle(
@@ -146,13 +207,22 @@ class WonScreen extends StatelessWidget {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: active ? AppColors.auction : AppColors.navyWithOpacity(0.08),
+              color: active
+                  ? AppColors.auction
+                  : AppColors.navyWithOpacity(0.08),
               shape: BoxShape.circle,
             ),
             child: Center(
               child: active
                   ? const Icon(Icons.check, size: 12, color: AppColors.white)
-                  : Text('$num', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+                  : Text(
+                      '$num',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 8),

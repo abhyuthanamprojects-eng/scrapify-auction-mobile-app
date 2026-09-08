@@ -7,6 +7,7 @@ void main() {
   testWidgets('App launches without crashing', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: ScrapifyApp()));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2500));
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

@@ -58,7 +58,12 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       decoration: const BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -71,7 +76,10 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
             child: Container(
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: const Color(0xFFCBD5E1),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 14),
@@ -79,11 +87,17 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
             children: [
               const Icon(Icons.camera_alt_outlined, color: AppColors.auction),
               const SizedBox(width: 8),
-              Text('Capture Fulfilment Evidence', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+              Text(
+                'Capture Fulfilment Evidence',
+                style: AppTextStyles.heading(size: 17, weight: FontWeight.w800),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text('Stage: ${widget.stage} • Order: ${widget.orderId}', style: AppTextStyles.captionMuted),
+          Text(
+            'Stage: ${widget.stage} • Order: ${widget.orderId}',
+            style: AppTextStyles.captionMuted,
+          ),
           const SizedBox(height: 16),
 
           // Evidence Type Selector Chips
@@ -91,11 +105,31 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _typeChip('Camera Photo', Icons.photo_camera, EvidenceType.photo),
-                _typeChip('Weighbridge Slip', Icons.scale, EvidenceType.weighbridgeSlip),
-                _typeChip('Serial OCR', Icons.document_scanner, EvidenceType.serialNumberScan),
-                _typeChip('Document PDF', Icons.picture_as_pdf, EvidenceType.documentPdf),
-                _typeChip('Digital Signature', Icons.draw, EvidenceType.digitalSignature),
+                _typeChip(
+                  'Camera Photo',
+                  Icons.photo_camera,
+                  EvidenceType.photo,
+                ),
+                _typeChip(
+                  'Weighbridge Slip',
+                  Icons.scale,
+                  EvidenceType.weighbridgeSlip,
+                ),
+                _typeChip(
+                  'Serial OCR',
+                  Icons.document_scanner,
+                  EvidenceType.serialNumberScan,
+                ),
+                _typeChip(
+                  'Document PDF',
+                  Icons.picture_as_pdf,
+                  EvidenceType.documentPdf,
+                ),
+                _typeChip(
+                  'Digital Signature',
+                  Icons.draw,
+                  EvidenceType.digitalSignature,
+                ),
               ],
             ),
           ),
@@ -125,8 +159,13 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
               ),
               child: Center(
                 child: _signed
-                    ? const Text('✓ Digital Signature Recorded',
-                        style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.success))
+                    ? const Text(
+                        '✓ Digital Signature Recorded',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.success,
+                        ),
+                      )
                     : TextButton.icon(
                         onPressed: () => setState(() => _signed = true),
                         icon: const Icon(Icons.draw),
@@ -154,82 +193,118 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
                   color: AppColors.appBg,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   border: Border.all(
-                    color: _attachedFile != null ? AppColors.success.withValues(alpha: 0.6) : AppColors.cardBorder,
+                    color: _attachedFile != null
+                        ? AppColors.success.withValues(alpha: 0.6)
+                        : AppColors.cardBorder,
                   ),
                 ),
                 child: _attachedFile != null
                     ? (_attachedFile!.isImage && _attachedFile!.path != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                            child: Stack(
-                              children: [
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  child: Image.file(
-                                    File(_attachedFile!.path!),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${_attachedFile!.name} (${_attachedFile!.formattedSize})',
-                                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () => setState(() => _attachedFile = null),
-                                        child: const Icon(Icons.close, color: Colors.white, size: 18),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Row(
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusLg,
+                              ),
+                              child: Stack(
                                 children: [
-                                  const Icon(Icons.picture_as_pdf, color: AppColors.destructive, size: 36),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    child: Image.file(
+                                      File(_attachedFile!.path!),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
+                                    color: Colors.black.withValues(alpha: 0.6),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          _attachedFile!.name,
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        Expanded(
+                                          child: Text(
+                                            '${_attachedFile!.name} (${_attachedFile!.formattedSize})',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
                                         ),
-                                        Text(_attachedFile!.formattedSize, style: AppTextStyles.captionMuted),
+                                        InkWell(
+                                          onTap: () => setState(
+                                            () => _attachedFile = null,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                  IconButton(
-                                    icon: const Icon(Icons.close, color: AppColors.destructive),
-                                    onPressed: () => setState(() => _attachedFile = null),
-                                  ),
                                 ],
                               ),
-                            ),
-                          ))
+                            )
+                          : Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.picture_as_pdf,
+                                      color: AppColors.destructive,
+                                      size: 36,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _attachedFile!.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Text(
+                                            _attachedFile!.formattedSize,
+                                            style: AppTextStyles.captionMuted,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: AppColors.destructive,
+                                      ),
+                                      onPressed: () =>
+                                          setState(() => _attachedFile = null),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ))
                     : Center(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _selectedType == EvidenceType.documentPdf ? Icons.upload_file : Icons.add_a_photo_outlined,
+                              _selectedType == EvidenceType.documentPdf
+                                  ? Icons.upload_file
+                                  : Icons.add_a_photo_outlined,
                               size: 36,
                               color: AppColors.navy,
                             ),
@@ -238,10 +313,17 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
                               _selectedType == EvidenceType.documentPdf
                                   ? 'Tap to select PDF document'
                                   : 'Capture Photo or Browse Gallery (GPS stamped)',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.navy,
+                              ),
                             ),
                             const SizedBox(height: 2),
-                            Text('Supports Camera, Gallery, PDF up to 10MB', style: AppTextStyles.captionMuted),
+                            Text(
+                              'Supports Camera, Gallery, PDF up to 10MB',
+                              style: AppTextStyles.captionMuted,
+                            ),
                           ],
                         ),
                       ),
@@ -271,34 +353,51 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
                       final ev = CapturedEvidence(
                         id: 'EV-${DateTime.now().millisecondsSinceEpoch % 10000}',
                         type: _selectedType,
-                        title: _attachedFile?.name ?? '${_selectedType.name.toUpperCase()} Evidence',
+                        title:
+                            _attachedFile?.name ??
+                            '${_selectedType.name.toUpperCase()} Evidence',
                         fileUrl: _attachedFile?.path != null
                             ? 'file://${_attachedFile!.path}'
-                            : 'https://cdn.bidplay.io/evidence/ev1.jpg',
+                            : null,
                         timestamp: DateTime.now().toIso8601String(),
-                        capturedBy: 'Yard Supervisor / Driver',
-                        geoCoordinates: '22.8046° N, 86.2029° E (Tata Plant Yard)',
+                        capturedBy: null,
+                        geoCoordinates: null,
                         remarks: _remarksCtl.text.trim(),
-                        status: 'VERIFIED',
-                        metricValue: _metricValCtl.text.trim().isNotEmpty ? _metricValCtl.text.trim() : null,
+                        status: 'PENDING_UPLOAD',
+                        metricValue: _metricValCtl.text.trim().isNotEmpty
+                            ? _metricValCtl.text.trim()
+                            : null,
+                        isUploaded: false,
                       );
                       widget.onEvidenceCaptured(ev);
                       await Future.delayed(const Duration(milliseconds: 300));
-                      if (mounted) {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('✓ Fulfilment evidence captured & verified on ledger')),
-                        );
-                      }
+                      if (!context.mounted) return;
+                      final messenger = ScaffoldMessenger.of(context);
+                      Navigator.of(context).pop();
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Evidence captured locally; server verification is still required.',
+                          ),
+                        ),
+                      );
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.auction,
                 foregroundColor: AppColors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                ),
               ),
               child: _uploading
                   ? const CircularProgressIndicator(color: AppColors.white)
-                  : const Text('Save & Verify Evidence', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  : const Text(
+                      'Save & Verify Evidence',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
             ),
           ),
         ],
@@ -316,11 +415,17 @@ class _EvidenceCaptureSheetState extends State<EvidenceCaptureSheet> {
         decoration: BoxDecoration(
           color: isSel ? AppColors.navy : AppColors.appBg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: isSel ? AppColors.navy : AppColors.cardBorder),
+          border: Border.all(
+            color: isSel ? AppColors.navy : AppColors.cardBorder,
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: isSel ? AppColors.white : AppColors.navy),
+            Icon(
+              icon,
+              size: 14,
+              color: isSel ? AppColors.white : AppColors.navy,
+            ),
             const SizedBox(width: 6),
             Text(
               label,

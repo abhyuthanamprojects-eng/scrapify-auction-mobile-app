@@ -2,9 +2,9 @@ import 'dart:html' as html;
 import 'web_security_service.dart';
 
 WebSecurityResult checkWebSecurityImpl() {
-  final ua = (html.window.navigator.userAgent ?? '').toLowerCase();
-  final platform = (html.window.navigator.platform ?? '').toLowerCase();
-  final touchPoints = html.window.navigator.maxTouchPoints ?? 0;
+  final ua = html.window.navigator.userAgent.toLowerCase();
+  final platform = html.window.navigator.platform!.toLowerCase();
+  final touchPoints = html.window.navigator.maxTouchPoints!;
   final isIpad =
       ua.contains('ipad') || (platform.contains('mac') && touchPoints > 1);
   final isAndroid = ua.contains('android');

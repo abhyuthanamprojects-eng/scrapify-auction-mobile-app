@@ -14,13 +14,21 @@ class BottomTabBar extends StatelessWidget {
     this.isSeller = false,
   });
 
-  List<_TabItem> get _items => const [
-        _TabItem(Icons.home_rounded, 'Home'),
-        _TabItem(Icons.gavel_rounded, 'Events'),
-        _TabItem(Icons.receipt_long_rounded, 'Bids'),
-        _TabItem(Icons.local_shipping_rounded, 'Orders'),
-        _TabItem(Icons.person_rounded, 'Profile'),
-      ];
+  List<_TabItem> get _items => isSeller
+      ? const [
+          _TabItem(Icons.home_rounded, 'Home'),
+          _TabItem(Icons.gavel_rounded, 'My Auctions'),
+          _TabItem(Icons.storefront_rounded, 'Market'),
+          _TabItem(Icons.notifications_none_rounded, 'Notices'),
+          _TabItem(Icons.person_rounded, 'Profile'),
+        ]
+      : const [
+          _TabItem(Icons.home_rounded, 'Home'),
+          _TabItem(Icons.gavel_rounded, 'Events'),
+          _TabItem(Icons.receipt_long_rounded, 'Bids'),
+          _TabItem(Icons.local_shipping_rounded, 'Orders'),
+          _TabItem(Icons.person_rounded, 'Profile'),
+        ];
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +68,9 @@ class BottomTabBar extends StatelessWidget {
             Icon(
               item.icon,
               size: 22,
-              color: isActive ? AppColors.auction : AppColors.whiteWithOpacity(0.5),
+              color: isActive
+                  ? AppColors.auction
+                  : AppColors.whiteWithOpacity(0.5),
             ),
             const SizedBox(height: 2),
             Text(
@@ -68,7 +78,9 @@ class BottomTabBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                color: isActive ? AppColors.auction : AppColors.whiteWithOpacity(0.5),
+                color: isActive
+                    ? AppColors.auction
+                    : AppColors.whiteWithOpacity(0.5),
               ),
             ),
           ],

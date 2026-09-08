@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../models/inspection.dart';
 import '../../providers/domain_providers.dart';
 
 class GatePassScreen extends ConsumerWidget {
@@ -14,25 +13,26 @@ class GatePassScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bookings = ref.watch(inspectionBookingsProvider);
-    final booking = bookings.firstWhere(
-      (b) => b.auctionCode == auctionCode,
-      orElse: () => bookings.isNotEmpty
-          ? bookings.first
-          : const InspectionBooking(
-              bookingId: 'GP-2026-8819',
-              auctionCode: 'SC-FWD-2026-1048',
-              auctionTitle: 'Industrial Copper Scrap & Armoured Cables',
-              facilityAddress: 'Tata Power Works, Gate 3, Jamshedpur',
-              contactPerson: 'Suresh Verma',
-              contactPhone: '+91 98765 43210',
-              selectedDate: '28 Aug 2026',
-              selectedTimeSlot: '11:30 AM – 12:30 PM',
-              visitorName: 'Rahul Sharma',
-              visitorMobile: '+91 98765 43210',
-              visitorGovtId: 'PAN: ABCDE1234F',
-              vehicleNumber: 'JH-05-AB-1234',
-            ),
-    );
+    final matchingBookings = bookings.where((b) => b.auctionCode == auctionCode);
+    final booking = matchingBookings.isEmpty ? null : matchingBookings.first;
+
+    if (booking == null) {
+      return Scaffold(
+        backgroundColor: AppColors.appBg,
+        appBar: AppBar(
+          title: const Text('Digital Gate Pass'),
+          backgroundColor: AppColors.navy,
+          foregroundColor: AppColors.white,
+          leading: IconButton(icon: const Icon(Icons.close), onPressed: () => context.pop()),
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('No issued gate pass is available for this auction.'),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.navy,

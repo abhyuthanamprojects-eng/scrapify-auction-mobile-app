@@ -10,6 +10,9 @@ import '../auctions/auctions_screen.dart';
 import '../my_bids/my_bids_screen.dart';
 import '../orders/orders_screen.dart';
 import '../profile/profile_screen.dart';
+import '../notifications/notifications_screen.dart';
+import '../seller/seller_home_screen.dart';
+import '../seller/my_auctions_screen.dart';
 
 final tabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -25,13 +28,21 @@ class AppShell extends ConsumerWidget {
     final kycVerified = authData.user?.kycVerified ?? false;
     final isPendingKyc = isAuthenticated && !kycVerified;
 
-    const screens = [
-      HomeScreen(),
-      AuctionsScreen(),
-      MyBidsScreen(),
-      OrdersScreen(),
-      ProfileScreen(),
-    ];
+    final screens = isSeller
+        ? const [
+            SellerHomeScreen(),
+            SellerMyAuctionsScreen(),
+            AuctionsScreen(),
+            NotificationsScreen(),
+            ProfileScreen(),
+          ]
+        : const [
+            HomeScreen(),
+            AuctionsScreen(),
+            MyBidsScreen(),
+            OrdersScreen(),
+            ProfileScreen(),
+          ];
 
     return Scaffold(
       body: Column(
@@ -44,7 +55,10 @@ class AppShell extends ConsumerWidget {
                 child: InkWell(
                   onTap: () => context.push('/reg-status'),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     child: Row(
                       children: [
                         Container(
@@ -54,7 +68,11 @@ class AppShell extends ConsumerWidget {
                             color: AppColors.auction.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.access_time, size: 18, color: AppColors.auction),
+                          child: const Icon(
+                            Icons.access_time,
+                            size: 18,
+                            color: AppColors.auction,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -63,17 +81,28 @@ class AppShell extends ConsumerWidget {
                             children: [
                               Text(
                                 'Profile under review',
-                                style: AppTextStyles.heading(size: 13, weight: FontWeight.w800, color: AppColors.navy),
+                                style: AppTextStyles.heading(
+                                  size: 13,
+                                  weight: FontWeight.w800,
+                                  color: AppColors.navy,
+                                ),
                               ),
                               const SizedBox(height: 1),
                               Text(
                                 'Bidding & orders are disabled until admin verifies your KYC.',
-                                style: TextStyle(fontSize: 11, color: AppColors.navyWithOpacity(0.6)),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.navyWithOpacity(0.6),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                        Icon(Icons.chevron_right, size: 18, color: AppColors.navyWithOpacity(0.4)),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 18,
+                          color: AppColors.navyWithOpacity(0.4),
+                        ),
                       ],
                     ),
                   ),
@@ -81,10 +110,7 @@ class AppShell extends ConsumerWidget {
               ),
             ),
           Expanded(
-            child: IndexedStack(
-              index: tabIndex,
-              children: screens,
-            ),
+            child: IndexedStack(index: tabIndex, children: screens),
           ),
         ],
       ),
@@ -96,7 +122,9 @@ class AppShell extends ConsumerWidget {
                 if (isPendingKyc && (i == 2 || i == 3)) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('This feature is available after KYC verification.'),
+                      content: Text(
+                        'This feature is available after KYC verification.',
+                      ),
                       backgroundColor: AppColors.auction,
                     ),
                   );
