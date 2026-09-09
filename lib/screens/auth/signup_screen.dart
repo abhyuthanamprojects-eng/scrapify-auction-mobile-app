@@ -20,6 +20,7 @@ class SignupScreen extends ConsumerStatefulWidget {
 
 class _SignupScreenState extends ConsumerState<SignupScreen> {
   int _step = 1;
+  String _registrationRole = 'buyer';
 
   // Step 1
   final _mobileCtl = TextEditingController();
@@ -117,7 +118,43 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
-              child: _buildStep(),
+              child: Column(
+                children: [
+                  if (_step == 1) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'How will you use Scrapify?',
+                        style: AppTextStyles.heading(size: 18),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Buyer'),
+                            selected: _registrationRole == 'buyer',
+                            onSelected: (_) =>
+                                setState(() => _registrationRole = 'buyer'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ChoiceChip(
+                            label: const Text('Seller'),
+                            selected: _registrationRole == 'seller',
+                            onSelected: (_) =>
+                                setState(() => _registrationRole = 'seller'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                  _buildStep(),
+                ],
+              ),
             ),
           ),
         ],
@@ -172,7 +209,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'BIDDER REGISTRATION',
+                          '${_registrationRole.toUpperCase()} REGISTRATION',
                           style: AppTextStyles.body(
                             size: 10,
                             weight: FontWeight.w700,
@@ -232,8 +269,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 color: active
                     ? AppColors.auction
                     : done
-                        ? AppColors.successWithOpacity(0.2)
-                        : AppColors.whiteWithOpacity(0.1),
+                    ? AppColors.successWithOpacity(0.2)
+                    : AppColors.whiteWithOpacity(0.1),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
               ),
               child: Row(
@@ -247,12 +284,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       color: active
                           ? AppColors.white
                           : done
-                              ? AppColors.success
-                              : AppColors.whiteWithOpacity(0.2),
+                          ? AppColors.success
+                          : AppColors.whiteWithOpacity(0.2),
                     ),
                     child: Center(
                       child: done
-                          ? const Icon(Icons.check, size: 10, color: AppColors.white)
+                          ? const Icon(
+                              Icons.check,
+                              size: 10,
+                              color: AppColors.white,
+                            )
                           : Text(
                               '$stepNum',
                               style: TextStyle(
@@ -276,8 +317,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         color: active
                             ? AppColors.white
                             : done
-                                ? AppColors.success
-                                : AppColors.whiteWithOpacity(0.6),
+                            ? AppColors.success
+                            : AppColors.whiteWithOpacity(0.6),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -304,8 +345,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   // ─── STEP 1: VERIFY ──────────────────────────────────────
   Widget _step1Verify() {
-    final mobileValid = RegExp(r'^\d{10}$').hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
-    final emailValid = _emailCtl.text.contains('@') && _emailCtl.text.contains('.');
+    final mobileValid = RegExp(
+      r'^\d{10}$',
+    ).hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
+    final emailValid =
+        _emailCtl.text.contains('@') && _emailCtl.text.contains('.');
     final canSend = mobileValid && emailValid;
 
     return Column(
@@ -326,11 +370,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           keyboardType: TextInputType.phone,
           prefix: Padding(
             padding: const EdgeInsets.only(left: 12, right: 4),
-            child: Text('+91', style: AppTextStyles.body(size: 14, weight: FontWeight.w700)),
+            child: Text(
+              '+91',
+              style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
+            ),
           ),
         ),
         const SizedBox(height: 16),
-        _fieldLabel('Email ID', required: true, hint: 'OTP will be sent to both mobile & email.'),
+        _fieldLabel(
+          'Email ID',
+          required: true,
+          hint: 'OTP will be sent to both mobile & email.',
+        ),
         const SizedBox(height: 6),
         _inputField(
           controller: _emailCtl,
@@ -350,7 +401,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             onTap: _sendOtp,
           ),
         ] else ...[
-          _infoBanner('OTP sent to +91 ${_mobileCtl.text} and ${_emailCtl.text}. Enter the code below.'),
+          _infoBanner(
+            'OTP sent to +91 ${_mobileCtl.text} and ${_emailCtl.text}. Enter the code below.',
+          ),
           const SizedBox(height: 16),
           if (_debugCode != null) ...[
             Container(
@@ -362,10 +415,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.bug_report, size: 14, color: AppColors.success),
+                  const Icon(
+                    Icons.bug_report,
+                    size: 14,
+                    color: AppColors.success,
+                  ),
                   const SizedBox(width: 8),
-                  Text('Debug OTP: $_debugCode',
-                      style: AppTextStyles.body(size: 12, weight: FontWeight.w700, color: AppColors.success)),
+                  Text(
+                    'Debug OTP: $_debugCode',
+                    style: AppTextStyles.body(
+                      size: 12,
+                      weight: FontWeight.w700,
+                      color: AppColors.success,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -392,7 +455,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   style: AppTextStyles.body(
                     size: 11,
                     weight: FontWeight.w700,
-                    color: _timer > 0 ? AppColors.navyWithOpacity(0.3) : AppColors.accentBlue,
+                    color: _timer > 0
+                        ? AppColors.navyWithOpacity(0.3)
+                        : AppColors.accentBlue,
                   ),
                 ),
               ),
@@ -415,10 +480,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _sendOtp() async {
     _setError(null);
     _setLoading(true);
-    final result = await ref.read(authProvider.notifier).requestOtp(
-      _emailCtl.text.trim(),
-      purpose: 'registration',
-    );
+    final result = await ref
+        .read(authProvider.notifier)
+        .requestOtp(_emailCtl.text.trim(), purpose: 'registration');
     if (!mounted) return;
     _setLoading(false);
     setState(() {
@@ -431,10 +495,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _verifyOtp() async {
     _setError(null);
     _setLoading(true);
-    final success = await ref.read(authProvider.notifier).verifyOtp(
-      _emailCtl.text.trim(),
-      _otpCtl.text.trim(),
-    );
+    final success = await ref
+        .read(authProvider.notifier)
+        .verifyOtp(_emailCtl.text.trim(), _otpCtl.text.trim());
     if (!mounted) return;
     _setLoading(false);
     if (success) {
@@ -451,7 +514,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   // ─── STEP 2: LOGIN ───────────────────────────────────────
   Widget _step2Login() {
     final pw = _passwordCtl.text;
-    final strong = pw.length >= 8 && RegExp(r'[A-Z]').hasMatch(pw) && RegExp(r'\d').hasMatch(pw);
+    final strong =
+        pw.length >= 8 &&
+        RegExp(r'[A-Z]').hasMatch(pw) &&
+        RegExp(r'\d').hasMatch(pw);
     final match = pw.isNotEmpty && pw == _password2Ctl.text;
     final username = _useEmail ? _emailCtl.text : '+91${_mobileCtl.text}';
 
@@ -474,17 +540,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
           child: Row(
             children: [
-              _toggleBtn('Use Email', _useEmail, () => setState(() => _useEmail = true)),
-              _toggleBtn('Use Mobile', !_useEmail, () => setState(() => _useEmail = false)),
+              _toggleBtn(
+                'Use Email',
+                _useEmail,
+                () => setState(() => _useEmail = true),
+              ),
+              _toggleBtn(
+                'Use Mobile',
+                !_useEmail,
+                () => setState(() => _useEmail = false),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 20),
         _fieldLabel('Username (auto-filled)', required: true),
         const SizedBox(height: 6),
-        _inputField(controller: TextEditingController(text: username), readOnly: true),
+        _inputField(
+          controller: TextEditingController(text: username),
+          readOnly: true,
+        ),
         const SizedBox(height: 16),
-        _fieldLabel('Create Password', required: true, hint: 'Min 8 characters, 1 uppercase, 1 number.'),
+        _fieldLabel(
+          'Create Password',
+          required: true,
+          hint: 'Min 8 characters, 1 uppercase, 1 number.',
+        ),
         const SizedBox(height: 6),
         _inputField(
           controller: _passwordCtl,
@@ -494,7 +575,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         if (pw.isNotEmpty && !strong) ...[
           const SizedBox(height: 4),
-          Text('Password too weak.', style: TextStyle(fontSize: 10, color: AppColors.destructive, fontWeight: FontWeight.w600)),
+          Text(
+            'Password too weak.',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.destructive,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
         const SizedBox(height: 16),
         _fieldLabel('Confirm Password', required: true),
@@ -507,7 +595,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         if (_password2Ctl.text.isNotEmpty && !match) ...[
           const SizedBox(height: 4),
-          Text('Passwords do not match.', style: TextStyle(fontSize: 10, color: AppColors.destructive, fontWeight: FontWeight.w600)),
+          Text(
+            'Passwords do not match.',
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.destructive,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
         const SizedBox(height: 8),
         if (_error != null) ...[
@@ -525,12 +620,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             _setError(null);
             _setLoading(true);
             try {
-              await ref.read(authProvider.notifier).register(
-                name: _contactCtl.text.isNotEmpty ? _contactCtl.text : _emailCtl.text.split('@').first,
-                email: _emailCtl.text.trim(),
-                phone: _mobileCtl.text.trim(),
-                password: _passwordCtl.text,
-              );
+              await ref
+                  .read(authProvider.notifier)
+                  .register(
+                    name: _contactCtl.text.isNotEmpty
+                        ? _contactCtl.text
+                        : _emailCtl.text.split('@').first,
+                    email: _emailCtl.text.trim(),
+                    phone: _mobileCtl.text.trim(),
+                    password: _passwordCtl.text,
+                    role: _registrationRole,
+                  );
               if (!mounted) return;
               final state = ref.read(authProvider);
               if (state.isAuthenticated) {
@@ -560,7 +660,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             color: selected ? AppColors.navy : Colors.transparent,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             boxShadow: selected
-                ? [BoxShadow(color: AppColors.blackWithOpacity(0.1), blurRadius: 4)]
+                ? [
+                    BoxShadow(
+                      color: AppColors.blackWithOpacity(0.1),
+                      blurRadius: 4,
+                    ),
+                  ]
                 : null,
           ),
           child: Center(
@@ -569,7 +674,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: selected ? AppColors.white : AppColors.navyWithOpacity(0.6),
+                color: selected
+                    ? AppColors.white
+                    : AppColors.navyWithOpacity(0.6),
               ),
             ),
           ),
@@ -581,7 +688,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   // ─── STEP 3: COMPANY ─────────────────────────────────────
   Widget _step3Company() {
     final allDocsUploaded = _docs.values.every((v) => v);
-    final complete = _companyCtl.text.isNotEmpty &&
+    final complete =
+        _companyCtl.text.isNotEmpty &&
         _addressCtl.text.isNotEmpty &&
         _gstCtl.text.isNotEmpty &&
         _panCtl.text.isNotEmpty &&
@@ -654,20 +762,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           children: AppConstants.categories.map((m) {
             final on = _materials.contains(m);
             return GestureDetector(
-              onTap: () => setState(() => on ? _materials.remove(m) : _materials.add(m)),
+              onTap: () =>
+                  setState(() => on ? _materials.remove(m) : _materials.add(m)),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: on ? AppColors.navy : AppColors.white,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                  border: Border.all(color: on ? AppColors.navy : AppColors.blackWithOpacity(0.1)),
+                  border: Border.all(
+                    color: on
+                        ? AppColors.navy
+                        : AppColors.blackWithOpacity(0.1),
+                  ),
                 ),
                 child: Text(
                   m,
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: on ? AppColors.white : AppColors.navyWithOpacity(0.7),
+                    color: on
+                        ? AppColors.white
+                        : AppColors.navyWithOpacity(0.7),
                   ),
                 ),
               ),
@@ -689,7 +807,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   _fieldLabel('Business Mobile', required: true),
                   const SizedBox(height: 6),
-                  _inputField(controller: _bizMobileCtl, hint: '+91 …', keyboardType: TextInputType.phone),
+                  _inputField(
+                    controller: _bizMobileCtl,
+                    hint: '+91 …',
+                    keyboardType: TextInputType.phone,
+                  ),
                 ],
               ),
             ),
@@ -700,7 +822,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   _fieldLabel('Business Email', required: true),
                   const SizedBox(height: 6),
-                  _inputField(controller: _bizEmailCtl, keyboardType: TextInputType.emailAddress),
+                  _inputField(
+                    controller: _bizEmailCtl,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                 ],
               ),
             ),
@@ -714,9 +839,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _inputField(controller: _bankIfscCtl, hint: 'IFSC')),
+            Expanded(
+              child: _inputField(controller: _bankIfscCtl, hint: 'IFSC'),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _inputField(controller: _bankNameCtl, hint: 'Bank name')),
+            Expanded(
+              child: _inputField(controller: _bankNameCtl, hint: 'Bank name'),
+            ),
           ],
         ),
         const SizedBox(height: 20),
@@ -738,7 +867,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             color: AppColors.white,
             borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
             border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-            boxShadow: [BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8)],
+            boxShadow: [
+              BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8),
+            ],
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -750,7 +881,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   value: _termsAccepted,
                   onChanged: (v) => setState(() => _termsAccepted = v ?? false),
                   activeColor: AppColors.navy,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -836,7 +969,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           color: AppColors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-          boxShadow: [BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8)],
+          boxShadow: [
+            BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8),
+          ],
         ),
         child: Row(
           children: [
@@ -844,13 +979,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: done ? AppColors.successWithOpacity(0.15) : AppColors.navyWithOpacity(0.05),
+                color: done
+                    ? AppColors.successWithOpacity(0.15)
+                    : AppColors.navyWithOpacity(0.05),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
               ),
               child: Icon(
                 done ? Icons.check : Icons.upload_file,
                 size: 16,
-                color: done ? AppColors.success : AppColors.navyWithOpacity(0.7),
+                color: done
+                    ? AppColors.success
+                    : AppColors.navyWithOpacity(0.7),
               ),
             ),
             const SizedBox(width: 12),
@@ -858,7 +997,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: AppTextStyles.body(size: 13, weight: FontWeight.w700)),
+                  Text(
+                    label,
+                    style: AppTextStyles.body(
+                      size: 13,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
                   Text(
                     done ? 'Uploaded' : 'Tap to upload',
                     style: AppTextStyles.captionMuted,
@@ -867,8 +1012,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
             ),
             if (done)
-              Text('Uploaded ✓',
-                  style: AppTextStyles.body(size: 10, weight: FontWeight.w700, color: AppColors.success)),
+              Text(
+                'Uploaded ✓',
+                style: AppTextStyles.body(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: AppColors.success,
+                ),
+              ),
           ],
         ),
       ),
@@ -897,7 +1048,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   Text('Terms & Conditions', style: AppTextStyles.labelLarge),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
-                    child: Text('Close', style: AppTextStyles.body(size: 12, weight: FontWeight.w700, color: AppColors.navyWithOpacity(0.6))),
+                    child: Text(
+                      'Close',
+                      style: AppTextStyles.body(
+                        size: 12,
+                        weight: FontWeight.w700,
+                        color: AppColors.navyWithOpacity(0.6),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -908,13 +1066,48 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 controller: scrollCtl,
                 padding: const EdgeInsets.all(16),
                 children: const [
-                  _TermItem(num: '1', title: 'Registration', text: 'By registering as a bidder you agree to provide accurate KYC details and documents.'),
-                  _TermItem(num: '2', title: 'EMD', text: 'A refundable Earnest Money Deposit is required to bid on each lot.'),
-                  _TermItem(num: '3', title: 'Winning bids', text: 'Winning bidders must pay the balance within 48 hours or forfeit their EMD.'),
-                  _TermItem(num: '4', title: 'Pickup & weighbridge', text: 'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.'),
-                  _TermItem(num: '5', title: 'Compliance', text: 'Bidders must hold valid PCB / Recycler authorisation where applicable.'),
-                  _TermItem(num: '6', title: 'Refunds', text: 'EMD of losing bidders is auto-released within 2 hours of auction close.'),
-                  _TermItem(num: '7', title: 'Approval', text: 'Registration is subject to admin approval and may be rejected without cause.'),
+                  _TermItem(
+                    num: '1',
+                    title: 'Registration',
+                    text:
+                        'By registering as a bidder you agree to provide accurate KYC details and documents.',
+                  ),
+                  _TermItem(
+                    num: '2',
+                    title: 'EMD',
+                    text:
+                        'A refundable Earnest Money Deposit is required to bid on each lot.',
+                  ),
+                  _TermItem(
+                    num: '3',
+                    title: 'Winning bids',
+                    text:
+                        'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
+                  ),
+                  _TermItem(
+                    num: '4',
+                    title: 'Pickup & weighbridge',
+                    text:
+                        'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
+                  ),
+                  _TermItem(
+                    num: '5',
+                    title: 'Compliance',
+                    text:
+                        'Bidders must hold valid PCB / Recycler authorisation where applicable.',
+                  ),
+                  _TermItem(
+                    num: '6',
+                    title: 'Refunds',
+                    text:
+                        'EMD of losing bidders is auto-released within 2 hours of auction close.',
+                  ),
+                  _TermItem(
+                    num: '7',
+                    title: 'Approval',
+                    text:
+                        'Registration is subject to admin approval and may be rejected without cause.',
+                  ),
                 ],
               ),
             ),
@@ -955,7 +1148,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       children: [
         Text('Review your details', style: AppTextStyles.titleMedium),
         const SizedBox(height: 4),
-        Text('All information from steps 1–3 has been validated.', style: AppTextStyles.caption),
+        Text(
+          'All information from steps 1–3 has been validated.',
+          style: AppTextStyles.caption,
+        ),
         const SizedBox(height: 20),
         _reviewGroup('Verification', [
           _reviewRow('Mobile', '+91 ${_mobileCtl.text}'),
@@ -964,7 +1160,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ]),
         const SizedBox(height: 12),
         _reviewGroup('Login', [
-          _reviewRow('Username', _useEmail ? _emailCtl.text : '+91${_mobileCtl.text}'),
+          _reviewRow(
+            'Username',
+            _useEmail ? _emailCtl.text : '+91${_mobileCtl.text}',
+          ),
           _reviewRow('Password', '•••••••• (set)'),
         ]),
         const SizedBox(height: 12),
@@ -994,15 +1193,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         color: AppColors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
         border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-        boxShadow: [BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title.toUpperCase(),
-            style: AppTextStyles.body(size: 10, weight: FontWeight.w700, color: AppColors.navyWithOpacity(0.6))
-                .copyWith(letterSpacing: 0.8),
+            style: AppTextStyles.body(
+              size: 10,
+              weight: FontWeight.w700,
+              color: AppColors.navyWithOpacity(0.6),
+            ).copyWith(letterSpacing: 0.8),
           ),
           const SizedBox(height: 8),
           ...rows,
@@ -1017,7 +1221,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(key, style: AppTextStyles.body(size: 12, color: AppColors.navyWithOpacity(0.6))),
+          Text(
+            key,
+            style: AppTextStyles.body(
+              size: 12,
+              color: AppColors.navyWithOpacity(0.6),
+            ),
+          ),
           Flexible(
             child: Text(
               value,
@@ -1040,7 +1250,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       children: [
         Text('Registration fee', style: AppTextStyles.titleMedium),
         const SizedBox(height: 4),
-        Text('Pay the one-time registration fee to submit for admin review.', style: AppTextStyles.caption),
+        Text(
+          'Pay the one-time registration fee to submit for admin review.',
+          style: AppTextStyles.caption,
+        ),
         const SizedBox(height: 20),
         Container(
           width: double.infinity,
@@ -1054,14 +1267,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             children: [
               Text(
                 'AMOUNT',
-                style: AppTextStyles.body(size: 10, weight: FontWeight.w700, color: AppColors.whiteWithOpacity(0.6))
-                    .copyWith(letterSpacing: 1.5),
+                style: AppTextStyles.body(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: AppColors.whiteWithOpacity(0.6),
+                ).copyWith(letterSpacing: 1.5),
               ),
               const SizedBox(height: 4),
-              Text('₹5,000', style: AppTextStyles.heading(size: 28, weight: FontWeight.w900, color: AppColors.white)),
+              Text(
+                '₹5,000',
+                style: AppTextStyles.heading(
+                  size: 28,
+                  weight: FontWeight.w900,
+                  color: AppColors.white,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('GST included · one-time · non-refundable',
-                  style: AppTextStyles.body(size: 11, color: AppColors.whiteWithOpacity(0.6))),
+              Text(
+                'GST included · one-time · non-refundable',
+                style: AppTextStyles.body(
+                  size: 11,
+                  color: AppColors.whiteWithOpacity(0.6),
+                ),
+              ),
             ],
           ),
         ),
@@ -1082,16 +1310,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       color: selected ? AppColors.auction : AppColors.white,
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                       border: Border.all(
-                        color: selected ? AppColors.auction : AppColors.blackWithOpacity(0.05),
+                        color: selected
+                            ? AppColors.auction
+                            : AppColors.blackWithOpacity(0.05),
                       ),
                       boxShadow: selected
-                          ? [BoxShadow(color: AppColors.auctionWithOpacity(0.3), blurRadius: 8)]
-                          : [BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 4)],
+                          ? [
+                              BoxShadow(
+                                color: AppColors.auctionWithOpacity(0.3),
+                                blurRadius: 8,
+                              ),
+                            ]
+                          : [
+                              BoxShadow(
+                                color: AppColors.blackWithOpacity(0.03),
+                                blurRadius: 4,
+                              ),
+                            ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.account_balance, size: 18, color: selected ? AppColors.white : AppColors.navy),
+                        Icon(
+                          Icons.account_balance,
+                          size: 18,
+                          color: selected ? AppColors.white : AppColors.navy,
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           m,
@@ -1170,10 +1414,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   color: AppColors.auctionWithOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.schedule, size: 24, color: AppColors.auction),
+                child: const Icon(
+                  Icons.schedule,
+                  size: 24,
+                  color: AppColors.auction,
+                ),
               ),
               const SizedBox(height: 12),
-              Text('Submitted — Pending Admin Review', style: AppTextStyles.labelLarge),
+              Text(
+                'Submitted — Pending Admin Review',
+                style: AppTextStyles.labelLarge,
+              ),
               const SizedBox(height: 8),
               Text(
                 'Your registration is being reviewed. You can browse auctions, but bidding is locked until approval. You\'ll receive an email + SMS once approved.',
@@ -1191,15 +1442,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             color: AppColors.white,
             borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
             border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-            boxShadow: [BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8)],
+            boxShadow: [
+              BoxShadow(color: AppColors.blackWithOpacity(0.03), blurRadius: 8),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'APPLICATION ID',
-                style: AppTextStyles.body(size: 10, weight: FontWeight.w700, color: AppColors.navyWithOpacity(0.6))
-                    .copyWith(letterSpacing: 0.8),
+                style: AppTextStyles.body(
+                  size: 10,
+                  weight: FontWeight.w700,
+                  color: AppColors.navyWithOpacity(0.6),
+                ).copyWith(letterSpacing: 0.8),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1239,10 +1495,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   color: AppColors.successWithOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, size: 24, color: AppColors.success),
+                child: const Icon(
+                  Icons.check,
+                  size: 24,
+                  color: AppColors.success,
+                ),
               ),
               const SizedBox(height: 12),
-              Text('Approved — You can now bid', style: AppTextStyles.labelLarge),
+              Text(
+                'Approved — You can now bid',
+                style: AppTextStyles.labelLarge,
+              ),
               const SizedBox(height: 8),
               Text(
                 'Bidding features are now unlocked across the app.',
@@ -1281,7 +1544,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               if (required)
                 TextSpan(
                   text: ' *',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.auction),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.auction,
+                  ),
                 ),
             ],
           ),
@@ -1314,14 +1581,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       maxLines: maxLines,
       textAlign: textAlign,
       onChanged: onChanged,
-      style: AppTextStyles.body(size: 14, weight: FontWeight.w500).copyWith(letterSpacing: letterSpacing),
+      style: AppTextStyles.body(
+        size: 14,
+        weight: FontWeight.w500,
+      ).copyWith(letterSpacing: letterSpacing),
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: prefix,
-        prefixIconConstraints: prefix != null ? const BoxConstraints(minWidth: 0) : null,
+        prefixIconConstraints: prefix != null
+            ? const BoxConstraints(minWidth: 0)
+            : null,
         filled: true,
         fillColor: readOnly ? AppColors.navyWithOpacity(0.05) : AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
           borderSide: BorderSide(color: AppColors.blackWithOpacity(0.05)),
@@ -1355,19 +1630,30 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           backgroundColor: color,
           foregroundColor: AppColors.white,
           disabledBackgroundColor: color.withValues(alpha: 0.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusLg)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          ),
         ),
         child: loading
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.white,
+                ),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   if (icon != null) ...[
                     const SizedBox(width: 6),
                     Icon(icon, size: 16),
@@ -1387,10 +1673,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, size: 16, color: AppColors.destructive),
+          const Icon(
+            Icons.error_outline,
+            size: 16,
+            color: AppColors.destructive,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(msg, style: TextStyle(fontSize: 12, color: AppColors.destructive)),
+            child: Text(
+              msg,
+              style: TextStyle(fontSize: 12, color: AppColors.destructive),
+            ),
           ),
         ],
       ),
@@ -1405,7 +1698,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         border: Border.all(color: AppColors.accentBlueWithOpacity(0.2)),
       ),
-      child: Text(msg, style: AppTextStyles.body(size: 11, color: AppColors.accentBlue)),
+      child: Text(
+        msg,
+        style: AppTextStyles.body(size: 11, color: AppColors.accentBlue),
+      ),
     );
   }
 }
@@ -1423,10 +1719,16 @@ class _TermItem extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: '$num. $title. ', style: const TextStyle(fontWeight: FontWeight.w700)),
+            TextSpan(
+              text: '$num. $title. ',
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             TextSpan(text: text),
           ],
-          style: AppTextStyles.body(size: 12, color: AppColors.navyWithOpacity(0.7)),
+          style: AppTextStyles.body(
+            size: 12,
+            color: AppColors.navyWithOpacity(0.7),
+          ),
         ),
       ),
     );

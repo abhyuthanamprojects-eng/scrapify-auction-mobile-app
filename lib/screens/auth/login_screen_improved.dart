@@ -42,10 +42,11 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
         .login(
           identifier: _identifierController.text.trim(),
           password: _passwordController.text,
+          loginContext: _isBuyer ? 'buyer' : 'seller',
         );
     final state = ref.read(authProvider);
     if (state.isAuthenticated && mounted) {
-      context.go('/home');
+      context.go(state.isSeller ? '/seller' : '/home');
     }
   }
 

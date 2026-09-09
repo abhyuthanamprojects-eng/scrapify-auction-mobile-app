@@ -16,14 +16,19 @@ class AuthService {
     String role = 'buyer',
     String? companyName,
   }) async {
-    final data = await _api.post(Endpoints.register, data: {
-      'name': name,
-      'email': email,
-      'phone': phone,
-      'password': password,
-      'role': role,
-      if (companyName != null) 'company_name': companyName,
-    }, anonymous: true);
+    final data = await _api.post(
+      Endpoints.register,
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'role': role,
+        'registration_type': role,
+        if (companyName != null) 'company_name': companyName,
+      },
+      anonymous: true,
+    );
 
     final user = AppUser.fromJson(data['user'] as Map<String, dynamic>);
     final token = data['token'] as String;
@@ -34,15 +39,23 @@ class AuthService {
   Future<({AppUser user, String token})> login({
     required String identifier,
     required String password,
+    String loginContext = 'buyer',
   }) async {
-    final data = await _api.post(Endpoints.login, data: {
-      'identifier': identifier,
-      'password': password,
-    }, anonymous: true);
+    final data = await _api.post(
+      Endpoints.login,
+      data: {
+        'identifier': identifier,
+        'password': password,
+        'login_context': loginContext,
+      },
+      anonymous: true,
+    );
 
     if (kDebugMode) {
       debugPrint('[AUTH_LOGIN] Response keys: ${data.keys.toList()}');
-      debugPrint('[AUTH_LOGIN] Full response: ${const JsonEncoder.withIndent("  ").convert(data)}');
+      debugPrint(
+        '[AUTH_LOGIN] Full response: ${const JsonEncoder.withIndent("  ").convert(data)}',
+      );
     }
 
     final inner = data['data'] as Map<String, dynamic>? ?? data;
@@ -57,10 +70,11 @@ class AuthService {
     required String identifier,
     String purpose = 'login',
   }) async {
-    final data = await _api.post(Endpoints.requestOtp, data: {
-      'identifier': identifier,
-      'purpose': purpose,
-    }, anonymous: true);
+    final data = await _api.post(
+      Endpoints.requestOtp,
+      data: {'identifier': identifier, 'purpose': purpose},
+      anonymous: true,
+    );
 
     return (
       debugCode: data['debug_code'] as String?,
@@ -72,10 +86,11 @@ class AuthService {
     required String identifier,
     required String code,
   }) async {
-    final data = await _api.post(Endpoints.verifyOtp, data: {
-      'identifier': identifier,
-      'code': code,
-    }, anonymous: true);
+    final data = await _api.post(
+      Endpoints.verifyOtp,
+      data: {'identifier': identifier, 'code': code},
+      anonymous: true,
+    );
 
     final verified = data['verified'] as bool? ?? false;
     AppUser? user;

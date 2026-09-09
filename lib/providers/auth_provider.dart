@@ -14,12 +14,14 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
   Future<void> login({
     required String identifier,
     required String password,
+    String loginContext = 'buyer',
   }) async {
     state = state.copyWith(authState: AuthState.loading, error: '');
     try {
       final result = await _authService.login(
         identifier: identifier,
         password: password,
+        loginContext: loginContext,
       );
       state = state.copyWith(
         authState: AuthState.authenticated,
