@@ -45,4 +45,6 @@ class NotificationItem {
     if (type.startsWith('order')) return 'order';
     return 'system';
   }
+
+  String? get deepLink => data['deep_link'] as String?;
 }

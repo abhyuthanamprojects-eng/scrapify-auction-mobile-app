@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+
 import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
 import '../core/network/token_storage.dart';
@@ -66,7 +68,7 @@ class AuthService {
     return (user: user, token: token);
   }
 
-  Future<({String? debugCode, String expiresAt})> requestOtp({
+  Future<String> requestOtp({
     required String identifier,
     String purpose = 'login',
   }) async {
@@ -76,19 +78,30 @@ class AuthService {
       anonymous: true,
     );
 
-    return (
-      debugCode: data['debug_code'] as String?,
-      expiresAt: data['expires_at'] as String? ?? '',
+    return data['expires_at'] as String? ?? '';
+  }
+
+  Future<String> resendOtp({
+    required String identifier,
+    String purpose = 'login',
+  }) async {
+    final data = await _api.post(
+      Endpoints.resendOtp,
+      data: {'identifier': identifier, 'purpose': purpose},
+      anonymous: true,
     );
+
+    return data['expires_at'] as String? ?? '';
   }
 
   Future<({AppUser? user, String? token, bool verified})> verifyOtp({
     required String identifier,
     required String code,
+    String purpose = 'login',
   }) async {
     final data = await _api.post(
       Endpoints.verifyOtp,
-      data: {'identifier': identifier, 'code': code},
+      data: {'identifier': identifier, 'code': code, 'purpose': purpose},
       anonymous: true,
     );
 

@@ -3,6 +3,7 @@ abstract final class Endpoints {
   static const register = '/auth/register';
   static const login = '/auth/login';
   static const requestOtp = '/auth/request-otp';
+  static const resendOtp = '/auth/resend-otp';
   static const verifyOtp = '/auth/verify-otp';
   static const me = '/auth/me';
   static const logout = '/auth/logout';
@@ -21,7 +22,8 @@ abstract final class Endpoints {
   static const auctions = '/auctions';
   static String auction(String code) => '/auctions/$code';
   static String auctionLots(String code) => '/auctions/$code/lots';
-  static String auctionLot(String code, String lotId) => '/auctions/$code/lots/$lotId';
+  static String auctionLot(String code, String lotId) =>
+      '/auctions/$code/lots/$lotId';
   static String auctionBids(String code) => '/auctions/$code/bids';
   static String auctionLiveState(String code) => '/auctions/$code/live-state';
   static String auctionInterested(String code) => '/auctions/$code/interested';
@@ -57,7 +59,8 @@ abstract final class Endpoints {
   static String vendorResubmitKyc(String code) => '/vendors/$code/resubmit-kyc';
   static String vendorKycStatus(String code) => '/vendors/$code/kyc-status';
   static String vendorDocuments(String code) => '/vendors/$code/documents';
-  static String vendorPayment(String code) => '/vendors/$code/registration-payment';
+  static String vendorPayment(String code) =>
+      '/vendors/$code/registration-payment';
 
   // Business verification (provider credentials remain server-side)
   static const kybStatus = '/kyb/status';
@@ -74,16 +77,20 @@ abstract final class Endpoints {
 
   // RFx & Technical Evaluation
   static String auctionRfx(String code) => '/auctions/$code/rfx';
-  static String submitRfx(String code, int packageId) => '/auctions/$code/rfx/$packageId/submit';
+  static String submitRfx(String code, int packageId) =>
+      '/auctions/$code/rfx/$packageId/submit';
 
   // Site Inspection & Gate Pass
-  static String auctionInspections(String code) => '/auctions/$code/inspections';
+  static String auctionInspections(String code) =>
+      '/auctions/$code/inspections';
   static String verifyGatePass(String token) => '/gate-passes/verify/$token';
   static String scanGatePass(String token) => '/gate-passes/$token/scan';
 
   // Clarifications & Addenda
-  static String auctionClarifications(String code) => '/auctions/$code/clarifications';
-  static String acknowledgeAddendum(String code, int addendumId) => '/auctions/$code/addenda/$addendumId/acknowledge';
+  static String auctionClarifications(String code) =>
+      '/auctions/$code/clarifications';
+  static String acknowledgeAddendum(String code, int addendumId) =>
+      '/auctions/$code/addenda/$addendumId/acknowledge';
 
   // Awards & Fallback
   static String auctionAwards(String code) => '/auctions/$code/awards';

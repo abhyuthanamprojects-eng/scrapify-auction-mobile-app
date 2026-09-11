@@ -1,7 +1,9 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -25,10 +27,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   // Step 1
   final _mobileCtl = TextEditingController();
   final _emailCtl = TextEditingController();
-  final _otpCtl = TextEditingController();
-  bool _otpSent = false;
-  int _timer = 0;
-  String? _debugCode;
+  final _mobileOtpCtl = TextEditingController();
+  final _emailOtpCtl = TextEditingController();
+  bool _mobileOtpSent = false;
+  bool _emailOtpSent = false;
+  bool _mobileVerified = false;
+  bool _emailVerified = false;
+  int _mobileTimer = 0;
+  int _emailTimer = 0;
 
   // Step 2
   bool _useEmail = true;
@@ -78,7 +84,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   void dispose() {
     _mobileCtl.dispose();
     _emailCtl.dispose();
-    _otpCtl.dispose();
+    _mobileOtpCtl.dispose();
+    _emailOtpCtl.dispose();
     _passwordCtl.dispose();
     _password2Ctl.dispose();
     _companyCtl.dispose();
@@ -95,13 +102,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     super.dispose();
   }
 
-  void _startTimer() {
-    setState(() => _timer = 30);
+  void _startTimer({required bool mobile}) {
+    setState(() {
+      if (mobile) {
+        _mobileTimer = 30;
+      } else {
+        _emailTimer = 30;
+      }
+    });
     Future.doWhile(() async {
       await Future.delayed(const Duration(seconds: 1));
       if (!mounted) return false;
-      setState(() => _timer = max(0, _timer - 1));
-      return _timer > 0;
+      setState(() {
+        if (mobile) {
+          _mobileTimer = max(0, _mobileTimer - 1);
+        } else {
+          _emailTimer = max(0, _emailTimer - 1);
+        }
+      });
+      return mobile ? _mobileTimer > 0 : _emailTimer > 0;
     });
   }
 
@@ -345,12 +364,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   // ─── STEP 1: VERIFY ──────────────────────────────────────
   Widget _step1Verify() {
-    final mobileValid = RegExp(
-      r'^\d{10}$',
-    ).hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
+    final mobileValid = RegExp(r'^[6-9]\d{9}$')
+        .hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
     final emailValid =
         _emailCtl.text.contains('@') && _emailCtl.text.contains('.');
-    final canSend = mobileValid && emailValid;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,157 +375,279 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Text('Verify your identity', style: AppTextStyles.titleMedium),
         const SizedBox(height: 4),
         Text(
-          'A one-time code will be sent to both your mobile number and email.',
+          'Verify your mobile by SMS and your email independently. Both checks are required before registration.',
           style: AppTextStyles.caption,
         ),
         const SizedBox(height: 20),
-        _fieldLabel('Mobile Number', required: true),
-        const SizedBox(height: 6),
-        _inputField(
-          controller: _mobileCtl,
-          hint: '98765 43210',
-          keyboardType: TextInputType.phone,
-          prefix: Padding(
-            padding: const EdgeInsets.only(left: 12, right: 4),
-            child: Text(
-              '+91',
-              style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _fieldLabel(
-          'Email ID',
-          required: true,
-          hint: 'OTP will be sent to both mobile & email.',
-        ),
-        const SizedBox(height: 6),
-        _inputField(
-          controller: _emailCtl,
-          hint: 'you@company.com',
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 20),
-        if (_error != null) ...[
-          _errorBanner(_error!),
-          const SizedBox(height: 12),
-        ],
-        if (!_otpSent) ...[
-          _primaryButton(
-            label: 'Send OTP to mobile & email',
-            enabled: canSend && !_loading,
-            loading: _loading,
-            onTap: _sendOtp,
-          ),
-        ] else ...[
-          _infoBanner(
-            'OTP sent to +91 ${_mobileCtl.text} and ${_emailCtl.text}. Enter the code below.',
-          ),
-          const SizedBox(height: 16),
-          if (_debugCode != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.successWithOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                border: Border.all(color: AppColors.successWithOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.bug_report,
-                    size: 14,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Debug OTP: $_debugCode',
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _otpChannelCard(
+                title: 'Mobile OTP',
+                verified: _mobileVerified,
+                controller: _mobileCtl,
+                otpController: _mobileOtpCtl,
+                inputLabel: 'Mobile Number',
+                inputHint: '98765 43210',
+                codeHint: '6-digit SMS code',
+                keyboardType: TextInputType.phone,
+                timer: _mobileTimer,
+                valid: mobileValid,
+                onSend: _sendMobileOtp,
+                onResend: _resendMobileOtp,
+                onVerify: _verifyMobileOtp,
+                onChange: () => setState(() {
+                  _mobileVerified = false;
+                  _mobileOtpSent = false;
+                  _mobileOtpCtl.clear();
+                }),
+                prefix: Padding(
+                  padding: const EdgeInsets.only(left: 12, right: 4),
+                  child: Text(
+                    '+91',
                     style: AppTextStyles.body(
-                      size: 12,
+                      size: 14,
                       weight: FontWeight.w700,
-                      color: AppColors.success,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          _fieldLabel('Enter OTP', required: true),
-          const SizedBox(height: 6),
-          _inputField(
-            controller: _otpCtl,
-            hint: '4–6 digit code',
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            letterSpacing: 8,
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Didn't get it?", style: AppTextStyles.caption),
-              GestureDetector(
-                onTap: _timer > 0 ? null : _sendOtp,
-                child: Text(
-                  _timer > 0 ? 'Resend in ${_timer}s' : 'Resend OTP',
-                  style: AppTextStyles.body(
-                    size: 11,
-                    weight: FontWeight.w700,
-                    color: _timer > 0
-                        ? AppColors.navyWithOpacity(0.3)
-                        : AppColors.accentBlue,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _otpChannelCard(
+                title: 'Email OTP',
+                verified: _emailVerified,
+                controller: _emailCtl,
+                otpController: _emailOtpCtl,
+                inputLabel: 'Email ID',
+                inputHint: 'you@company.com',
+                codeHint: '6-digit email code',
+                keyboardType: TextInputType.emailAddress,
+                timer: _emailTimer,
+                valid: emailValid,
+                onSend: _sendEmailOtp,
+                onResend: _resendEmailOtp,
+                onVerify: _verifyEmailOtp,
+                onChange: () => setState(() {
+                  _emailVerified = false;
+                  _emailOtpSent = false;
+                  _emailOtpCtl.clear();
+                }),
+              ),
+            ),
+          ],
+        ),
+        if (_error != null) ...[
           const SizedBox(height: 16),
-          _primaryButton(
-            label: 'Verify & Continue',
-            color: AppColors.auction,
-            icon: Icons.arrow_forward,
-            enabled: _otpCtl.text.length >= 4 && !_loading,
-            loading: _loading,
-            onTap: _verifyOtp,
-          ),
+          _errorBanner(_error!),
         ],
       ],
     );
   }
 
-  Future<void> _sendOtp() async {
-    _setError(null);
-    _setLoading(true);
-    final result = await ref
-        .read(authProvider.notifier)
-        .requestOtp(_emailCtl.text.trim(), purpose: 'registration');
-    if (!mounted) return;
-    _setLoading(false);
-    setState(() {
-      _otpSent = true;
-      _debugCode = result.debugCode;
-    });
-    _startTimer();
+  Widget _otpChannelCard({
+    required String title,
+    required bool verified,
+    required TextEditingController controller,
+    required TextEditingController otpController,
+    required String inputLabel,
+    required String inputHint,
+    required String codeHint,
+    required TextInputType keyboardType,
+    required int timer,
+    required bool valid,
+    required VoidCallback onSend,
+    required VoidCallback onResend,
+    required VoidCallback onVerify,
+    required VoidCallback onChange,
+    Widget? prefix,
+  }) {
+    final sent = title == 'Mobile OTP' ? _mobileOtpSent : _emailOtpSent;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+        border: Border.all(
+          color: verified
+              ? AppColors.success.withValues(alpha: 0.5)
+              : AppColors.blackWithOpacity(0.06),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: AppTextStyles.body(weight: FontWeight.w700)),
+              if (verified)
+                Text(
+                  'Verified',
+                  style: AppTextStyles.body(
+                    size: 11,
+                    weight: FontWeight.w700,
+                    color: AppColors.success,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _fieldLabel(inputLabel, required: true),
+          const SizedBox(height: 6),
+          _inputField(
+            controller: controller,
+            hint: inputHint,
+            keyboardType: keyboardType,
+            prefix: prefix,
+            readOnly: verified,
+            onChanged: (_) {
+              if (!verified && sent) {
+                setState(() {
+                  if (title == 'Mobile OTP') {
+                    _mobileOtpSent = false;
+                    _mobileOtpCtl.clear();
+                  } else {
+                    _emailOtpSent = false;
+                    _emailOtpCtl.clear();
+                  }
+                });
+              } else {
+                setState(() {});
+              }
+            },
+          ),
+          if (!verified && !sent) ...[
+            const SizedBox(height: 10),
+            _primaryButton(
+              label: title == 'Mobile OTP' ? 'Send SMS OTP' : 'Send email OTP',
+              enabled: valid && !_loading,
+              loading: _loading,
+              onTap: onSend,
+            ),
+          ],
+          if (!verified && sent) ...[
+            const SizedBox(height: 10),
+            _fieldLabel('Enter code', required: true),
+            const SizedBox(height: 6),
+            _inputField(
+              controller: otpController,
+              hint: codeHint,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              letterSpacing: 5,
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: timer > 0 ? null : onResend,
+                  child: Text(
+                    timer > 0
+                        ? 'Resend in ' + timer.toString() + 's'
+                        : 'Resend',
+                    style: AppTextStyles.body(
+                      size: 11,
+                      weight: FontWeight.w700,
+                      color: timer > 0
+                          ? AppColors.navyWithOpacity(0.3)
+                          : AppColors.accentBlue,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onChange,
+                  child: Text(
+                    'Change',
+                    style: AppTextStyles.body(
+                      size: 11,
+                      weight: FontWeight.w700,
+                      color: AppColors.navyWithOpacity(0.6),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            _primaryButton(
+              label: 'Verify',
+              color: AppColors.auction,
+              enabled: otpController.text.length == 6 && !_loading,
+              loading: _loading,
+              onTap: onVerify,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  Future<void> _verifyOtp() async {
+  Future<void> _sendMobileOtp() => _requestOtp(mobile: true, resend: false);
+
+  Future<void> _resendMobileOtp() => _requestOtp(mobile: true, resend: true);
+
+  Future<void> _sendEmailOtp() => _requestOtp(mobile: false, resend: false);
+
+  Future<void> _resendEmailOtp() => _requestOtp(mobile: false, resend: true);
+
+  Future<void> _requestOtp({required bool mobile, required bool resend}) async {
     _setError(null);
     _setLoading(true);
-    final success = await ref
-        .read(authProvider.notifier)
-        .verifyOtp(_emailCtl.text.trim(), _otpCtl.text.trim());
+    final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
+    final notifier = ref.read(authProvider.notifier);
+    final success = resend
+        ? await notifier.resendOtp(identifier, purpose: 'register')
+        : await notifier.requestOtp(identifier, purpose: 'register');
     if (!mounted) return;
     _setLoading(false);
-    if (success) {
-      setState(() {
-        _step = 2;
-        _error = null;
-      });
-    } else {
+    if (!success) {
+      final err = ref.read(authProvider).error;
+      _setError(err.isNotEmpty ? err : 'Could not send OTP. Please try again.');
+      return;
+    }
+    setState(() {
+      if (mobile) {
+        _mobileOtpSent = true;
+      } else {
+        _emailOtpSent = true;
+      }
+    });
+    _startTimer(mobile: mobile);
+  }
+
+  Future<void> _verifyMobileOtp() => _verifyChannelOtp(mobile: true);
+
+  Future<void> _verifyEmailOtp() => _verifyChannelOtp(mobile: false);
+
+  Future<void> _verifyChannelOtp({required bool mobile}) async {
+    _setError(null);
+    _setLoading(true);
+    final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
+    final code = mobile ? _mobileOtpCtl.text.trim() : _emailOtpCtl.text.trim();
+    final success = await ref
+        .read(authProvider.notifier)
+        .verifyOtp(identifier, code, purpose: 'register');
+    if (!mounted) return;
+    _setLoading(false);
+    if (!success) {
       final err = ref.read(authProvider).error;
       _setError(err.isNotEmpty ? err : 'Invalid OTP. Please try again.');
+      return;
     }
+    final complete = mobile ? _emailVerified : _mobileVerified;
+    setState(() {
+      if (mobile) {
+        _mobileVerified = true;
+      } else {
+        _emailVerified = true;
+      }
+      if (complete) _step = 2;
+      _error = null;
+    });
   }
 
   // ─── STEP 2: LOGIN ───────────────────────────────────────
@@ -1069,44 +1208,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   _TermItem(
                     num: '1',
                     title: 'Registration',
-                    text:
-                        'By registering as a bidder you agree to provide accurate KYC details and documents.',
+                    text: 'By registering as a bidder you agree to provide accurate KYC details and documents.',
                   ),
                   _TermItem(
                     num: '2',
                     title: 'EMD',
-                    text:
-                        'A refundable Earnest Money Deposit is required to bid on each lot.',
+                    text: 'A refundable Earnest Money Deposit is required to bid on each lot.',
                   ),
                   _TermItem(
                     num: '3',
                     title: 'Winning bids',
-                    text:
-                        'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
+                    text: 'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
                   ),
                   _TermItem(
                     num: '4',
                     title: 'Pickup & weighbridge',
-                    text:
-                        'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
+                    text: 'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
                   ),
                   _TermItem(
                     num: '5',
                     title: 'Compliance',
-                    text:
-                        'Bidders must hold valid PCB / Recycler authorisation where applicable.',
+                    text: 'Bidders must hold valid PCB / Recycler authorisation where applicable.',
                   ),
                   _TermItem(
                     num: '6',
                     title: 'Refunds',
-                    text:
-                        'EMD of losing bidders is auto-released within 2 hours of auction close.',
+                    text: 'EMD of losing bidders is auto-released within 2 hours of auction close.',
                   ),
                   _TermItem(
                     num: '7',
                     title: 'Approval',
-                    text:
-                        'Registration is subject to admin approval and may be rejected without cause.',
+                    text: 'Registration is subject to admin approval and may be rejected without cause.',
                   ),
                 ],
               ),

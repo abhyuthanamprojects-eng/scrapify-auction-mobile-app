@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -20,7 +21,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _controllers = List.generate(6, (_) => TextEditingController());
   final _focusNodes = List.generate(6, (_) => FocusNode());
   bool _isVerifying = false;
-  String? _debugCode;
   String? _error;
 
   @override
@@ -41,10 +41,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _requestOtp() async {
-    final result = await ref.read(authProvider.notifier).requestOtp(widget.identifier);
-    if (mounted) {
-      setState(() => _debugCode = result.debugCode);
-    }
+    await ref.read(authProvider.notifier).requestOtp(widget.identifier);
   }
 
   void _onChanged(int index, String value) {
@@ -75,7 +72,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       _error = null;
     });
 
-    final success = await ref.read(authProvider.notifier).verifyOtp(widget.identifier, code);
+    final success = await ref
+        .read(authProvider.notifier)
+        .verifyOtp(widget.identifier, code);
     if (!mounted) return;
 
     if (success) {
@@ -119,29 +118,35 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                       color: AppColors.navyWithOpacity(0.05),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                     ),
-                    child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      size: 18,
+                      color: AppColors.navy,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: Image.asset(AssetPaths.appIcon, width: 48, height: 48, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48)),
+                  child: Image.asset(
+                    AssetPaths.appIcon,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) =>
+                        const SizedBox(width: 48, height: 48),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                Text('Enter verification code', style: AppTextStyles.displayMedium),
+                Text(
+                  'Enter verification code',
+                  style: AppTextStyles.displayMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'We sent a 6-digit code to ${widget.identifier}',
                   style: AppTextStyles.caption,
                 ),
-                if (_debugCode != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Debug code: $_debugCode',
-                    style: TextStyle(fontSize: 11, color: AppColors.auction, fontWeight: FontWeight.w600),
-                  ),
-                ],
                 const SizedBox(height: 40),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -150,12 +155,20 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Center(
-                    child: Text(_error!, style: TextStyle(fontSize: 12, color: AppColors.destructive)),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.destructive,
+                      ),
+                    ),
                   ),
                 ],
                 const SizedBox(height: 32),
                 if (_isVerifying)
-                  const Center(child: CircularProgressIndicator(color: AppColors.auction))
+                  const Center(
+                    child: CircularProgressIndicator(color: AppColors.auction),
+                  )
                 else
                   Center(
                     child: TextButton(

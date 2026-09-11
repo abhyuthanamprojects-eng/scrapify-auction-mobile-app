@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../core/network/api_exception.dart';
 import '../core/network/token_storage.dart';
 import '../models/user.dart';
@@ -65,28 +66,37 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     }
   }
 
-  Future<({String? debugCode})> requestOtp(
-    String identifier, {
-    String purpose = 'login',
-  }) async {
+  Future<bool> requestOtp(String identifier, {String purpose = 'login'}) async {
     try {
-      final result = await _authService.requestOtp(
-        identifier: identifier,
-        purpose: purpose,
-      );
-      return (debugCode: result.debugCode);
+      await _authService.requestOtp(identifier: identifier, purpose: purpose);
+      return true;
     } on ApiException catch (e) {
       state = state.copyWith(error: e.firstError);
-      return (debugCode: null);
+      return false;
     }
   }
 
-  Future<bool> verifyOtp(String identifier, String code) async {
+  Future<bool> resendOtp(String identifier, {String purpose = 'login'}) async {
+    try {
+      await _authService.resendOtp(identifier: identifier, purpose: purpose);
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(error: e.firstError);
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp(
+    String identifier,
+    String code, {
+    String purpose = 'login',
+  }) async {
     state = state.copyWith(authState: AuthState.loading, error: '');
     try {
       final result = await _authService.verifyOtp(
         identifier: identifier,
         code: code,
+        purpose: purpose,
       );
       if (result.user != null) {
         state = state.copyWith(

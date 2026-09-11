@@ -51,7 +51,7 @@ class NotificationsScreen extends ConsumerWidget {
                   ),
                   itemCount: notifs.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 6),
-                  itemBuilder: (_, i) => _notifCard(notifs[i], ref),
+                  itemBuilder: (context, i) => _notifCard(context, notifs[i], ref),
                 );
               },
               loading: () => const Padding(
@@ -78,7 +78,7 @@ class NotificationsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _notifCard(NotificationItem notif, WidgetRef ref) {
+  Widget _notifCard(BuildContext context, NotificationItem notif, WidgetRef ref) {
     final cat = notif.category;
     final iconMap = {
       'bid': (Icons.gavel, AppColors.auction),
@@ -95,6 +95,9 @@ class NotificationsScreen extends ConsumerWidget {
           await NotificationService().markRead(notif.id);
           ref.invalidate(notificationsProvider);
           ref.invalidate(unreadCountProvider);
+        }
+        if (notif.deepLink != null && context.mounted) {
+          context.push(notif.deepLink!);
         }
       },
       child: Container(
