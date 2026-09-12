@@ -7,6 +7,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
+import '../../core/validation/input_validators.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -30,8 +31,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty)
+    final identifier = _identifierController.text.trim();
+    if (identifier.isEmpty || _passwordController.text.isEmpty) {
       return;
+    }
+    if ((identifier.contains('@') && !isEmail(identifier)) ||
+        (!identifier.contains('@') && !isIndianMobile(identifier))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a valid email or Indian mobile number.'),
+        ),
+      );
+      return;
+    }
     ref.read(authProvider.notifier).clearError();
     await ref
         .read(authProvider.notifier)

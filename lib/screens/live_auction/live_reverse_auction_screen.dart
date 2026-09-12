@@ -25,11 +25,13 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   late double _currentL1;
   late int _secondsRemaining;
   late int _bidders;
-  int _myRank = 2;
-  bool _isPaused = false;
+  int _myRank = 0;
   String? _bannerNotice;
   Timer? _tickerTimer;
-  Timer? _botTimer;
+  DateTime? _slotEndsAt;
+  int _serverOffsetMs = 0;
+  int? _lastBidId;
+  DateTime? _lastBidAt;
   bool _loading = true;
   String? _loadError;
 
@@ -52,9 +54,14 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
 
     // Countdown
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted || _isPaused) return;
+      if (!mounted) return;
       setState(() {
-        if (_secondsRemaining > 0) _secondsRemaining--;
+        if (_slotEndsAt != null) {
+          _secondsRemaining = _slotEndsAt!
+              .difference(DateTime.now().add(Duration(milliseconds: _serverOffsetMs)))
+              .inSeconds
+              .clamp(0, 999999);
+        }
       });
     });
 
@@ -64,12 +71,24 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
     try {
       final auction = await AuctionService().show(widget.lotId);
       final bids = await AuctionService().bids(widget.lotId);
+      final live = await AuctionService().liveState(widget.lotId);
+      final end = ((live['active_slot'] as Map<String, dynamic>?)?['ends_at'] ??
+          live['schedule_end']) as String?;
+      final slotEndsAt = DateTime.tryParse(end ?? '');
+      final serverTime = DateTime.tryParse(live['server_time'] as String? ?? '');
+      final offset = serverTime?.difference(DateTime.now()).inMilliseconds ?? _serverOffsetMs;
       if (!mounted) return;
       setState(() {
         _auction = auction;
-        _currentL1 = auction.currentHighestInr;
-        _secondsRemaining = auction.secondsRemaining;
-        _bidders = auction.bidders;
+        _currentL1 = (live['current_lowest_inr'] as num?)?.toDouble() ??
+            (live['current_price_inr'] as num?)?.toDouble() ?? auction.currentHighestInr;
+        _secondsRemaining = slotEndsAt == null
+            ? (live['seconds_remaining'] as num?)?.toInt() ?? 0
+            : slotEndsAt.difference(DateTime.now().add(Duration(milliseconds: offset))).inSeconds.clamp(0, 999999);
+        _bidders = (live['bidders'] as num?)?.toInt() ?? auction.bidders;
+        _myRank = (live['own_rank'] as num?)?.toInt() ?? 0;
+        _slotEndsAt = slotEndsAt;
+        _serverOffsetMs = offset;
         _offerFeed
           ..clear()
           ..addAll(bids.map((bid) => {
@@ -92,7 +111,6 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   @override
   void dispose() {
     _tickerTimer?.cancel();
-    _botTimer?.cancel();
     super.dispose();
   }
 
@@ -100,10 +118,15 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
     try {
       final result = await BidService().placeBid(auctionCode: _auction.code, amount: amount);
       if (!mounted) return;
+      final live = await AuctionService().liveState(_auction.code);
       setState(() {
-      _currentL1 = result.currentHighest;
-      _myRank = 1; // Now L1
-      _bannerNotice = isAuto ? '⚡ Auto-Offer matched at L1' : '✓ Offer Accepted! You are currently Rank #1 (L1 Lowest)';
+      _currentL1 = (live['current_lowest_inr'] as num?)?.toDouble() ??
+          (live['current_price_inr'] as num?)?.toDouble() ?? result.currentHighest;
+      _myRank = (live['own_rank'] as num?)?.toInt() ?? 0;
+      _bidders = (live['bidders'] as num?)?.toInt() ?? result.bidders;
+      _lastBidId = result.bid.id;
+      _lastBidAt = result.bid.at;
+      _bannerNotice = isAuto ? 'Auto-offer accepted; server state refreshed' : 'Offer accepted; server rank refreshed';
       _offerFeed.insert(0, {
         'vendor': isAuto ? 'You (Auto-Floor)' : 'You',
         'amount': amount,
@@ -225,11 +248,11 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
 
   void _showBidReceipt(double amount) {
     final receipt = BidReceipt(
-      receiptId: 'REV-2026-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      receiptId: _lastBidId?.toString() ?? '—',
       auctionCode: _auction.code,
       auctionTitle: _auction.title,
       amountInr: amount,
-      timestamp: DateTime.now().toIso8601String(),
+      timestamp: _lastBidAt?.toIso8601String() ?? '—',
     );
 
     showDialog(
@@ -249,7 +272,7 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
               _receiptRow('Event ID', receipt.auctionCode),
               _receiptRow('Offer Amount (L1)', Formatters.formatINR(receipt.amountInr)),
               _receiptRow('Timestamp', receipt.timestamp.split('T').first),
-              _receiptRow('Verification Hash', 'SHA256: 8f4b29c91...'),
+              _receiptRow('Server status', 'Accepted by auction API'),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,

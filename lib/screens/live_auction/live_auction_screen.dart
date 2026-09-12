@@ -25,14 +25,15 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
   late double _currentHighest;
   late int _secondsRemaining;
   late int _bidders;
-  int _myRank = 2;
+  int _myRank = 0;
   bool _isAutoBidEnabled = false;
-  double _autoBidCeiling = 3000000;
-  bool _isExtended = false;
-  bool _isPaused = false;
+  double _autoBidCeiling = 0;
   String? _bannerNotice;
   Timer? _tickerTimer;
-  Timer? _botTimer;
+  DateTime? _slotEndsAt;
+  int _serverOffsetMs = 0;
+  int? _lastBidId;
+  DateTime? _lastBidAt;
   bool _loading = true;
   String? _loadError;
 
@@ -49,15 +50,13 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
 
     // Main Countdown Timer
     _tickerTimer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (!mounted || _isPaused) return;
+      if (!mounted) return;
       setState(() {
-        if (_secondsRemaining > 0) {
-          _secondsRemaining--;
-          if (_secondsRemaining == 30 && !_isExtended) {
-            _isExtended = true;
-            _secondsRemaining += 120;
-            _bannerNotice = '⚡ +2:00 mins extended due to active bid activity';
-          }
+        if (_slotEndsAt != null) {
+          _secondsRemaining = _slotEndsAt!
+              .difference(DateTime.now().add(Duration(milliseconds: _serverOffsetMs)))
+              .inSeconds
+              .clamp(0, 999999);
         }
       });
     });
@@ -68,12 +67,23 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
     try {
       final auction = await AuctionService().show(widget.lotId);
       final bids = await AuctionService().bids(widget.lotId);
+      final live = await AuctionService().liveState(widget.lotId);
+      final end = ((live['active_slot'] as Map<String, dynamic>?)?['ends_at'] ??
+          live['schedule_end']) as String?;
+      final slotEndsAt = DateTime.tryParse(end ?? '');
+      final serverTime = DateTime.tryParse(live['server_time'] as String? ?? '');
+      final offset = serverTime?.difference(DateTime.now()).inMilliseconds ?? _serverOffsetMs;
       if (!mounted) return;
       setState(() {
         _auction = auction;
-        _currentHighest = auction.currentHighestInr;
-        _secondsRemaining = auction.secondsRemaining;
-        _bidders = auction.bidders;
+        _currentHighest = (live['current_highest_inr'] as num?)?.toDouble() ?? auction.currentHighestInr;
+        _secondsRemaining = slotEndsAt == null
+            ? (live['seconds_remaining'] as num?)?.toInt() ?? 0
+            : slotEndsAt.difference(DateTime.now().add(Duration(milliseconds: offset))).inSeconds.clamp(0, 999999);
+        _bidders = (live['bidders'] as num?)?.toInt() ?? auction.bidders;
+        _myRank = (live['own_rank'] as num?)?.toInt() ?? 0;
+        _slotEndsAt = slotEndsAt;
+        _serverOffsetMs = offset;
         _bidFeed
           ..clear()
           ..addAll(bids.map((bid) => {
@@ -96,7 +106,6 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
   @override
   void dispose() {
     _tickerTimer?.cancel();
-    _botTimer?.cancel();
     super.dispose();
   }
 
@@ -104,10 +113,14 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
     try {
       final result = await BidService().placeBid(auctionCode: _auction.code, amount: amount);
       if (!mounted) return;
+      final live = await AuctionService().liveState(_auction.code);
       setState(() {
-      _currentHighest = result.currentHighest;
-      _myRank = 1; // Leading
-      _bannerNotice = isAuto ? '⚡ Auto-Bid placed successfully' : '✓ Bid Accepted! You are currently Rank #1 (Leading)';
+      _currentHighest = (live['current_highest_inr'] as num?)?.toDouble() ?? result.currentHighest;
+      _myRank = (live['own_rank'] as num?)?.toInt() ?? 0;
+      _bidders = (live['bidders'] as num?)?.toInt() ?? result.bidders;
+      _lastBidId = result.bid.id;
+      _lastBidAt = result.bid.at;
+      _bannerNotice = isAuto ? 'Auto-bid accepted; server state refreshed' : 'Bid accepted; server rank refreshed';
       _bidFeed.insert(0, {
         'bidder': isAuto ? 'You (Auto-Proxy)' : 'You',
         'amount': amount,
@@ -123,7 +136,9 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
 
   void _openAutoBidSheet() {
     final step = _auction.bidIncrementInr > 0 ? _auction.bidIncrementInr : 20000;
-    double ceiling = _autoBidCeiling;
+    double ceiling = _autoBidCeiling > _currentHighest + step
+        ? _autoBidCeiling
+        : _currentHighest + step;
 
     showModalBottomSheet(
       context: context,
@@ -185,13 +200,22 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _autoBidCeiling = ceiling;
-                      _isAutoBidEnabled = true;
-                      _bannerNotice = '⚡ Auto-Bid active up to ${Formatters.formatINR(ceiling)}';
-                    });
-                    Navigator.of(ctx).pop();
+                  onPressed: () async {
+                    try {
+                      await BidService().setProxyBid(
+                        auctionCode: _auction.code,
+                        maxAmount: ceiling,
+                      );
+                      if (!mounted) return;
+                      setState(() {
+                        _autoBidCeiling = ceiling;
+                        _isAutoBidEnabled = true;
+                        _bannerNotice = 'Auto-bid enabled up to ${Formatters.formatINR(ceiling)}';
+                      });
+                      Navigator.of(ctx).pop();
+                    } catch (error) {
+                      if (mounted) setState(() => _bannerNotice = 'Auto-bid rejected: $error');
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.auction,
@@ -210,11 +234,11 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
 
   void _showBidReceipt(double amount) {
     final receipt = BidReceipt(
-      receiptId: 'REC-2026-${DateTime.now().millisecondsSinceEpoch % 100000}',
+      receiptId: _lastBidId?.toString() ?? '—',
       auctionCode: _auction.code,
       auctionTitle: _auction.title,
       amountInr: amount,
-      timestamp: DateTime.now().toIso8601String(),
+      timestamp: _lastBidAt?.toIso8601String() ?? '—',
     );
 
     showDialog(
@@ -234,7 +258,7 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
               _receiptRow('Event ID', receipt.auctionCode),
               _receiptRow('Bid Amount', Formatters.formatINR(receipt.amountInr)),
               _receiptRow('Timestamp', receipt.timestamp.split('T').first),
-              _receiptRow('IP Signature', '103.21.244.10 (Verified)'),
+              _receiptRow('Server status', 'Accepted by auction API'),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -384,20 +408,6 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  // Emergency Pause Simulation Toggle (Admin testing)
-                  IconButton(
-                    icon: Icon(
-                      _isPaused ? Icons.play_arrow : Icons.pause,
-                      color: AppColors.white.withValues(alpha: 0.7),
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPaused = !_isPaused;
-                        _bannerNotice = _isPaused ? '⏸ Auction paused by administrator' : null;
-                      });
-                    },
                   ),
                 ],
               ),
@@ -610,11 +620,12 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                 children: [
                   // Quick Increment Pills
                   Row(
-                    children: [5000, 10000, 25000, 50000].map((inc) {
+                    children: [1, 2, 5, 10].map((multiplier) {
+                      final inc = _auction.bidIncrementInr * multiplier;
                       final targetAmount = _currentHighest + inc;
                       return Expanded(
                         child: GestureDetector(
-                          onTap: _isPaused || _secondsRemaining <= 0
+                          onTap: _secondsRemaining <= 0
                               ? null
                               : () => _confirmAndSubmit(targetAmount),
                           child: Container(
@@ -627,7 +638,7 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                             ),
                             child: Center(
                               child: Text(
-                                '+${Formatters.formatINR(inc.toDouble()).replaceAll('₹', '')}',
+                                '+${Formatters.formatINR(inc).replaceAll('₹', '')}',
                                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.goldSoft),
                               ),
                             ),
@@ -642,7 +653,7 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                     width: double.infinity,
                     height: 54,
                     child: ElevatedButton(
-                      onPressed: _isPaused || _secondsRemaining <= 0
+                      onPressed: _secondsRemaining <= 0
                           ? null
                           : () => _confirmAndSubmit(nextValidBid),
                       style: ElevatedButton.styleFrom(
@@ -654,9 +665,7 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                       child: Text(
                         _secondsRemaining <= 0
                             ? 'AUCTION CONCLUDED'
-                            : _isPaused
-                                ? 'AUCTION PAUSED'
-                                : 'BID ${Formatters.formatINR(nextValidBid)}',
+                            : 'BID ${Formatters.formatINR(nextValidBid)}',
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.5),
                       ),
                     ),

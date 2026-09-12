@@ -24,9 +24,9 @@ class BidReceipt extends Equatable {
     required this.timestamp,
     this.status = 'accepted',
     this.rejectionReason,
-    this.clientIp = '103.21.244.10',
-    this.signatureHash = 'SHA256:7f83b1657ff1fc53b92dc18148a1d65dfc2d4b1fa3d677284addd200126d9069',
-    this.deviceId = 'Apple iPhone 15 Pro',
+    this.clientIp = '',
+    this.signatureHash = '',
+    this.deviceId = '',
     double? bidAmountInr,
     String? cryptographicSignature,
     String? ipAddress,
@@ -37,7 +37,7 @@ class BidReceipt extends Equatable {
   String get ipAddress => clientIp;
 
   factory BidReceipt.fromJson(Map<String, dynamic> json) => BidReceipt(
-        receiptId: json['receipt_id'] as String? ?? 'REC-${DateTime.now().millisecondsSinceEpoch}',
+        receiptId: json['receipt_id'] as String? ?? '',
         auctionCode: json['auction_code'] as String? ?? '',
         auctionTitle: json['auction_title'] as String? ?? '',
         lotNumber: json['lot_number'] as String? ?? 'Lot 01',
@@ -46,9 +46,9 @@ class BidReceipt extends Equatable {
         timestamp: json['timestamp'] as String? ?? DateTime.now().toIso8601String(),
         status: json['status'] as String? ?? 'accepted',
         rejectionReason: json['rejection_reason'] as String?,
-        clientIp: json['client_ip'] as String? ?? '103.21.244.10',
+        clientIp: json['client_ip'] as String? ?? '',
         signatureHash: json['signature_hash'] as String? ?? '',
-        deviceId: json['device_id'] as String? ?? 'Mobile Device',
+        deviceId: json['device_id'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {

@@ -22,11 +22,39 @@ class VendorService {
     return await _api.get(Endpoints.vendorKycStatus(vendorCode));
   }
 
-  Future<Map<String, dynamic>> getBusinessVerification() => _api.get(Endpoints.kybStatus);
-  Future<Map<String, dynamic>> getBusinessVerificationHistory() => _api.get(Endpoints.kybHistory);
-  Future<Map<String, dynamic>> verifyGstin(String gstin, {String? businessName}) => _api.post(Endpoints.kybVerifyGstin, data: {'gstin': gstin, if (businessName != null && businessName.isNotEmpty) 'business_name': businessName});
-  Future<Map<String, dynamic>> verifyBank({required String account, required String confirmation, required String ifsc, String? name, String? phone}) => _api.post(Endpoints.kybVerifyBank, data: {'bank_account': account, 'bank_account_confirmation': confirmation, 'ifsc': ifsc, if (name != null && name.isNotEmpty) 'name': name, if (phone != null && phone.isNotEmpty) 'phone': phone});
-  Future<Map<String, dynamic>> requestBusinessReverification() => _api.post(Endpoints.kybReverify);
+  Future<Map<String, dynamic>> getBusinessVerification() =>
+      _api.get(Endpoints.kybStatus);
+  Future<Map<String, dynamic>> getBusinessVerificationHistory() =>
+      _api.get(Endpoints.kybHistory);
+  Future<Map<String, dynamic>> verifyGstin(
+    String gstin, {
+    String? businessName,
+  }) => _api.post(
+    Endpoints.kybVerifyGstin,
+    data: {
+      'gstin': gstin,
+      if (businessName != null && businessName.isNotEmpty)
+        'business_name': businessName,
+    },
+  );
+  Future<Map<String, dynamic>> verifyBank({
+    required String account,
+    required String confirmation,
+    required String ifsc,
+    String? name,
+    String? phone,
+  }) => _api.post(
+    Endpoints.kybVerifyBank,
+    data: {
+      'bank_account': account,
+      'bank_account_confirmation': confirmation,
+      'ifsc': ifsc,
+      if (name != null && name.isNotEmpty) 'name': name,
+      if (phone != null && phone.isNotEmpty) 'phone': phone,
+    },
+  );
+  Future<Map<String, dynamic>> requestBusinessReverification() =>
+      _api.post(Endpoints.kybReverify);
 
   Future<Map<String, dynamic>> register({
     required String companyName,
@@ -38,22 +66,35 @@ class VendorService {
     String? gstNumber,
     String? panNumber,
     String? licenseNumber,
+    String? bankName,
+    String? accountNumber,
+    String? ifscCode,
+    String? accountHolderName,
     List<String>? materialInterest,
+    Map<String, dynamic>? warehouseDetails,
     bool termsAccepted = false,
   }) async {
-    return await _api.post(Endpoints.vendorRegister, data: {
-      'company_name': companyName,
-      'contact_name': contactName,
-      'email': email,
-      'phone': phone,
-      if (location != null) 'location': location,
-      if (address != null) 'address': address,
-      if (gstNumber != null) 'gst_number': gstNumber,
-      if (panNumber != null) 'pan_number': panNumber,
-      if (licenseNumber != null) 'license_number': licenseNumber,
-      if (materialInterest != null) 'material_interest': materialInterest,
-      'terms_accepted': termsAccepted,
-    });
+    return await _api.post(
+      Endpoints.vendorRegister,
+      data: {
+        'company_name': companyName,
+        'contact_name': contactName,
+        'email': email,
+        'phone': phone,
+        if (location != null) 'location': location,
+        if (address != null) 'address': address,
+        if (gstNumber != null) 'gst_number': gstNumber,
+        if (panNumber != null) 'pan_number': panNumber,
+        if (licenseNumber != null) 'license_number': licenseNumber,
+        if (bankName != null) 'bank_name': bankName,
+        if (accountNumber != null) 'account_number': accountNumber,
+        if (ifscCode != null) 'ifsc_code': ifscCode,
+        if (accountHolderName != null) 'account_holder_name': accountHolderName,
+        if (materialInterest != null) 'material_interest': materialInterest,
+        if (warehouseDetails != null) 'warehouse_details': warehouseDetails,
+        'terms_accepted': termsAccepted,
+      },
+    );
   }
 
   Future<Map<String, dynamic>> uploadDocument({
@@ -80,10 +121,9 @@ class VendorService {
     required String reference,
     required double amount,
   }) async {
-    return await _api.post(Endpoints.vendorPayment(vendorCode), data: {
-      'method': method,
-      'reference': reference,
-      'amount': amount,
-    });
+    return await _api.post(
+      Endpoints.vendorPayment(vendorCode),
+      data: {'method': method, 'reference': reference, 'amount': amount},
+    );
   }
 }

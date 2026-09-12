@@ -16,7 +16,8 @@ class CreateAuctionScreen extends ConsumerStatefulWidget {
   const CreateAuctionScreen({super.key});
 
   @override
-  ConsumerState<CreateAuctionScreen> createState() => _CreateAuctionScreenState();
+  ConsumerState<CreateAuctionScreen> createState() =>
+      _CreateAuctionScreenState();
 }
 
 class _SubLotItem {
@@ -39,15 +40,23 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
 
   // Step 1: Identification
   final _titleController = TextEditingController();
-  final _companyController = TextEditingController(text: 'Sharma MetalWorks');
-  final _plantController = TextEditingController(text: 'Jaipur Plant');
-  final _warehouseController = TextEditingController(text: 'Warehouse A');
-  final _locationController = TextEditingController(text: 'Jaipur, Rajasthan');
+  final _companyController = TextEditingController();
+  final _plantController = TextEditingController();
+  final _warehouseController = TextEditingController();
+  final _warehouseAddressController = TextEditingController();
+  final _warehouseCityController = TextEditingController();
+  final _warehouseStateController = TextEditingController();
+  final _warehousePincodeController = TextEditingController();
+  final _warehouseContactController = TextEditingController();
+  final _locationController = TextEditingController();
   String? _selectedCategory = 'Ferrous';
+  String _direction = 'forward';
 
   // Step 2: Preparation
   String _auctionType = 'single'; // 'single' or 'lot_wise'
-  final _materialTypeController = TextEditingController(text: 'MS Scrap Heavy Melting');
+  final _materialTypeController = TextEditingController(
+    text: 'MS Scrap Heavy Melting',
+  );
   final _quantityController = TextEditingController(text: '25');
   String _uom = 'MT';
   final List<_SubLotItem> _subLots = [];
@@ -69,26 +78,39 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   final _reservePriceController = TextEditingController(text: '550000');
   final _bidIncrementController = TextEditingController(text: '5000');
   final _emdAmountController = TextEditingController(text: '25000');
-  final _paymentTermsController = TextEditingController(text: '100% advance before lifting');
+  final _paymentTermsController = TextEditingController(
+    text: '100% advance before lifting',
+  );
   final _liftingPeriodController = TextEditingController(text: '7');
   String _liftingUnit = 'Days';
-  final _termsController = TextEditingController(text: 'Standard auction terms & conditions apply.');
+  final _termsController = TextEditingController(
+    text: 'Standard auction terms & conditions apply.',
+  );
   final _contactNameController = TextEditingController();
   final _contactPhoneController = TextEditingController();
   final _contactEmailController = TextEditingController();
+  final _initialSlotMinutesController = TextEditingController(text: '30');
+  final _continuationSlotMinutesController = TextEditingController(text: '2');
+  final _maximumDurationMinutesController = TextEditingController(text: '120');
 
   @override
   void initState() {
     super.initState();
-    // Default schedules: start in 24 hours, end in 48 hours
+    // Default schedule: a maximum two-hour auction window.
     final now = DateTime.now();
     _scheduleStart = now.add(const Duration(hours: 24));
-    _scheduleEnd = now.add(const Duration(hours: 48));
-    _scheduleStartController.text = DateFormat('yyyy-MM-dd HH:mm').format(_scheduleStart!);
-    _scheduleEndController.text = DateFormat('yyyy-MM-dd HH:mm').format(_scheduleEnd!);
+    _scheduleEnd = _scheduleStart!.add(const Duration(minutes: 120));
+    _scheduleStartController.text = DateFormat(
+      'yyyy-MM-dd HH:mm',
+    ).format(_scheduleStart!);
+    _scheduleEndController.text = DateFormat(
+      'yyyy-MM-dd HH:mm',
+    ).format(_scheduleEnd!);
 
     _inspectionDate = now.add(const Duration(hours: 12));
-    _inspectionDateController.text = DateFormat('yyyy-MM-dd').format(_inspectionDate!);
+    _inspectionDateController.text = DateFormat(
+      'yyyy-MM-dd',
+    ).format(_inspectionDate!);
     _inspectionTimeController.text = '10:00 AM';
     _inspectionLocationController.text = _locationController.text;
   }
@@ -99,6 +121,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     _companyController.dispose();
     _plantController.dispose();
     _warehouseController.dispose();
+    _warehouseAddressController.dispose();
+    _warehouseCityController.dispose();
+    _warehouseStateController.dispose();
+    _warehousePincodeController.dispose();
+    _warehouseContactController.dispose();
     _locationController.dispose();
     _materialTypeController.dispose();
     _quantityController.dispose();
@@ -118,6 +145,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     _contactNameController.dispose();
     _contactPhoneController.dispose();
     _contactEmailController.dispose();
+    _initialSlotMinutesController.dispose();
+    _continuationSlotMinutesController.dispose();
+    _maximumDurationMinutesController.dispose();
     for (final item in _subLots) {
       item.dispose();
     }
@@ -144,7 +174,12 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   Widget _buildHeader(BuildContext context) {
     final titles = ['Identification', 'Preparation', 'Inspection', 'Details'];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 8, AppSpacing.screenPaddingH, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        8,
+        AppSpacing.screenPaddingH,
+        0,
+      ),
       child: Row(
         children: [
           GestureDetector(
@@ -152,8 +187,15 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             child: Container(
               width: 36,
               height: 36,
-              decoration: BoxDecoration(color: AppColors.navyWithOpacity(0.05), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.arrow_back, size: 18, color: AppColors.navy),
+              decoration: BoxDecoration(
+                color: AppColors.navyWithOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: AppColors.navy,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -161,7 +203,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Create Auction', style: AppTextStyles.titleSmall),
-              Text('Step ${_step + 1}: ${titles[_step]}', style: AppTextStyles.captionMuted),
+              Text(
+                'Step ${_step + 1}: ${titles[_step]}',
+                style: AppTextStyles.captionMuted,
+              ),
             ],
           ),
         ],
@@ -171,18 +216,28 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
 
   Widget _buildProgressBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 16, AppSpacing.screenPaddingH, 8),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        16,
+        AppSpacing.screenPaddingH,
+        8,
+      ),
       child: Row(
-        children: List.generate(4, (i) => Expanded(
-          child: Container(
-            height: 4,
-            margin: EdgeInsets.only(right: i < 3 ? 4 : 0),
-            decoration: BoxDecoration(
-              color: i <= _step ? AppColors.auction : AppColors.navyWithOpacity(0.1),
-              borderRadius: BorderRadius.circular(2),
+        children: List.generate(
+          4,
+          (i) => Expanded(
+            child: Container(
+              height: 4,
+              margin: EdgeInsets.only(right: i < 3 ? 4 : 0),
+              decoration: BoxDecoration(
+                color: i <= _step
+                    ? AppColors.auction
+                    : AppColors.navyWithOpacity(0.1),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -222,6 +277,17 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           decoration: const InputDecoration(hintText: 'Operating company name'),
         ),
         const SizedBox(height: 16),
+        Text('Auction Direction *', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _direction,
+          items: const [
+            DropdownMenuItem(value: 'forward', child: Text('Forward auction')),
+            DropdownMenuItem(value: 'reverse', child: Text('Reverse auction')),
+          ],
+          onChanged: (value) => setState(() => _direction = value ?? 'forward'),
+        ),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -232,7 +298,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _plantController,
-                    decoration: const InputDecoration(hintText: 'e.g., Plant 1'),
+                    decoration: const InputDecoration(
+                      hintText: 'e.g., Plant 1',
+                    ),
                   ),
                 ],
               ),
@@ -258,7 +326,59 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _locationController,
-          decoration: const InputDecoration(hintText: 'e.g., Jaipur, Rajasthan'),
+          decoration: const InputDecoration(
+            hintText: 'e.g., Jaipur, Rajasthan',
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('Warehouse Details', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _warehouseAddressController,
+          decoration: const InputDecoration(
+            hintText: 'Full warehouse / yard address',
+          ),
+          maxLines: 2,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _warehouseCityController,
+                decoration: const InputDecoration(hintText: 'City'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _warehouseStateController,
+                decoration: const InputDecoration(hintText: 'State'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _warehousePincodeController,
+                decoration: const InputDecoration(hintText: 'Pincode'),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _warehouseContactController,
+                decoration: const InputDecoration(
+                  hintText: 'Warehouse contact',
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         Text('Scrap Category *', style: AppTextStyles.labelMedium),
@@ -269,7 +389,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
-          children: AppConstants.categories.map((c) => _categoryTile(c)).toList(),
+          children: AppConstants.categories
+              .map((c) => _categoryTile(c))
+              .toList(),
         ),
       ],
     );
@@ -283,9 +405,17 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         Row(
           children: [
-            _typeCard('Single Lot', 'Entire quantity in one single lot', 'single'),
+            _typeCard(
+              'Single Lot',
+              'Entire quantity in one single lot',
+              'single',
+            ),
             const SizedBox(width: 8),
-            _typeCard('Lot-wise', 'Split material into multiple sub-lots', 'lot_wise'),
+            _typeCard(
+              'Lot-wise',
+              'Split material into multiple sub-lots',
+              'lot_wise',
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -293,7 +423,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _materialTypeController,
-          decoration: const InputDecoration(hintText: 'e.g., MS Scrap, Copper Wire, Mixed Ferrous'),
+          decoration: const InputDecoration(
+            hintText: 'e.g., MS Scrap, Copper Wire, Mixed Ferrous',
+          ),
         ),
         const SizedBox(height: 16),
         if (_auctionType == 'single') ...[
@@ -319,7 +451,12 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     DropdownMenuItem(value: 'Nos.', child: Text('Nos.')),
                   ],
                   onChanged: (v) => setState(() => _uom = v ?? 'MT'),
-                  decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -328,7 +465,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Sub-Lots (${_subLots.length})', style: AppTextStyles.labelMedium),
+              Text(
+                'Sub-Lots (${_subLots.length})',
+                style: AppTextStyles.labelMedium,
+              ),
               TextButton.icon(
                 onPressed: () {
                   setState(() {
@@ -336,7 +476,14 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   });
                 },
                 icon: const Icon(Icons.add, size: 16, color: AppColors.auction),
-                label: const Text('Add Sub-Lot', style: TextStyle(color: AppColors.auction, fontWeight: FontWeight.bold, fontSize: 12)),
+                label: const Text(
+                  'Add Sub-Lot',
+                  style: TextStyle(
+                    color: AppColors.auction,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
@@ -350,7 +497,13 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                 border: Border.all(color: AppColors.cardBorder),
               ),
               child: const Center(
-                child: Text('Click "Add Sub-Lot" to define multiple lots for this auction.', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                child: Text(
+                  'Click "Add Sub-Lot" to define multiple lots for this auction.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
             )
           else
@@ -370,16 +523,30 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Lot #${i + 1}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.navy)),
+                        Text(
+                          'Lot #${i + 1}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: AppColors.navy,
+                          ),
+                        ),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                          onPressed: () => setState(() => _subLots.removeAt(i).dispose()),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              setState(() => _subLots.removeAt(i).dispose()),
                         ),
                       ],
                     ),
                     TextField(
                       controller: item.nameController,
-                      decoration: const InputDecoration(hintText: 'Lot Name (e.g. Lot A: Clean Copper)'),
+                      decoration: const InputDecoration(
+                        hintText: 'Lot Name (e.g. Lot A: Clean Copper)',
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -387,7 +554,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         Expanded(
                           child: TextField(
                             controller: item.quantityController,
-                            decoration: const InputDecoration(hintText: 'Quantity'),
+                            decoration: const InputDecoration(
+                              hintText: 'Quantity',
+                            ),
                             keyboardType: TextInputType.number,
                           ),
                         ),
@@ -399,16 +568,23 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                             items: const [
                               DropdownMenuItem(value: 'MT', child: Text('MT')),
                               DropdownMenuItem(value: 'KG', child: Text('KG')),
-                              DropdownMenuItem(value: 'Nos.', child: Text('Nos.')),
+                              DropdownMenuItem(
+                                value: 'Nos.',
+                                child: Text('Nos.'),
+                              ),
                             ],
-                            onChanged: (v) => setState(() => item.uom = v ?? 'MT'),
+                            onChanged: (v) =>
+                                setState(() => item.uom = v ?? 'MT'),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: TextField(
                             controller: item.reservePriceController,
-                            decoration: const InputDecoration(hintText: 'Reserve ₹', prefixText: '₹'),
+                            decoration: const InputDecoration(
+                              hintText: 'Reserve ₹',
+                              prefixText: '₹',
+                            ),
                             keyboardType: TextInputType.number,
                           ),
                         ),
@@ -448,11 +624,16 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                       if (picked != null) {
                         setState(() {
                           _inspectionDate = picked;
-                          _inspectionDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+                          _inspectionDateController.text = DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(picked);
                         });
                       }
                     },
-                    decoration: const InputDecoration(hintText: 'Select date', suffixIcon: Icon(Icons.calendar_today, size: 18)),
+                    decoration: const InputDecoration(
+                      hintText: 'Select date',
+                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    ),
                   ),
                 ],
               ),
@@ -466,7 +647,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _inspectionTimeController,
-                    decoration: const InputDecoration(hintText: 'e.g. 10:00 AM - 4:00 PM'),
+                    decoration: const InputDecoration(
+                      hintText: 'e.g. 10:00 AM - 4:00 PM',
+                    ),
                   ),
                 ],
               ),
@@ -478,13 +661,18 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _inspectionLocationController,
-          decoration: const InputDecoration(hintText: 'Exact premises or yard location for buyer inspection'),
+          decoration: const InputDecoration(
+            hintText: 'Exact premises or yard location for buyer inspection',
+          ),
         ),
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Lot & Inspection Photos (${_auctionPhotos.length}/6)', style: AppTextStyles.labelMedium),
+            Text(
+              'Lot & Inspection Photos (${_auctionPhotos.length}/6)',
+              style: AppTextStyles.labelMedium,
+            ),
             TextButton.icon(
               onPressed: () async {
                 final photos = await AppFilePicker.pickMultiImages();
@@ -497,8 +685,19 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   });
                 }
               },
-              icon: const Icon(Icons.add_photo_alternate_outlined, size: 16, color: AppColors.auction),
-              label: const Text('Add Photos', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.auction)),
+              icon: const Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 16,
+                color: AppColors.auction,
+              ),
+              label: const Text(
+                'Add Photos',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.auction,
+                ),
+              ),
             ),
           ],
         ),
@@ -508,42 +707,55 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              ..._auctionPhotos.map((p) => Stack(
-                children: [
-                  Container(
-                    width: 90,
-                    height: 90,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(color: AppColors.cardBorder),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: p.path != null
-                        ? Image.file(File(p.path!), fit: BoxFit.cover)
-                        : const Center(child: Icon(Icons.image, color: AppColors.navy)),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 12,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _auctionPhotos.remove(p)),
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
+              ..._auctionPhotos.map(
+                (p) => Stack(
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd,
                         ),
-                        child: const Icon(Icons.close, color: Colors.white, size: 14),
+                        border: Border.all(color: AppColors.cardBorder),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: p.path != null
+                          ? Image.file(File(p.path!), fit: BoxFit.cover)
+                          : const Center(
+                              child: Icon(Icons.image, color: AppColors.navy),
+                            ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () => setState(() => _auctionPhotos.remove(p)),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              )),
+                  ],
+                ),
+              ),
               if (_auctionPhotos.length < 6)
                 GestureDetector(
                   onTap: () async {
-                    final photo = await AppFilePicker.showPickerBottomSheet(context, title: 'Add Auction Photo');
+                    final photo = await AppFilePicker.showPickerBottomSheet(
+                      context,
+                      title: 'Add Auction Photo',
+                    );
                     if (photo != null) {
                       setState(() => _auctionPhotos.add(photo));
                     }
@@ -554,14 +766,28 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.navyWithOpacity(0.04),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(color: AppColors.navyWithOpacity(0.15), style: BorderStyle.solid),
+                      border: Border.all(
+                        color: AppColors.navyWithOpacity(0.15),
+                        style: BorderStyle.solid,
+                      ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_a_photo_outlined, size: 24, color: AppColors.navyWithOpacity(0.5)),
+                        Icon(
+                          Icons.add_a_photo_outlined,
+                          size: 24,
+                          color: AppColors.navyWithOpacity(0.5),
+                        ),
                         const SizedBox(height: 4),
-                        Text('Add Photo', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.navyWithOpacity(0.6))),
+                        Text(
+                          'Add Photo',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.navyWithOpacity(0.6),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -570,11 +796,16 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Inspection Guidelines & Safety Protocols', style: AppTextStyles.labelMedium),
+        Text(
+          'Inspection Guidelines & Safety Protocols',
+          style: AppTextStyles.labelMedium,
+        ),
         const SizedBox(height: 8),
         TextField(
           controller: _guidelinesController,
-          decoration: const InputDecoration(hintText: 'Entry requirements, PPE rules, gate entry rules...'),
+          decoration: const InputDecoration(
+            hintText: 'Entry requirements, PPE rules, gate entry rules...',
+          ),
           maxLines: 3,
         ),
       ],
@@ -599,24 +830,39 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: _scheduleStart ?? DateTime.now().add(const Duration(hours: 1)),
+                        initialDate:
+                            _scheduleStart ??
+                            DateTime.now().add(const Duration(hours: 1)),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 90)),
                       );
                       if (date != null && mounted) {
                         final time = await showTimePicker(
                           context: context,
-                          initialTime: TimeOfDay.fromDateTime(_scheduleStart ?? DateTime.now()),
+                          initialTime: TimeOfDay.fromDateTime(
+                            _scheduleStart ?? DateTime.now(),
+                          ),
                         );
                         if (time != null) {
                           setState(() {
-                            _scheduleStart = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-                            _scheduleStartController.text = DateFormat('yyyy-MM-dd HH:mm').format(_scheduleStart!);
+                            _scheduleStart = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                            _scheduleStartController.text = DateFormat(
+                              'yyyy-MM-dd HH:mm',
+                            ).format(_scheduleStart!);
                           });
                         }
                       }
                     },
-                    decoration: const InputDecoration(hintText: 'Start time', suffixIcon: Icon(Icons.calendar_today, size: 18)),
+                    decoration: const InputDecoration(
+                      hintText: 'Start time',
+                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    ),
                   ),
                 ],
               ),
@@ -634,7 +880,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: _scheduleEnd ?? (_scheduleStart ?? DateTime.now()).add(const Duration(hours: 4)),
+                        initialDate:
+                            _scheduleEnd ??
+                            (_scheduleStart ?? DateTime.now()).add(
+                              const Duration(hours: 4),
+                            ),
                         firstDate: _scheduleStart ?? DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 90)),
                       );
@@ -645,13 +895,24 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         );
                         if (time != null) {
                           setState(() {
-                            _scheduleEnd = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-                            _scheduleEndController.text = DateFormat('yyyy-MM-dd HH:mm').format(_scheduleEnd!);
+                            _scheduleEnd = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                            _scheduleEndController.text = DateFormat(
+                              'yyyy-MM-dd HH:mm',
+                            ).format(_scheduleEnd!);
                           });
                         }
                       }
                     },
-                    decoration: const InputDecoration(hintText: 'End time', suffixIcon: Icon(Icons.calendar_today, size: 18)),
+                    decoration: const InputDecoration(
+                      hintText: 'End time',
+                      suffixIcon: Icon(Icons.calendar_today, size: 18),
+                    ),
                   ),
                 ],
               ),
@@ -669,7 +930,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _startingPriceController,
-                    decoration: const InputDecoration(hintText: '₹ Amount', prefixText: '₹ '),
+                    decoration: const InputDecoration(
+                      hintText: '₹ Amount',
+                      prefixText: '₹ ',
+                    ),
                     keyboardType: TextInputType.number,
                   ),
                 ],
@@ -684,7 +948,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _reservePriceController,
-                    decoration: const InputDecoration(hintText: '₹ Amount', prefixText: '₹ '),
+                    decoration: const InputDecoration(
+                      hintText: '₹ Amount',
+                      prefixText: '₹ ',
+                    ),
                     keyboardType: TextInputType.number,
                   ),
                 ],
@@ -703,7 +970,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _bidIncrementController,
-                    decoration: const InputDecoration(hintText: '₹ Amount', prefixText: '₹ '),
+                    decoration: const InputDecoration(
+                      hintText: '₹ Amount',
+                      prefixText: '₹ ',
+                    ),
                     keyboardType: TextInputType.number,
                   ),
                 ],
@@ -718,7 +988,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _emdAmountController,
-                    decoration: const InputDecoration(hintText: '₹ Amount', prefixText: '₹ '),
+                    decoration: const InputDecoration(
+                      hintText: '₹ Amount',
+                      prefixText: '₹ ',
+                    ),
                     keyboardType: TextInputType.number,
                   ),
                 ],
@@ -757,7 +1030,8 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                       DropdownMenuItem(value: 'Days', child: Text('Days')),
                       DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
                     ],
-                    onChanged: (v) => setState(() => _liftingUnit = v ?? 'Days'),
+                    onChanged: (v) =>
+                        setState(() => _liftingUnit = v ?? 'Days'),
                   ),
                 ],
               ),
@@ -769,7 +1043,36 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _paymentTermsController,
-          decoration: const InputDecoration(hintText: 'e.g., 100% within 7 days of award'),
+          decoration: const InputDecoration(
+            hintText: 'e.g., 100% within 7 days of award',
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('Auction Contact', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _contactNameController,
+          decoration: const InputDecoration(hintText: 'Contact person name'),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _contactPhoneController,
+                decoration: const InputDecoration(hintText: 'Phone number'),
+                keyboardType: TextInputType.phone,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _contactEmailController,
+                decoration: const InputDecoration(hintText: 'Email address'),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         Text('Terms & Conditions', style: AppTextStyles.labelMedium),
@@ -778,6 +1081,45 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           controller: _termsController,
           decoration: const InputDecoration(hintText: 'Additional terms...'),
           maxLines: 3,
+        ),
+        const SizedBox(height: 24),
+        Text('Live Auction Timing Policy', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 6),
+        Text(
+          'The first slot runs for 30 minutes by default. Each continuation slot is 2 minutes, and the complete auction cannot exceed 120 minutes.',
+          style: AppTextStyles.captionMuted,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _initialSlotMinutesController,
+                decoration: const InputDecoration(
+                  labelText: 'Initial slot (minutes)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _continuationSlotMinutesController,
+                decoration: const InputDecoration(
+                  labelText: 'Next slot (minutes)',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _maximumDurationMinutesController,
+          decoration: const InputDecoration(
+            labelText: 'Maximum auction duration (minutes)',
+          ),
+          keyboardType: TextInputType.number,
         ),
       ],
     );
@@ -789,14 +1131,24 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       onTap: () => setState(() => _selectedCategory = category),
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.auction.withValues(alpha: 0.1) : AppColors.navyWithOpacity(0.03),
+          color: isSelected
+              ? AppColors.auction.withValues(alpha: 0.1)
+              : AppColors.navyWithOpacity(0.03),
           borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(color: isSelected ? AppColors.auction : AppColors.blackWithOpacity(0.05)),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.auction
+                : AppColors.blackWithOpacity(0.05),
+          ),
         ),
         child: Center(
           child: Text(
             category,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isSelected ? AppColors.auction : AppColors.navy),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isSelected ? AppColors.auction : AppColors.navy,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -812,15 +1164,31 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.auction.withValues(alpha: 0.05) : AppColors.appBg,
+            color: isSelected
+                ? AppColors.auction.withValues(alpha: 0.05)
+                : AppColors.appBg,
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            border: Border.all(color: isSelected ? AppColors.auction : AppColors.blackWithOpacity(0.05), width: isSelected ? 2 : 1),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.auction
+                  : AppColors.blackWithOpacity(0.05),
+              width: isSelected ? 2 : 1,
+            ),
           ),
           child: Column(
             children: [
-              Text(title, style: AppTextStyles.labelMedium.copyWith(color: isSelected ? AppColors.auction : AppColors.navy)),
+              Text(
+                title,
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: isSelected ? AppColors.auction : AppColors.navy,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(desc, style: AppTextStyles.captionMuted, textAlign: TextAlign.center),
+              Text(
+                desc,
+                style: AppTextStyles.captionMuted,
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -834,23 +1202,29 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       child: AppButton(
         label: _step < 3 ? 'Continue' : 'Submit for Review',
         isLoading: _isSubmitting,
-        onPressed: _isSubmitting ? null : () {
-          if (_step == 0) {
-            final title = _titleController.text.trim();
-            final company = _companyController.text.trim();
-            if (title.isEmpty || company.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter auction title and company name.')),
-              );
-              return;
-            }
-          }
-          if (_step < 3) {
-            setState(() => _step++);
-          } else {
-            _showConfirmation();
-          }
-        },
+        onPressed: _isSubmitting
+            ? null
+            : () {
+                if (_step == 0) {
+                  final title = _titleController.text.trim();
+                  final company = _companyController.text.trim();
+                  if (title.isEmpty || company.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Please enter auction title and company name.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                }
+                if (_step < 3) {
+                  setState(() => _step++);
+                } else {
+                  _showConfirmation();
+                }
+              },
       ),
     );
   }
@@ -860,9 +1234,14 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Submit Auction?'),
-        content: const Text('Your auction will be reviewed and approved by the compliance team before going live.'),
+        content: const Text(
+          'Your auction will be reviewed and approved by the compliance team before going live.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
@@ -876,30 +1255,91 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   }
 
   Future<void> _submitAuction() async {
+    final start = _scheduleStart;
+    final end = _scheduleEnd;
+    final initialSlotMinutes =
+        int.tryParse(_initialSlotMinutesController.text.trim()) ?? 0;
+    final continuationSlotMinutes =
+        int.tryParse(_continuationSlotMinutesController.text.trim()) ?? 0;
+    final maximumDurationMinutes =
+        int.tryParse(_maximumDurationMinutesController.text.trim()) ?? 0;
+
+    if (start == null || end == null || !end.isAfter(start)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please choose a valid auction start and end time.'),
+        ),
+      );
+      return;
+    }
+    if (maximumDurationMinutes < 1 || maximumDurationMinutes > 120) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Maximum auction duration must be between 1 and 120 minutes.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (end.difference(start).inMinutes > maximumDurationMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'The selected auction window cannot exceed the maximum duration.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (initialSlotMinutes < 1 || continuationSlotMinutes < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Slot durations must be greater than zero.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       final body = <String, dynamic>{
         'title': _titleController.text.trim().isNotEmpty
             ? _titleController.text.trim()
             : '${_materialTypeController.text.trim()} Scrap Disposal',
+        'description': _materialTypeController.text.trim(),
         'company': _companyController.text.trim().isNotEmpty
             ? _companyController.text.trim()
             : 'Enterprise Seller',
         'category': _selectedCategory ?? 'Ferrous',
-        'direction': 'forward',
+        'direction': _direction,
         'lot_type': _auctionType,
         'plant': _plantController.text.trim(),
         'warehouse': _warehouseController.text.trim(),
+        'warehouse_details': {
+          'address': _warehouseAddressController.text.trim(),
+          'city': _warehouseCityController.text.trim(),
+          'state': _warehouseStateController.text.trim(),
+          'pincode': _warehousePincodeController.text.trim(),
+          'contact': _warehouseContactController.text.trim(),
+        },
         'location': _locationController.text.trim(),
         'material_type': _materialTypeController.text.trim(),
         'quantity': _quantityController.text.trim(),
         'uom': _uom,
-        'starting_price': double.tryParse(_startingPriceController.text.trim()) ?? 0,
+        'starting_price':
+            double.tryParse(_startingPriceController.text.trim()) ?? 0,
         'reserve_price': double.tryParse(_reservePriceController.text.trim()),
-        'bid_increment': double.tryParse(_bidIncrementController.text.trim()) ?? 1000,
-        'emd_amount': double.tryParse(_emdAmountController.text.trim()) ?? 10000,
-        'schedule_start': _scheduleStart?.toIso8601String() ?? DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
-        'schedule_end': _scheduleEnd?.toIso8601String() ?? DateTime.now().add(const Duration(hours: 48)).toIso8601String(),
+        'bid_increment':
+            double.tryParse(_bidIncrementController.text.trim()) ?? 1000,
+        'emd_amount':
+            double.tryParse(_emdAmountController.text.trim()) ?? 10000,
+        'schedule_start':
+            _scheduleStart?.toIso8601String() ??
+            DateTime.now().add(const Duration(hours: 24)).toIso8601String(),
+        'schedule_end':
+            _scheduleEnd?.toIso8601String() ??
+            DateTime.now().add(const Duration(hours: 48)).toIso8601String(),
         'inspection_date': _inspectionDateController.text.trim(),
         'inspection_time': _inspectionTimeController.text.trim(),
         'inspection_location': _inspectionLocationController.text.trim(),
@@ -908,19 +1348,45 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         'payment_terms': _paymentTermsController.text.trim(),
         'lifting_period': _liftingPeriodController.text.trim(),
         'lifting_unit': _liftingUnit,
+        'contact_name': _contactNameController.text.trim(),
+        'contact_phone': _contactPhoneController.text.trim(),
+        'contact_email': _contactEmailController.text.trim(),
+        'warehouse_contact': _warehouseContactController.text.trim(),
         'status': 'pending_approval',
       };
 
       if (_auctionType == 'lot_wise' && _subLots.isNotEmpty) {
-        body['sub_lots'] = _subLots.map((item) => {
-          'name': item.nameController.text.trim().isNotEmpty ? item.nameController.text.trim() : 'Lot Material',
-          'quantity': item.quantityController.text.trim().isNotEmpty ? item.quantityController.text.trim() : '1',
-          'uom': item.uom,
-          'reserve_price': double.tryParse(item.reservePriceController.text.trim()),
-        }).toList();
+        body['sub_lots'] = _subLots
+            .map(
+              (item) => {
+                'name': item.nameController.text.trim().isNotEmpty
+                    ? item.nameController.text.trim()
+                    : 'Lot Material',
+                'quantity': item.quantityController.text.trim().isNotEmpty
+                    ? item.quantityController.text.trim()
+                    : '1',
+                'uom': item.uom,
+                'reserve_price': double.tryParse(
+                  item.reservePriceController.text.trim(),
+                ),
+              },
+            )
+            .toList();
       }
 
       final created = await _auctionService.create(body);
+      await _auctionService.updateConfiguration(created.code, {
+        'emd_required':
+            (double.tryParse(_emdAmountController.text.trim()) ?? 0) > 0,
+        'emd_type': 'FIXED',
+        'emd_fixed_amount':
+            double.tryParse(_emdAmountController.text.trim()) ?? 0,
+        'initial_slot_minutes': initialSlotMinutes,
+        'continuation_slot_minutes': continuationSlotMinutes,
+        'maximum_auction_duration_minutes': maximumDurationMinutes,
+        'bid_cutoff_ms': 500,
+        'continuation_mode': 'MANUAL_ADMIN',
+      });
 
       // Invalidate seller auctions provider to refresh list
       ref.invalidate(sellerAuctionsProvider);
@@ -928,7 +1394,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Auction #${created.code} submitted successfully for review!'),
+            content: Text(
+              'Auction #${created.code} submitted successfully for review!',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -950,4 +1418,3 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     }
   }
 }
-

@@ -11,7 +11,9 @@ class LiveAuctionChannel {
   WebSocketChannel? _channel;
   StreamSubscription? _sub;
   Timer? _pollTimer;
+  Timer? _reconnectTimer;
   String? _auctionCode;
+  Future<Map<String, dynamic>> Function()? _pollRequest;
 
   final _bidController = StreamController<Bid>.broadcast();
   final _stateController = StreamController<Map<String, dynamic>>.broadcast();
@@ -28,14 +30,18 @@ class LiveAuctionChannel {
   final _reconnectingController = StreamController<bool>.broadcast();
   Stream<bool> get onReconnectingChange => _reconnectingController.stream;
 
-  Future<void> connect(String auctionCode) async {
+  Future<void> connect(
+    String auctionCode, {
+    Future<Map<String, dynamic>> Function()? pollRequest,
+  }) async {
     _auctionCode = auctionCode;
+    _pollRequest = pollRequest;
     await _disconnect();
     _setReconnecting(false);
 
     try {
       final uri = Uri(
-        scheme: 'ws',
+        scheme: ApiConfig.reverbPort == 443 ? 'wss' : 'ws',
         host: ApiConfig.reverbHost,
         port: ApiConfig.reverbPort,
         path: '/app/${ApiConfig.reverbKey}',
@@ -45,6 +51,8 @@ class LiveAuctionChannel {
       await _channel!.ready;
       _connected = true;
       _setReconnecting(false);
+      _reconnectTimer?.cancel();
+      _reconnectTimer = null;
 
       // Subscribe to the auction's public channel
       _channel!.sink.add(jsonEncode({
@@ -107,8 +115,21 @@ class LiveAuctionChannel {
     if (kDebugMode) debugPrint('[WS] Falling back to polling');
 
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      _stateController.add({'poll': true, 'code': _auctionCode});
+    if (_pollRequest != null) {
+      _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+        try {
+          final snapshot = await _pollRequest!();
+          _stateController.add(snapshot);
+        } catch (e) {
+          if (kDebugMode) debugPrint('[WS] API polling failed: $e');
+        }
+      });
+    }
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
+      if (_auctionCode != null) {
+        connect(_auctionCode!, pollRequest: _pollRequest);
+      }
     });
   }
 
@@ -119,6 +140,8 @@ class LiveAuctionChannel {
     _channel = null;
     _pollTimer?.cancel();
     _pollTimer = null;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _connected = false;
     _setReconnecting(false);
   }

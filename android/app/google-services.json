@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1042418024481",
+    "project_id": "scrapify-auction",
+    "storage_bucket": "scrapify-auction.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1042418024481:android:12e5a1fbc665b660252360",
+        "android_client_info": {
+          "package_name": "com.scrapify.auction"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1042418024481-g0trjjp14eshgn724khf3qf63v52m65i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHmclBXiX46jDYBvI6VHFLCCI7Zuzfvik"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1042418024481-g0trjjp14eshgn724khf3qf63v52m65i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1042418024481-hck239ccmavui7jf3mv86abu0a2kl1qh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.scrapify.auction"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

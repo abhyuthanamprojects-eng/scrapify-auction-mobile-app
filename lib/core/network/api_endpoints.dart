@@ -21,6 +21,8 @@ abstract final class Endpoints {
   // Auctions
   static const auctions = '/auctions';
   static String auction(String code) => '/auctions/$code';
+  static String auctionConfiguration(String code) =>
+      '/auctions/$code/configuration';
   static String auctionLots(String code) => '/auctions/$code/lots';
   static String auctionLot(String code, String lotId) =>
       '/auctions/$code/lots/$lotId';

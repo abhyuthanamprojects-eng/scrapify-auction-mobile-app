@@ -28,6 +28,8 @@ class LiveBidState {
   final double currentHighest;
   final int bidders;
   final int secondsRemaining;
+  final DateTime? slotEndsAt;
+  final int serverOffsetMs;
   final List<Bid> recentBids;
   final bool autoBidActive;
   final double? proxyMaxAmount;
@@ -39,6 +41,8 @@ class LiveBidState {
     this.currentHighest = 0,
     this.bidders = 0,
     this.secondsRemaining = 0,
+    this.slotEndsAt,
+    this.serverOffsetMs = 0,
     this.recentBids = const [],
     this.autoBidActive = false,
     this.proxyMaxAmount,
@@ -50,6 +54,8 @@ class LiveBidState {
     double? currentHighest,
     int? bidders,
     int? secondsRemaining,
+    DateTime? slotEndsAt,
+    int? serverOffsetMs,
     List<Bid>? recentBids,
     bool? autoBidActive,
     double? proxyMaxAmount,
@@ -61,6 +67,8 @@ class LiveBidState {
         currentHighest: currentHighest ?? this.currentHighest,
         bidders: bidders ?? this.bidders,
         secondsRemaining: secondsRemaining ?? this.secondsRemaining,
+        slotEndsAt: slotEndsAt ?? this.slotEndsAt,
+        serverOffsetMs: serverOffsetMs ?? this.serverOffsetMs,
         recentBids: recentBids ?? this.recentBids,
         autoBidActive: autoBidActive ?? this.autoBidActive,
         proxyMaxAmount: proxyMaxAmount ?? this.proxyMaxAmount,
@@ -84,11 +92,7 @@ class LiveBidNotifier extends StateNotifier<LiveBidState> {
     // Fetch initial state
     try {
       final liveState = await _auctionService.liveState(state.auctionCode);
-      state = state.copyWith(
-        currentHighest: (liveState['current_highest_inr'] as num?)?.toDouble() ?? 0,
-        bidders: liveState['bidders'] as int? ?? 0,
-        secondsRemaining: liveState['seconds_remaining'] as int? ?? 0,
-      );
+      _applyLiveState(liveState);
     } catch (_) {}
 
     // Fetch recent bids
@@ -98,53 +102,68 @@ class LiveBidNotifier extends StateNotifier<LiveBidState> {
     } catch (_) {}
 
     // Connect WebSocket
-    await _channel.connect(state.auctionCode);
+    await _channel.connect(state.auctionCode, pollRequest: _pollLiveState);
     _bidSub = _channel.onBid.listen(_onBid);
     _stateSub = _channel.onStateChange.listen(_onState);
 
     // Start countdown
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.secondsRemaining > 0) {
-        state = state.copyWith(secondsRemaining: state.secondsRemaining - 1);
-      }
+      final endsAt = state.slotEndsAt;
+      if (endsAt == null) return;
+      final remaining = endsAt
+          .difference(DateTime.now().add(Duration(milliseconds: state.serverOffsetMs)))
+          .inSeconds
+          .clamp(0, 999999);
+      state = state.copyWith(secondsRemaining: remaining);
     });
   }
 
   void _onBid(Bid bid) {
-    state = state.copyWith(
-      currentHighest: bid.amountInr,
-      recentBids: [bid, ...state.recentBids].take(20).toList(),
-    );
+    final bids = [
+      bid,
+      ...state.recentBids.where((item) => item.id != bid.id),
+    ].take(20).toList();
+    state = state.copyWith(recentBids: bids);
+    _pollLiveState();
   }
 
   void _onState(Map<String, dynamic> data) async {
-    if (data.containsKey('poll')) {
-      // Polling fallback — re-fetch live state
-      try {
-        final liveState = await _auctionService.liveState(state.auctionCode);
-        state = state.copyWith(
-          currentHighest: (liveState['current_highest_inr'] as num?)?.toDouble(),
-          bidders: liveState['bidders'] as int?,
-          secondsRemaining: liveState['seconds_remaining'] as int?,
-        );
-      } catch (_) {}
-      return;
-    }
+    // Broadcast payloads are hints only. Refresh the complete authoritative
+    // snapshot so reverse ranking, slot cutoff, and server time stay correct.
+    await _pollLiveState();
+  }
 
+  Future<Map<String, dynamic>> _pollLiveState() async {
+    final liveState = await _auctionService.liveState(state.auctionCode);
+    _applyLiveState(liveState);
+    return liveState;
+  }
+
+  void _applyLiveState(Map<String, dynamic> liveState) {
+    final direction = liveState['direction'] as String?;
+    final value = direction == 'reverse'
+        ? liveState['current_lowest_inr'] ?? liveState['current_price_inr']
+        : liveState['current_highest_inr'] ?? liveState['current_price_inr'];
+    final serverTime = DateTime.tryParse(liveState['server_time'] as String? ?? '');
+    final endsAt = (liveState['active_slot'] as Map<String, dynamic>?)?['ends_at'] ??
+        liveState['schedule_end'];
+    final slotEndsAt = DateTime.tryParse(endsAt as String? ?? '');
+    final offset = serverTime == null
+        ? state.serverOffsetMs
+        : serverTime.difference(DateTime.now()).inMilliseconds;
+    final remaining = slotEndsAt == null
+        ? (liveState['seconds_remaining'] as num?)?.toInt() ?? 0
+        : slotEndsAt
+            .difference(DateTime.now().add(Duration(milliseconds: offset)))
+            .inSeconds
+            .clamp(0, 999999);
     state = state.copyWith(
-      currentHighest: (data['current_highest'] as num?)?.toDouble(),
-      bidders: data['bidders_count'] as int?,
+      currentHighest: (value as num?)?.toDouble() ?? state.currentHighest,
+      bidders: (liveState['bidders'] as num?)?.toInt() ?? state.bidders,
+      secondsRemaining: remaining,
+      slotEndsAt: slotEndsAt,
+      serverOffsetMs: offset,
     );
-
-    // Update schedule_end if extended
-    if (data['schedule_end'] != null) {
-      final end = DateTime.tryParse(data['schedule_end'] as String);
-      if (end != null) {
-        state = state.copyWith(
-          secondsRemaining: end.difference(DateTime.now()).inSeconds.clamp(0, 999999),
-        );
-      }
-    }
   }
 
   Future<void> placeBid(double amount, {String? lot}) async {

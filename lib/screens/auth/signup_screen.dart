@@ -9,7 +9,10 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
+import '../../core/validation/input_validators.dart';
+import '../../core/utils/file_picker_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/pincode_service.dart';
 import '../../services/vendor_service.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -53,12 +56,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _bankAccountCtl = TextEditingController();
   final _bankIfscCtl = TextEditingController();
   final _bankNameCtl = TextEditingController();
+  final _warehouseNameCtl = TextEditingController();
+  final _warehouseAddressCtl = TextEditingController();
+  final _warehouseCityCtl = TextEditingController();
+  final _warehouseStateCtl = TextEditingController();
+  final _warehousePincodeCtl = TextEditingController();
+  final _warehouseContactCtl = TextEditingController();
+  final _pincodeService = PincodeService();
+  bool _warehousePincodeResolved = false;
   final Set<String> _materials = {};
   final Map<String, bool> _docs = {
     'license': false,
     'gst': false,
     'pan': false,
     'cheque': false,
+  };
+  final Map<String, PickedAttachment?> _docFiles = {
+    'license': null,
+    'gst': null,
+    'pan': null,
+    'cheque': null,
   };
   bool _termsAccepted = false;
 
@@ -99,6 +116,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _bankAccountCtl.dispose();
     _bankIfscCtl.dispose();
     _bankNameCtl.dispose();
+    _warehouseNameCtl.dispose();
+    _warehouseAddressCtl.dispose();
+    _warehouseCityCtl.dispose();
+    _warehouseStateCtl.dispose();
+    _warehousePincodeCtl.dispose();
+    _warehouseContactCtl.dispose();
     super.dispose();
   }
 
@@ -126,6 +149,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   void _setError(String? e) => setState(() => _error = e);
   void _setLoading(bool v) => setState(() => _loading = v);
+
+  bool _isIndianMobile(String value) {
+    return isIndianMobile(value);
+  }
+
+  bool _isEmail(String value) => isEmail(value);
+  bool _isPincode(String value) => isIndianPincode(value);
+  bool _isGstin(String value) => isGstin(value);
+  bool _isPan(String value) => isPan(value);
 
   @override
   Widget build(BuildContext context) {
@@ -364,8 +396,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   // ─── STEP 1: VERIFY ──────────────────────────────────────
   Widget _step1Verify() {
-    final mobileValid = RegExp(r'^[6-9]\d{9}$')
-        .hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
+    final mobileValid = RegExp(
+      r'^[6-9]\d{9}$',
+    ).hasMatch(_mobileCtl.text.replaceAll(RegExp(r'\D'), ''));
     final emailValid =
         _emailCtl.text.contains('@') && _emailCtl.text.contains('.');
 
@@ -596,8 +629,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _requestOtp({required bool mobile, required bool resend}) async {
     _setError(null);
-    _setLoading(true);
     final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
+    if (mobile && !_isIndianMobile(identifier)) {
+      _setError('Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+    if (!mobile && !_isEmail(identifier)) {
+      _setError('Enter a valid email address.');
+      return;
+    }
+    _setLoading(true);
     final notifier = ref.read(authProvider.notifier);
     final success = resend
         ? await notifier.resendOtp(identifier, purpose: 'register')
@@ -628,6 +669,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _setLoading(true);
     final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
     final code = mobile ? _mobileOtpCtl.text.trim() : _emailOtpCtl.text.trim();
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      _setError('Enter the 6-digit OTP.');
+      return;
+    }
     final success = await ref
         .read(authProvider.notifier)
         .verifyOtp(identifier, code, purpose: 'register');
@@ -650,13 +695,42 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
   }
 
+  Future<void> _onWarehousePincodeChanged(String value) async {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final pincode = digits.length > 6 ? digits.substring(0, 6) : digits;
+    _warehousePincodeResolved = false;
+    _warehouseCityCtl.clear();
+    _warehouseStateCtl.clear();
+    if (pincode != value) {
+      _warehousePincodeCtl.value = _warehousePincodeCtl.value.copyWith(
+        text: pincode,
+        selection: TextSelection.collapsed(offset: pincode.length),
+      );
+    }
+    if (!_isPincode(pincode)) {
+      if (mounted) setState(() {});
+      return;
+    }
+    final result = await _pincodeService.lookup(pincode);
+    if (!mounted) return;
+    if (result == null) {
+      setState(() {
+        _error = 'We could not resolve this warehouse PIN code.';
+      });
+      return;
+    }
+    setState(() {
+      _warehouseCityCtl.text = result.city;
+      _warehouseStateCtl.text = result.state;
+      _warehousePincodeResolved = true;
+      _error = null;
+    });
+  }
+
   // ─── STEP 2: LOGIN ───────────────────────────────────────
   Widget _step2Login() {
     final pw = _passwordCtl.text;
-    final strong =
-        pw.length >= 8 &&
-        RegExp(r'[A-Z]').hasMatch(pw) &&
-        RegExp(r'\d').hasMatch(pw);
+    final strong = isStrongPassword(pw);
     final match = pw.isNotEmpty && pw == _password2Ctl.text;
     final username = _useEmail ? _emailCtl.text : '+91${_mobileCtl.text}';
 
@@ -826,7 +900,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   // ─── STEP 3: COMPANY ─────────────────────────────────────
   Widget _step3Company() {
-    final allDocsUploaded = _docs.values.every((v) => v);
     final complete =
         _companyCtl.text.isNotEmpty &&
         _addressCtl.text.isNotEmpty &&
@@ -840,8 +913,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _bankAccountCtl.text.isNotEmpty &&
         _bankIfscCtl.text.isNotEmpty &&
         _bankNameCtl.text.isNotEmpty &&
-        allDocsUploaded &&
+        (_registrationRole != 'seller' ||
+            (_warehouseNameCtl.text.isNotEmpty &&
+                _warehouseAddressCtl.text.isNotEmpty &&
+                _warehouseCityCtl.text.isNotEmpty &&
+                _warehouseStateCtl.text.isNotEmpty &&
+                _warehousePincodeCtl.text.isNotEmpty)) &&
+        _docFiles.values.every((file) => file?.path?.isNotEmpty == true) &&
         _termsAccepted;
+    final validBusinessIdentity =
+        _isIndianMobile(_bizMobileCtl.text) &&
+        _isEmail(_bizEmailCtl.text) &&
+        _isGstin(_gstCtl.text) &&
+        _isPan(_panCtl.text);
+    final validWarehouse =
+        _registrationRole != 'seller' ||
+        (_isPincode(_warehousePincodeCtl.text) && _warehousePincodeResolved);
+    final formReady = complete && validBusinessIdentity && validWarehouse;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,6 +948,80 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 6),
         _inputField(controller: _addressCtl, maxLines: 2),
         const SizedBox(height: 16),
+
+        if (_registrationRole == 'seller') ...[
+          Text('Warehouse / operating site', style: AppTextStyles.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            'This is the location from which your seller lots will be dispatched or inspected.',
+            style: AppTextStyles.caption,
+          ),
+          const SizedBox(height: 12),
+          _fieldLabel('Warehouse Name', required: true),
+          const SizedBox(height: 6),
+          _inputField(controller: _warehouseNameCtl),
+          const SizedBox(height: 12),
+          _fieldLabel('Warehouse Address', required: true),
+          const SizedBox(height: 6),
+          _inputField(controller: _warehouseAddressCtl, maxLines: 2),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Warehouse City', required: true),
+                    const SizedBox(height: 6),
+                    _inputField(controller: _warehouseCityCtl, readOnly: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Warehouse State', required: true),
+                    const SizedBox(height: 6),
+                    _inputField(controller: _warehouseStateCtl, readOnly: true),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Warehouse PIN Code', required: true),
+                    const SizedBox(height: 6),
+                    _inputField(
+                      controller: _warehousePincodeCtl,
+                      keyboardType: TextInputType.number,
+                      onChanged: _onWarehousePincodeChanged,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Site Contact', required: false),
+                    const SizedBox(height: 6),
+                    _inputField(controller: _warehouseContactCtl),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+        ],
 
         Row(
           children: [
@@ -1061,25 +1223,85 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           label: 'Continue',
           color: AppColors.auction,
           icon: Icons.arrow_forward,
-          enabled: complete && !_loading,
+          enabled: formReady && !_loading,
           loading: _loading,
           onTap: () async {
             _setError(null);
             _setLoading(true);
             try {
               final vendorService = VendorService();
-              await vendorService.register(
+              final registration = await vendorService.register(
                 companyName: _companyCtl.text.trim(),
                 contactName: _contactCtl.text.trim(),
                 email: _bizEmailCtl.text.trim(),
                 phone: _bizMobileCtl.text.trim(),
                 address: _addressCtl.text.trim(),
-                gstNumber: _gstCtl.text.trim(),
-                panNumber: _panCtl.text.trim(),
+                gstNumber: _gstCtl.text.trim().toUpperCase(),
+                panNumber: _panCtl.text.trim().toUpperCase(),
                 licenseNumber: _licenseCtl.text.trim(),
+                bankName: _bankNameCtl.text.trim(),
+                accountNumber: _bankAccountCtl.text.trim(),
+                ifscCode: _bankIfscCtl.text.trim(),
+                accountHolderName: _contactCtl.text.trim(),
                 materialInterest: _materials.toList(),
+                warehouseDetails: _registrationRole == 'seller'
+                    ? {
+                        'name': _warehouseNameCtl.text.trim(),
+                        'address': _warehouseAddressCtl.text.trim(),
+                        'city': _warehouseCityCtl.text.trim(),
+                        'state': _warehouseStateCtl.text.trim(),
+                        'pincode': _warehousePincodeCtl.text.trim(),
+                        'contact_name': _warehouseContactCtl.text.trim().isEmpty
+                            ? _contactCtl.text.trim()
+                            : _warehouseContactCtl.text.trim(),
+                        'contact_phone': _bizMobileCtl.text.trim(),
+                      }
+                    : null,
                 termsAccepted: _termsAccepted,
               );
+              final user = ref.read(authProvider).user;
+              final vendorCode =
+                  registration['data']?['code'] ??
+                  registration['code'] ??
+                  user?.vendorCode;
+              if (vendorCode is! String || vendorCode.isEmpty) {
+                throw StateError(
+                  'Vendor code missing from registration response.',
+                );
+              }
+
+              await Future.wait([
+                vendorService.uploadDocument(
+                  vendorCode: vendorCode,
+                  docKey: 'license',
+                  kind: 'License',
+                  filePath: _docFiles['license']!.path!,
+                  fileName: _docFiles['license']!.name,
+                ),
+                vendorService.uploadDocument(
+                  vendorCode: vendorCode,
+                  docKey: 'gst',
+                  kind: 'GST Certificate',
+                  filePath: _docFiles['gst']!.path!,
+                  fileName: _docFiles['gst']!.name,
+                ),
+                vendorService.uploadDocument(
+                  vendorCode: vendorCode,
+                  docKey: 'pan',
+                  kind: 'PAN Card',
+                  filePath: _docFiles['pan']!.path!,
+                  fileName: _docFiles['pan']!.name,
+                ),
+                vendorService.uploadDocument(
+                  vendorCode: vendorCode,
+                  docKey: 'cheque',
+                  kind: 'Cancelled Cheque',
+                  filePath: _docFiles['cheque']!.path!,
+                  fileName: _docFiles['cheque']!.name,
+                ),
+              ]);
+              await vendorService.submitKyc(vendorCode);
+              await ref.read(authProvider.notifier).refreshUser();
               if (!mounted) return;
               setState(() {
                 _step = 4;
@@ -1101,7 +1323,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget _docRow(String label, String key) {
     final done = _docs[key] ?? false;
     return GestureDetector(
-      onTap: () => setState(() => _docs[key] = true),
+      onTap: () async {
+        final file = await AppFilePicker.showPickerBottomSheet(
+          context,
+          title: 'Upload $label',
+          allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+        );
+        if (!mounted || file == null) return;
+        if (file.path == null || file.path!.isEmpty) {
+          _setError(
+            'The selected file could not be read. Please choose it again.',
+          );
+          return;
+        }
+        setState(() {
+          _docFiles[key] = file;
+          _docs[key] = true;
+          _error = null;
+        });
+      },
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -1144,7 +1384,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     ),
                   ),
                   Text(
-                    done ? 'Uploaded' : 'Tap to upload',
+                    done
+                        ? (_docFiles[key]?.name ?? 'Selected')
+                        : 'Tap to upload',
                     style: AppTextStyles.captionMuted,
                   ),
                 ],
@@ -1208,37 +1450,44 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   _TermItem(
                     num: '1',
                     title: 'Registration',
-                    text: 'By registering as a bidder you agree to provide accurate KYC details and documents.',
+                    text:
+                        'By registering as a bidder you agree to provide accurate KYC details and documents.',
                   ),
                   _TermItem(
                     num: '2',
                     title: 'EMD',
-                    text: 'A refundable Earnest Money Deposit is required to bid on each lot.',
+                    text:
+                        'A refundable Earnest Money Deposit is required to bid on each lot.',
                   ),
                   _TermItem(
                     num: '3',
                     title: 'Winning bids',
-                    text: 'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
+                    text:
+                        'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
                   ),
                   _TermItem(
                     num: '4',
                     title: 'Pickup & weighbridge',
-                    text: 'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
+                    text:
+                        'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
                   ),
                   _TermItem(
                     num: '5',
                     title: 'Compliance',
-                    text: 'Bidders must hold valid PCB / Recycler authorisation where applicable.',
+                    text:
+                        'Bidders must hold valid PCB / Recycler authorisation where applicable.',
                   ),
                   _TermItem(
                     num: '6',
                     title: 'Refunds',
-                    text: 'EMD of losing bidders is auto-released within 2 hours of auction close.',
+                    text:
+                        'EMD of losing bidders is auto-released within 2 hours of auction close.',
                   ),
                   _TermItem(
                     num: '7',
                     title: 'Approval',
-                    text: 'Registration is subject to admin approval and may be rejected without cause.',
+                    text:
+                        'Registration is subject to admin approval and may be rejected without cause.',
                   ),
                 ],
               ),
@@ -1306,6 +1555,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _reviewRow('Contact', _contactCtl.text),
           _reviewRow('Business phone', _bizMobileCtl.text),
           _reviewRow('Business email', _bizEmailCtl.text),
+          if (_registrationRole == 'seller') ...[
+            _reviewRow('Warehouse', _warehouseNameCtl.text),
+            _reviewRow(
+              'Warehouse address',
+              '${_warehouseAddressCtl.text}, ${_warehouseCityCtl.text}, ${_warehouseStateCtl.text} - ${_warehousePincodeCtl.text}',
+            ),
+          ],
           _reviewRow('Docs', 'All 4 uploaded', isOk: true),
           _reviewRow('T&C', 'Accepted', isOk: true),
         ]),
@@ -1818,21 +2074,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _infoBanner(String msg) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.accentBlueWithOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        border: Border.all(color: AppColors.accentBlueWithOpacity(0.2)),
-      ),
-      child: Text(
-        msg,
-        style: AppTextStyles.body(size: 11, color: AppColors.accentBlue),
       ),
     );
   }

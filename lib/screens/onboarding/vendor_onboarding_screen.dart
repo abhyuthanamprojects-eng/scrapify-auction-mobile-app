@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/vendor_service.dart';
 import '../../services/pincode_service.dart';
 import '../../core/utils/file_picker_service.dart';
+import '../../core/validation/input_validators.dart';
 
 class VendorOnboardingScreen extends ConsumerStatefulWidget {
   const VendorOnboardingScreen({super.key});
@@ -38,8 +39,9 @@ class _VendorOnboardingScreenState
   // Step 3: Address & Operating Hubs
   final _addressLine1Ctl = TextEditingController();
   final _cityCtl = TextEditingController();
-  String _state = 'Maharashtra';
+  String _state = '';
   final _pincodeCtl = TextEditingController();
+  bool _pincodeResolved = false;
 
   // Step 4: Categories
   final Set<String> _selectedCategories = {};
@@ -113,12 +115,23 @@ class _VendorOnboardingScreenState
           if (v.state != null) _state = v.state!;
           if (v.pincode != null && _pincodeCtl.text.isEmpty)
             _pincodeCtl.text = v.pincode!;
+          if (v.pincode != null && isIndianPincode(v.pincode!)) {
+            _onPincodeChanged(v.pincode!);
+          }
         }
       }
     });
   }
 
   Future<void> _nextStep() async {
+    final validationError = _validateCurrentStep();
+    if (validationError != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationError)));
+      return;
+    }
+
     // Save draft step progress to server
     try {
       final stepMap = <String, dynamic>{
@@ -533,14 +546,37 @@ class _VendorOnboardingScreenState
   }
 
   Future<void> _onPincodeChanged(String value) async {
-    if (value.length != 6) return;
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final pincode = digits.substring(0, digits.length.clamp(0, 6));
+    if (pincode != value) {
+      _pincodeCtl.value = _pincodeCtl.value.copyWith(
+        text: pincode,
+        selection: TextSelection.collapsed(offset: pincode.length),
+      );
+    }
+    if (!isIndianPincode(pincode)) {
+      if (mounted) {
+        setState(() {
+          _pincodeResolved = false;
+          _cityCtl.clear();
+          _state = '';
+        });
+      }
+      return;
+    }
+    setState(() {
+      _pincodeResolved = false;
+      _cityCtl.clear();
+      _state = '';
+    });
     setState(() => _pincodeLookupLoading = true);
     try {
-      final result = await _pincodeService.lookup(value);
+      final result = await _pincodeService.lookup(pincode);
       if (result != null && mounted) {
         setState(() {
           _cityCtl.text = result.city;
           _state = result.state;
+          _pincodeResolved = true;
         });
       }
     } finally {
@@ -591,8 +627,9 @@ class _VendorOnboardingScreenState
             Expanded(
               child: TextField(
                 controller: _cityCtl,
+                readOnly: true,
                 decoration: const InputDecoration(
-                  labelText: 'City *',
+                  labelText: 'City (from PIN API) *',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -1038,7 +1075,7 @@ class _VendorOnboardingScreenState
         _reviewRow('Constitution', _companyType),
         _reviewRow(
           'GSTIN',
-          _gstinCtl.text.isNotEmpty ? _gstinCtl.text : '27AABCM1234N1Z5',
+          _gstinCtl.text.isNotEmpty ? _gstinCtl.text : 'Not provided',
         ),
         _reviewRow('Operating State', _state),
         _reviewRow(
@@ -1047,7 +1084,7 @@ class _VendorOnboardingScreenState
         ),
         _reviewRow(
           'Settlement Bank',
-          _bankNameCtl.text.isNotEmpty ? _bankNameCtl.text : 'HDFC Bank Ltd',
+          _bankNameCtl.text.isNotEmpty ? _bankNameCtl.text : 'Not provided',
         ),
         _reviewRow(
           'Authorized Signatory',
@@ -1106,5 +1143,91 @@ class _VendorOnboardingScreenState
         ],
       ),
     );
+  }
+
+  String? _validateCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        if (_legalNameCtl.text.trim().length < 2) {
+          return 'Enter the registered legal name.';
+        }
+        if (!RegExp(
+          r'^[A-Za-z0-9 .,&()\-/]{8,30}$',
+        ).hasMatch(_cinCtl.text.trim())) {
+          return 'Enter a valid CIN or LLPIN.';
+        }
+        return null;
+      case 1:
+        if (!isGstin(_gstinCtl.text)) {
+          return 'Enter a valid 15-character GSTIN.';
+        }
+        if (!isPan(_panCtl.text)) {
+          return 'Enter a valid 10-character PAN.';
+        }
+        return null;
+      case 2:
+        if (_addressLine1Ctl.text.trim().length < 5) {
+          return 'Enter the registered yard address.';
+        }
+        if (!isIndianPincode(_pincodeCtl.text) || !_pincodeResolved) {
+          return 'Enter a valid PIN code and wait for the location lookup.';
+        }
+        return null;
+      case 3:
+        return _selectedCategories.isEmpty
+            ? 'Select at least one material category.'
+            : null;
+      case 4:
+        if (_bankNameCtl.text.trim().length < 2) {
+          return 'Enter the bank name.';
+        }
+        if (!RegExp(r'^\d{6,30}$').hasMatch(_accountNoCtl.text.trim())) {
+          return 'Enter a valid bank account number.';
+        }
+        if (!isIfsc(_ifscCtl.text)) {
+          return 'Enter a valid IFSC code.';
+        }
+        return null;
+      case 5:
+        if (_signatoryNameCtl.text.trim().length < 2) {
+          return 'Enter the signatory name.';
+        }
+        if (_designationCtl.text.trim().length < 2) {
+          return 'Enter the signatory designation.';
+        }
+        if (!isEmail(_signatoryEmailCtl.text)) {
+          return 'Enter a valid signatory email.';
+        }
+        if (!isIndianMobile(_signatoryPhoneCtl.text)) {
+          return 'Enter a valid signatory mobile number.';
+        }
+        return null;
+      case 6:
+        return _annualCapacityCtl.text.trim().isEmpty
+            ? 'Enter the handling capacity.'
+            : null;
+      case 8:
+        return _acceptIntegrityPact &&
+                _acceptH1Commitment &&
+                _acceptPlatformFees
+            ? null
+            : 'Accept all terms before continuing.';
+      case 9:
+        for (var step = 0; step < 9; step++) {
+          final error = _validateStepNumber(step);
+          if (error != null) return error;
+        }
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  String? _validateStepNumber(int step) {
+    final currentStep = _currentStep;
+    _currentStep = step;
+    final error = _validateCurrentStep();
+    _currentStep = currentStep;
+    return error;
   }
 }

@@ -62,6 +62,13 @@ class AuctionService {
     return Auction.fromJson(inner);
   }
 
+  Future<void> updateConfiguration(
+    String code,
+    Map<String, dynamic> body,
+  ) async {
+    await _api.patch(Endpoints.auctionConfiguration(code), data: body);
+  }
+
   Future<void> submit(String code) async {
     await _api.post(Endpoints.auctionSubmit(code));
   }
