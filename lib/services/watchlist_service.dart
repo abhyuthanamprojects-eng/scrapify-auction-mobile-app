@@ -16,7 +16,7 @@ class WatchlistService {
   Future<void> add(String auctionCode, {String? lot}) async {
     await _api.post(Endpoints.watchlist, data: {
       'auction_id': auctionCode,
-      if (lot != null) 'lot': lot,
+      if (lot case final value?) 'lot': value,
     });
   }
 

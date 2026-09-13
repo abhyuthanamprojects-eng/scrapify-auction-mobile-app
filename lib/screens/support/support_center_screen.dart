@@ -19,7 +19,7 @@ class _SupportCenterScreenState extends State<SupportCenterScreen>
   final _eventCodeCtl = TextEditingController();
   String _selectedCategory = 'Live Auction Technical Query';
   PickedAttachment? _attachedFile;
-  bool _creating = false;
+  final bool _creating = false;
 
   @override
   void initState() {

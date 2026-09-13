@@ -101,20 +101,28 @@ class _VendorOnboardingScreenState
         }
         if (user.vendor != null) {
           final v = user.vendor!;
-          if (v.gstNumber != null && _gstinCtl.text.isEmpty)
+          if (v.gstNumber != null && _gstinCtl.text.isEmpty) {
             _gstinCtl.text = v.gstNumber!;
-          if (v.panNumber != null && _panCtl.text.isEmpty)
+          }
+          if (v.panNumber != null && _panCtl.text.isEmpty) {
             _panCtl.text = v.panNumber!;
-          if (v.bankName != null && _bankNameCtl.text.isEmpty)
+          }
+          if (v.bankName != null && _bankNameCtl.text.isEmpty) {
             _bankNameCtl.text = v.bankName!;
-          if (v.accountNumber != null && _accountNoCtl.text.isEmpty)
+          }
+          if (v.accountNumber != null && _accountNoCtl.text.isEmpty) {
             _accountNoCtl.text = v.accountNumber!;
-          if (v.ifscCode != null && _ifscCtl.text.isEmpty)
+          }
+          if (v.ifscCode != null && _ifscCtl.text.isEmpty) {
             _ifscCtl.text = v.ifscCode!;
-          if (v.city != null && _cityCtl.text.isEmpty) _cityCtl.text = v.city!;
+          }
+          if (v.city != null && _cityCtl.text.isEmpty) {
+            _cityCtl.text = v.city!;
+          }
           if (v.state != null) _state = v.state!;
-          if (v.pincode != null && _pincodeCtl.text.isEmpty)
+          if (v.pincode != null && _pincodeCtl.text.isEmpty) {
             _pincodeCtl.text = v.pincode!;
+          }
           if (v.pincode != null && isIndianPincode(v.pincode!)) {
             _onPincodeChanged(v.pincode!);
           }

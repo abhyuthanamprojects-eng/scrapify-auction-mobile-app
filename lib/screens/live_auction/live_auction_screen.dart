@@ -553,7 +553,7 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.all(12),
                   itemCount: _bidFeed.length,
-                  separatorBuilder: (_, __) => Divider(height: 12, color: AppColors.white.withValues(alpha: 0.06)),
+                  separatorBuilder: (_, _) => Divider(height: 12, color: AppColors.white.withValues(alpha: 0.06)),
                   itemBuilder: (ctx, i) {
                     final item = _bidFeed[i];
                     final isMe = item['isMe'] as bool;

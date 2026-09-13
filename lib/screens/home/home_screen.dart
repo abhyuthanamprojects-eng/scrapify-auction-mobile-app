@@ -150,7 +150,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: CardSkeleton(),
                 ),
               ),
-              error: (_, __) =>
+              error: (_, _) =>
                   const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
             SliverToBoxAdapter(
@@ -208,7 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: ListSkeleton(count: 2),
                 ),
               ),
-              error: (_, __) =>
+              error: (_, _) =>
                   const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -671,7 +671,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: AppConstants.categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (ctx, i) {
           final cat = AppConstants.categories[i];
           final isAll = cat == 'All Categories';
@@ -753,7 +753,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         itemCount: auctions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        separatorBuilder: (_, _) => const SizedBox(width: 14),
         itemBuilder: (ctx, i) {
           final a = auctions[i];
           return SizedBox(

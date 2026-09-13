@@ -45,7 +45,7 @@ class _MyBidsScreenState extends ConsumerState<MyBidsScreen>
         elevation: 0,
         bottom: bids.when(
           loading: () => _tabs(),
-          error: (_, __) => _tabs(),
+          error: (_, _) => _tabs(),
           data: (data) => TabBar(
             controller: _tabController,
             isScrollable: true,
@@ -107,7 +107,7 @@ class _MyBidsScreenState extends ConsumerState<MyBidsScreen>
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       itemCount: bids.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) => _bidCard(context, bids[index]),
     );
   }

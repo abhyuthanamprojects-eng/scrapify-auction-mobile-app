@@ -31,7 +31,7 @@ class PayableSummaryScreen extends StatefulWidget {
 }
 
 class _PayableSummaryScreenState extends State<PayableSummaryScreen> {
-  bool _paid = false;
+  final bool _paid = false;
   String? _selectedSlot;
 
   double get _gst => widget.h1Value * 0.18;

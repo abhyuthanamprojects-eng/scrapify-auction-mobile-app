@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
@@ -47,6 +49,8 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
   List<DocItem> _documents = [];
   bool _loading = true;
   final _vendorService = VendorService();
+  Uint8List? _previewBytes;
+  bool _documentBusy = false;
 
   @override
   void initState() {
@@ -299,7 +303,25 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
     );
   }
 
-  void _viewSecureDoc(DocItem doc) {
+  Future<void> _viewSecureDoc(DocItem doc) async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) return;
+    setState(() => _documentBusy = true);
+    try {
+      final bytes = await _vendorService.downloadDocument(vendorCode, doc.id);
+      if (!mounted) return;
+      _previewBytes = Uint8List.fromList(bytes);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load this document.')),
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _documentBusy = false);
+    }
+    if (!mounted || _previewBytes == null) return;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -358,6 +380,19 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                       ),
                       child: Stack(
                         children: [
+                          if (doc.fileFormat == 'JPG' ||
+                              doc.fileFormat == 'JPEG' ||
+                              doc.fileFormat == 'PNG' ||
+                              doc.fileFormat == 'WEBP')
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.memory(
+                                  _previewBytes!,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
                           Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -444,8 +479,42 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
     );
   }
 
+  Future<void> _downloadDocument(DocItem doc) async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) return;
+    setState(() => _documentBusy = true);
+    try {
+      final bytes = await _vendorService.downloadDocument(vendorCode, doc.id);
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save document',
+        fileName: doc.title,
+      );
+      if (path != null) await File(path).writeAsBytes(bytes, flush: true);
+      if (mounted && path != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Document saved successfully.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not download this document.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _documentBusy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(
+        backgroundColor: AppColors.appBg,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.appBg,
       appBar: AppBar(
@@ -490,7 +559,7 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
       itemCount: list.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (ctx, i) {
         final doc = list[i];
         return _docCard(doc);
@@ -581,10 +650,28 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _viewSecureDoc(doc),
+                  onPressed: _documentBusy ? null : () => _viewSecureDoc(doc),
                   icon: const Icon(Icons.visibility_outlined, size: 16),
                   label: const Text(
                     'View Document',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.navy,
+                    side: const BorderSide(color: AppColors.cardBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _documentBusy ? null : () => _downloadDocument(doc),
+                  icon: const Icon(Icons.download_outlined, size: 16),
+                  label: const Text(
+                    'Download',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                   ),
                   style: OutlinedButton.styleFrom(

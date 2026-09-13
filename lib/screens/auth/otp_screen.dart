@@ -137,7 +137,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
+                    errorBuilder: (_, _, _) =>
                         const SizedBox(width: 48, height: 48),
                   ),
                 ),

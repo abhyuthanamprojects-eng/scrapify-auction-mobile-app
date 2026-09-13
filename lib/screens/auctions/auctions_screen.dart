@@ -249,7 +249,7 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 90),
           itemCount: list.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
           itemBuilder: (ctx, i) {
             final a = list[i];
             return AuctionCard(

@@ -245,6 +245,14 @@ class ApiClient {
         statusCode: status,
         message: e.message ?? 'Request failed',
       );
+
+  Future<List<int>> downloadBytes(String path) async {
+    final response = await _dio.get<List<int>>(
+      path,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return response.data ?? <int>[];
+  }
     } on ApiException {
       rethrow;
     } catch (e) {

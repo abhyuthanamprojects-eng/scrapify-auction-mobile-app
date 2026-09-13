@@ -300,7 +300,7 @@ class TeamManagementScreen extends ConsumerWidget {
                 ),
                 Switch.adaptive(
                   value: m.isActive,
-                  activeColor: AppColors.success,
+                  activeThumbColor: AppColors.success,
                   onChanged: (_) =>
                       ref.read(teamMembersProvider.notifier).toggleStatus(m.id),
                 ),

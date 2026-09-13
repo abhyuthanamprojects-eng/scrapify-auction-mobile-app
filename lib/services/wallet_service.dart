@@ -18,7 +18,7 @@ class WalletService {
   }) async {
     final data =
         await _api.get(Endpoints.walletTransactions, queryParameters: {
-      if (type != null) 'type': type,
+      if (type case final value?) 'type': value,
       'per_page': perPage,
       'page': page,
     });
@@ -39,7 +39,7 @@ class WalletService {
     final data = await _api.post(Endpoints.walletTopUp, data: {
       'amount': amount,
       'method': method,
-      if (note != null) 'note': note,
+      if (note case final value?) 'note': value,
     });
 
     final txn = Transaction.fromJson(
@@ -53,8 +53,8 @@ class WalletService {
     String? auction,
   }) async {
     final data = await _api.get(Endpoints.emd, queryParameters: {
-      if (status != null) 'status': status,
-      if (auction != null) 'auction': auction,
+      if (status case final value?) 'status': value,
+      if (auction case final value?) 'auction': value,
     });
     return (data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
   }
@@ -65,13 +65,13 @@ class WalletService {
   }) async {
     return await _api.post(Endpoints.emdLock, data: {
       'auction_id': auctionId,
-      if (lot != null) 'lot': lot,
+      if (lot case final value?) 'lot': value,
     });
   }
 
   Future<void> releaseEmd(int id, {String? reason}) async {
     await _api.post(Endpoints.emdRelease(id), data: {
-      if (reason != null) 'reason': reason,
+      if (reason case final value?) 'reason': value,
     });
   }
 }

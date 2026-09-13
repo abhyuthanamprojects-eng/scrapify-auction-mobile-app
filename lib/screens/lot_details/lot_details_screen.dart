@@ -227,7 +227,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                           ? Image.network(
                               auction.photos.first,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _mediaPlaceholder(),
+                              errorBuilder: (_, _, _) => _mediaPlaceholder(),
                             )
                           : _mediaPlaceholder(),
                       Container(

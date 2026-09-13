@@ -397,7 +397,7 @@ class _PaymentsDashboardScreenState
                 ListView.separated(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 80),
                   itemCount: awards.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
                   itemBuilder: (ctx, i) {
                     final a = awards[i];
                     return Container(

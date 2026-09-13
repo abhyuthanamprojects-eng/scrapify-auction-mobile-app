@@ -54,20 +54,20 @@ abstract final class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+      GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        builder: (_, _) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/vendor-onboarding',
-        builder: (_, __) => const VendorOnboardingScreen(),
+        builder: (_, _) => const VendorOnboardingScreen(),
       ),
       GoRoute(
         path: '/business-verification',
-        builder: (_, __) => const BusinessVerificationScreen(),
+        builder: (_, _) => const BusinessVerificationScreen(),
       ),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/otp',
         builder: (_, state) =>
@@ -75,7 +75,7 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
+        builder: (_, _) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: '/mfa',
@@ -98,28 +98,28 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: '/trusted-devices',
-        builder: (_, __) => const TrustedDevicesScreen(),
+        builder: (_, _) => const TrustedDevicesScreen(),
       ),
       GoRoute(
         path: '/documents',
-        builder: (_, __) => const DocumentCentreScreen(),
+        builder: (_, _) => const DocumentCentreScreen(),
       ),
       GoRoute(
         path: '/support',
-        builder: (_, __) => const SupportCenterScreen(),
+        builder: (_, _) => const SupportCenterScreen(),
       ),
-      GoRoute(path: '/role', builder: (_, __) => const RoleScreen()),
+      GoRoute(path: '/role', builder: (_, _) => const RoleScreen()),
       GoRoute(
         path: '/signup',
         builder: (_, state) =>
             SignupScreen(prefillIdentifier: state.extra as String?),
       ),
-      GoRoute(path: '/home', builder: (_, __) => const AppShell()),
-      GoRoute(path: '/auctions', builder: (_, __) => const AuctionsScreen()),
-      GoRoute(path: '/wallet', builder: (_, __) => const WalletScreen()),
+      GoRoute(path: '/home', builder: (_, _) => const AppShell()),
+      GoRoute(path: '/auctions', builder: (_, _) => const AuctionsScreen()),
+      GoRoute(path: '/wallet', builder: (_, _) => const WalletScreen()),
       GoRoute(
         path: '/my-bids',
-        builder: (_, __) =>
+        builder: (_, _) =>
             const RoleGuard(allowedRoles: {'buyer'}, child: MyBidsScreen()),
       ),
       GoRoute(
@@ -176,11 +176,11 @@ abstract final class AppRouter {
           child: RfxScreen(auctionCode: state.pathParameters['id']!),
         ),
       ),
-      GoRoute(path: '/won', builder: (_, __) => const WonScreen()),
-      GoRoute(path: '/lost', builder: (_, __) => const LostScreen()),
+      GoRoute(path: '/won', builder: (_, _) => const WonScreen()),
+      GoRoute(path: '/lost', builder: (_, _) => const LostScreen()),
       GoRoute(
         path: '/awards',
-        builder: (_, __) =>
+        builder: (_, _) =>
             const RoleGuard(allowedRoles: {'buyer'}, child: AwardsScreen()),
       ),
       GoRoute(
@@ -199,47 +199,47 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: '/payments',
-        builder: (_, __) => const PaymentsDashboardScreen(),
+        builder: (_, _) => const PaymentsDashboardScreen(),
       ),
-      GoRoute(path: '/orders', builder: (_, __) => const OrdersScreen()),
+      GoRoute(path: '/orders', builder: (_, _) => const OrdersScreen()),
       GoRoute(
         path: '/order/:id',
         builder: (_, state) =>
             OrderDetailScreen(orderId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/disputes', builder: (_, __) => const DisputesScreen()),
+      GoRoute(path: '/disputes', builder: (_, _) => const DisputesScreen()),
       GoRoute(
         path: '/new-dispute/:id',
         builder: (_, state) =>
             NewDisputeScreen(orderId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/team', builder: (_, __) => const TeamManagementScreen()),
+      GoRoute(path: '/team', builder: (_, _) => const TeamManagementScreen()),
       GoRoute(
         path: '/performance',
-        builder: (_, __) => const PerformanceScreen(),
+        builder: (_, _) => const PerformanceScreen(),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationsScreen(),
+        builder: (_, _) => const NotificationsScreen(),
       ),
       GoRoute(
         path: '/profile/edit',
-        builder: (_, __) => const EditProfileScreen(),
+        builder: (_, _) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/profile/notif-settings',
-        builder: (_, __) => const NotifSettingsScreen(),
+        builder: (_, _) => const NotifSettingsScreen(),
       ),
       GoRoute(
         path: '/seller/auctions',
-        builder: (_, __) => const RoleGuard(
+        builder: (_, _) => const RoleGuard(
           allowedRoles: {'seller'},
           child: SellerMyAuctionsScreen(),
         ),
       ),
       GoRoute(
         path: '/seller/create-auction',
-        builder: (_, __) => const RoleGuard(
+        builder: (_, _) => const RoleGuard(
           allowedRoles: {'seller'},
           child: CreateAuctionScreen(),
         ),

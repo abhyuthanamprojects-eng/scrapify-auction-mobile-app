@@ -510,7 +510,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       child: Image.asset(
                         AssetPaths.appIcon,
                         fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) => const Icon(
+                        errorBuilder: (_, _, _) => const Icon(
                           Icons.gavel,
                           size: 18,
                           color: AppColors.auction,
@@ -850,7 +850,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   onTap: timer > 0 ? null : onResend,
                   child: Text(
                     timer > 0
-                        ? 'Resend in ' + timer.toString() + 's'
+                        ? 'Resend in ${timer}s'
                         : 'Resend',
                     style: AppTextStyles.body(
                       size: 11,
@@ -945,7 +945,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
     final code = mobile ? _mobileOtpCtl.text.trim() : _emailOtpCtl.text.trim();
     final otpLength = mobile ? _mobileOtpLength : _emailOtpLength;
-    if (!RegExp('^\\d{' + otpLength.toString() + '}\$').hasMatch(code)) {
+    if (!RegExp('^\\d{$otpLength}\$').hasMatch(code)) {
       _setError('Enter the $otpLength-digit OTP.');
       return;
     }

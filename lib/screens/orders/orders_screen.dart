@@ -36,7 +36,7 @@ class OrdersScreen extends ConsumerWidget {
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 90),
                 itemCount: data.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
                 itemBuilder: (ctx, i) {
                   final f = data[i];
                   return _buildFulfilmentCard(context, f);

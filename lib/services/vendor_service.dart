@@ -82,19 +82,19 @@ class VendorService {
         'contact_name': contactName,
         'email': email,
         'phone': phone,
-        if (location != null) 'location': location,
-        if (address != null) 'address': address,
-        if (gstNumber != null) 'gst_number': gstNumber,
-        if (panNumber != null) 'pan_number': panNumber,
-        if (licenseNumber != null) 'license_number': licenseNumber,
-        if (bankName != null) 'bank_name': bankName,
-        if (accountNumber != null) 'account_number': accountNumber,
-        if (ifscCode != null) 'ifsc_code': ifscCode,
-        if (accountHolderName != null) 'account_holder_name': accountHolderName,
+        if (location case final value?) 'location': value,
+        if (address case final value?) 'address': value,
+        if (gstNumber case final value?) 'gst_number': value,
+        if (panNumber case final value?) 'pan_number': value,
+        if (licenseNumber case final value?) 'license_number': value,
+        if (bankName case final value?) 'bank_name': value,
+        if (accountNumber case final value?) 'account_number': value,
+        if (ifscCode case final value?) 'ifsc_code': value,
+        if (accountHolderName case final value?) 'account_holder_name': value,
         if (businessType != null && businessType.isNotEmpty)
           'business_type': businessType,
-        if (materialInterest != null) 'material_interest': materialInterest,
-        if (warehouseDetails != null) 'warehouse_details': warehouseDetails,
+        if (materialInterest case final value?) 'material_interest': value,
+        if (warehouseDetails case final value?) 'warehouse_details': value,
         'terms_accepted': termsAccepted,
       },
     );
@@ -120,6 +120,12 @@ class VendorService {
 
   Future<Map<String, dynamic>> getDocuments(String vendorCode) async {
     return await _api.get(Endpoints.vendorDocuments(vendorCode));
+  }
+
+  Future<List<int>> downloadDocument(String vendorCode, String documentId) {
+    return _api.downloadBytes(
+      '${Endpoints.vendorDocuments(vendorCode)}/$documentId/download',
+    );
   }
 
   Future<Map<String, dynamic>> verifyPan({

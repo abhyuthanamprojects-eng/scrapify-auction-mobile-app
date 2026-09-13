@@ -68,7 +68,7 @@ class _NotifSettingsScreenState extends State<NotifSettingsScreen> {
               title: Text(k, style: AppTextStyles.bodyMedium),
               value: _prefs[k] ?? false,
               onChanged: (v) => setState(() => _prefs[k] = v),
-              activeColor: AppColors.auction,
+              activeThumbColor: AppColors.auction,
             )).toList(),
           ),
         ),

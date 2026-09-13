@@ -34,8 +34,9 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
   }
 
   Future<void> _login() async {
-    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty)
+    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty) {
       return;
+    }
     ref.read(authProvider.notifier).clearError();
     await ref
         .read(authProvider.notifier)

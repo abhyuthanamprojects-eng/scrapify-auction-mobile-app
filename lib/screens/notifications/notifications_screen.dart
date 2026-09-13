@@ -50,7 +50,7 @@ class NotificationsScreen extends ConsumerWidget {
                     AppSpacing.screenPaddingH, 0, AppSpacing.screenPaddingH, 24,
                   ),
                   itemCount: notifs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  separatorBuilder: (_, _) => const SizedBox(height: 6),
                   itemBuilder: (context, i) => _notifCard(context, notifs[i], ref),
                 );
               },

@@ -172,7 +172,7 @@ class _TrustedDevicesScreenState extends State<TrustedDevicesScreen> {
           ),
           Switch.adaptive(
             value: val,
-            activeColor: AppColors.success,
+            activeThumbColor: AppColors.success,
             onChanged: onChanged,
           ),
         ],
