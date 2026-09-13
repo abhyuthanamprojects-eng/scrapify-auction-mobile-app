@@ -92,6 +92,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _bankAccountCtl = TextEditingController();
   final _bankIfscCtl = TextEditingController();
   final _bankNameCtl = TextEditingController();
+  final _bankHolderCtl = TextEditingController();
   final _warehouseNameCtl = TextEditingController();
   final _warehouseAddressCtl = TextEditingController();
   final _warehouseCityCtl = TextEditingController();
@@ -101,13 +102,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _pincodeService = PincodeService();
   final _vendorService = VendorService();
   Timer? _gstDebounce;
+  Timer? _bankDebounce;
   int _gstRequestId = 0;
+  int _bankRequestId = 0;
   bool _gstVerified = false;
   bool _gstLoading = false;
   String? _gstProvider;
   String? _gstStatus;
   String? _gstError;
   bool _gstAddressAutofilled = false;
+  bool _bankVerified = false;
+  bool _bankLoading = false;
+  String? _bankProvider;
+  String? _bankError;
+  String _bankHolderName = '';
   bool _warehousePincodeResolved = false;
   final Set<String> _materials = {};
   final Map<String, bool> _docs = {
@@ -162,6 +170,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _bankAccountCtl.dispose();
     _bankIfscCtl.dispose();
     _bankNameCtl.dispose();
+    _bankHolderCtl.dispose();
     _warehouseNameCtl.dispose();
     _warehouseAddressCtl.dispose();
     _warehouseCityCtl.dispose();
@@ -169,6 +178,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _warehousePincodeCtl.dispose();
     _warehouseContactCtl.dispose();
     _gstDebounce?.cancel();
+    _bankDebounce?.cancel();
     super.dispose();
   }
 
@@ -205,6 +215,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isPincode(String value) => isIndianPincode(value);
   bool _isGstin(String value) => isGstin(value);
   bool _isPan(String value) => isPan(value);
+  bool _isIfsc(String value) =>
+      RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(value.trim().toUpperCase());
+  bool _isBankAccount(String value) =>
+      RegExp(r'^\d{6,40}$').hasMatch(value.trim());
 
   void _onGstinChanged(String value) {
     final sanitized = value
@@ -295,6 +309,115 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       } finally {
         if (mounted && requestId == _gstRequestId) {
           setState(() => _gstLoading = false);
+        }
+      }
+    });
+  }
+
+  void _onBankChanged({String? account, String? ifsc}) {
+    final normalizedAccount = (account ?? _bankAccountCtl.text)
+        .replaceAll(RegExp(r'\D'), '')
+        .substring(
+          0,
+          (account ?? _bankAccountCtl.text)
+                      .replaceAll(RegExp(r'\D'), '')
+                      .length >
+                  40
+              ? 40
+              : (account ?? _bankAccountCtl.text)
+                    .replaceAll(RegExp(r'\D'), '')
+                    .length,
+        );
+    final normalizedIfsc = (ifsc ?? _bankIfscCtl.text)
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .toUpperCase()
+        .substring(
+          0,
+          (ifsc ?? _bankIfscCtl.text)
+                      .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+                      .length >
+                  11
+              ? 11
+              : (ifsc ?? _bankIfscCtl.text)
+                    .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+                    .length,
+        );
+    if (_bankAccountCtl.text != normalizedAccount) {
+      _bankAccountCtl.value = TextEditingValue(
+        text: normalizedAccount,
+        selection: TextSelection.collapsed(offset: normalizedAccount.length),
+      );
+    }
+    if (_bankIfscCtl.text != normalizedIfsc) {
+      _bankIfscCtl.value = TextEditingValue(
+        text: normalizedIfsc,
+        selection: TextSelection.collapsed(offset: normalizedIfsc.length),
+      );
+    }
+
+    _bankDebounce?.cancel();
+    final requestId = ++_bankRequestId;
+    setState(() {
+      _bankVerified = false;
+      _bankLoading = false;
+      _bankProvider = null;
+      _bankError = null;
+      _bankHolderName = '';
+      _bankNameCtl.clear();
+      _bankHolderCtl.clear();
+    });
+
+    if (!_isBankAccount(normalizedAccount) || !_isIfsc(normalizedIfsc)) return;
+
+    setState(() => _bankLoading = true);
+    _bankDebounce = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final response = await _vendorService.verifyBank(
+          account: normalizedAccount,
+          confirmation: normalizedAccount,
+          ifsc: normalizedIfsc,
+          name: _companyCtl.text.trim().isNotEmpty
+              ? _companyCtl.text.trim()
+              : _contactCtl.text.trim(),
+          phone: _bizMobileCtl.text.trim().isNotEmpty
+              ? _bizMobileCtl.text.trim()
+              : _mobileCtl.text.trim(),
+        );
+        final raw = response['data'];
+        final details = raw is Map
+            ? Map<String, dynamic>.from(raw)
+            : <String, dynamic>{};
+        if (!mounted || requestId != _bankRequestId) return;
+        if (details['bank_verification_status'] != 'BANK_VERIFIED') {
+          throw StateError(
+            details['last_error_code']?.toString() ??
+                'This bank account could not be verified.',
+          );
+        }
+        setState(() {
+          _bankVerified = true;
+          _bankProvider = details['bank_provider']?.toString();
+          _bankHolderName =
+              details['bank_account_holder_name']?.toString().trim() ?? '';
+          _bankNameCtl.text = details['bank_name']?.toString().trim() ?? '';
+          _bankHolderCtl.text = _bankHolderName;
+          _bankError = null;
+          _error = null;
+        });
+      } catch (e) {
+        if (!mounted || requestId != _bankRequestId) return;
+        final message = e is ApiException
+            ? e.userMessage
+            : e is StateError
+            ? e.message
+            : 'Bank verification failed. Please try again.';
+        setState(() {
+          _bankVerified = false;
+          _bankError = message;
+        });
+      } finally {
+        if (mounted && requestId == _bankRequestId) {
+          setState(() => _bankLoading = false);
         }
       }
     });
@@ -1067,7 +1190,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _bizEmailCtl.text.isNotEmpty &&
         _bankAccountCtl.text.isNotEmpty &&
         _bankIfscCtl.text.isNotEmpty &&
-        _bankNameCtl.text.isNotEmpty &&
+        _bankVerified &&
         (_registrationRole != 'seller' ||
             (_warehouseNameCtl.text.isNotEmpty &&
                 _warehouseAddressCtl.text.isNotEmpty &&
@@ -1367,19 +1490,64 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
         _fieldLabel('Bank Details (for EMD refunds)'),
         const SizedBox(height: 8),
-        _inputField(controller: _bankAccountCtl, hint: 'Account number'),
+        _inputField(
+          controller: _bankAccountCtl,
+          hint: 'Account number',
+          keyboardType: TextInputType.number,
+          maxLength: 40,
+          onChanged: (value) => _onBankChanged(account: value),
+        ),
         const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
-              child: _inputField(controller: _bankIfscCtl, hint: 'IFSC'),
+              child: _inputField(
+                controller: _bankIfscCtl,
+                hint: 'IFSC',
+                maxLength: 11,
+                onChanged: (value) => _onBankChanged(ifsc: value),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _inputField(controller: _bankNameCtl, hint: 'Bank name'),
+              child: _inputField(
+                controller: _bankNameCtl,
+                hint: 'Bank name (from provider)',
+                readOnly: true,
+              ),
             ),
           ],
         ),
+        const SizedBox(height: 8),
+        _inputField(
+          controller: _bankHolderCtl,
+          hint: 'Account holder name (from provider)',
+          readOnly: true,
+        ),
+        if (_bankLoading) ...[
+          const SizedBox(height: 8),
+          Text('Verifying bank account…', style: AppTextStyles.captionMuted),
+        ],
+        if (_bankVerified) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Bank account verified${_bankProvider == null ? '' : ' · $_bankProvider'}'
+            '${_bankHolderName.isEmpty ? '' : ' · Account holder: $_bankHolderName'}'
+            '${_bankNameCtl.text.isEmpty ? ' · Bank name was not returned by provider' : ''}',
+            style: AppTextStyles.body(
+              size: 12,
+              weight: FontWeight.w600,
+              color: Colors.green.shade700,
+            ),
+          ),
+        ],
+        if (_bankError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _bankError!,
+            style: AppTextStyles.body(size: 12, color: Colors.red.shade700),
+          ),
+        ],
         const SizedBox(height: 20),
 
         _fieldLabel('Documents (all 4 required)'),
@@ -1473,7 +1641,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 bankName: _bankNameCtl.text.trim(),
                 accountNumber: _bankAccountCtl.text.trim(),
                 ifscCode: _bankIfscCtl.text.trim(),
-                accountHolderName: _contactCtl.text.trim(),
+                accountHolderName: _bankHolderName.isNotEmpty
+                    ? _bankHolderName
+                    : _contactCtl.text.trim(),
                 materialInterest: _materials.toList(),
                 warehouseDetails: _registrationRole == 'seller'
                     ? {
