@@ -115,6 +115,19 @@ class VendorService {
     );
   }
 
+  Future<Map<String, dynamic>> verifyPan({
+    required String pan,
+    String? name,
+    String? dateOfBirth,
+  }) => _api.post(
+    Endpoints.kybVerifyPan,
+    data: {
+      'pan': pan,
+      if (name != null && name.isNotEmpty) 'name': name,
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
+    },
+  );
+
   Future<Map<String, dynamic>> recordPayment({
     required String vendorCode,
     required String method,

@@ -68,6 +68,7 @@ abstract final class Endpoints {
   static const kybStatus = '/kyb/status';
   static const kybHistory = '/kyb/history';
   static const kybVerifyGstin = '/kyb/gstin/verify';
+  static const kybVerifyPan = '/kyb/pan/verify';
   static const kybVerifyBank = '/kyb/bank/verify';
   static const kybReverify = '/kyb/reverify';
 
