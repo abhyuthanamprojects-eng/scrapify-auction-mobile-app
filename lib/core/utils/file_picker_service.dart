@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
@@ -23,7 +24,9 @@ class PickedAttachment {
 
   String get formattedSize {
     if (sizeInBytes < 1024) return '$sizeInBytes B';
-    if (sizeInBytes < 1024 * 1024) return '${(sizeInBytes / 1024).toStringAsFixed(1)} KB';
+    if (sizeInBytes < 1024 * 1024) {
+      return '${(sizeInBytes / 1024).toStringAsFixed(1)} KB';
+    }
     return '${(sizeInBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
@@ -34,11 +37,14 @@ class AppFilePicker {
   static final _imagePicker = ImagePicker();
 
   /// Pick single PDF, Document or Image using system file picker
-  static Future<PickedAttachment?> pickDocument({List<String>? allowedExtensions}) async {
+  static Future<PickedAttachment?> pickDocument({
+    List<String>? allowedExtensions,
+  }) async {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: allowedExtensions ?? ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
+        allowedExtensions:
+            allowedExtensions ?? ['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
         allowMultiple: false,
       );
 
@@ -60,8 +66,30 @@ class AppFilePicker {
     return null;
   }
 
-  /// Pick image from camera or gallery
-  static Future<PickedAttachment?> pickImage({ImageSource source = ImageSource.gallery}) async {
+  /// Pick image after explaining the business purpose of the platform permission.
+  static Future<PickedAttachment?> pickImage({
+    required BuildContext context,
+    ImageSource source = ImageSource.gallery,
+  }) async {
+    final permission = source == ImageSource.camera
+        ? Permission.camera
+        : Permission.photos;
+    final purpose = source == ImageSource.camera
+        ? 'Scrapify uses the camera only when you choose to capture KYC documents, auction lot evidence, weighment slips, or dispute evidence. Camera access is not used in the background.'
+        : 'Scrapify uses photo access only when you choose an existing image for KYC documents, auction lot evidence, weighment slips, or dispute evidence. Only the files you select are uploaded.';
+    final title = source == ImageSource.camera
+        ? 'Camera access for document evidence'
+        : 'Photo access for document uploads';
+
+    if (!await _ensurePermission(
+      context,
+      permission: permission,
+      title: title,
+      purpose: purpose,
+    )) {
+      return null;
+    }
+
     try {
       final xfile = await _imagePicker.pickImage(
         source: source,
@@ -88,8 +116,20 @@ class AppFilePicker {
     return null;
   }
 
-  /// Pick multiple images from gallery
-  static Future<List<PickedAttachment>> pickMultiImages() async {
+  /// Pick multiple images from the gallery after explaining photo access.
+  static Future<List<PickedAttachment>> pickMultiImages({
+    required BuildContext context,
+  }) async {
+    if (!await _ensurePermission(
+      context,
+      permission: Permission.photos,
+      title: 'Photo access for auction evidence',
+      purpose:
+          'Scrapify uses photo access only when you choose images for auction lot listings and inspection evidence. The app reads only the images you select and uploads them to the relevant auction record.',
+    )) {
+      return [];
+    }
+
     try {
       final xfiles = await _imagePicker.pickMultiImage(
         imageQuality: 85,
@@ -102,13 +142,15 @@ class AppFilePicker {
         final file = File(xf.path);
         final length = await file.length();
         final ext = xf.name.split('.').last.toLowerCase();
-        picked.add(PickedAttachment(
-          name: xf.name,
-          sizeInBytes: length,
-          path: xf.path,
-          extension: ext,
-          isImage: true,
-        ));
+        picked.add(
+          PickedAttachment(
+            name: xf.name,
+            sizeInBytes: length,
+            path: xf.path,
+            extension: ext,
+            isImage: true,
+          ),
+        );
       }
       return picked;
     } catch (e) {
@@ -147,7 +189,10 @@ class AppFilePicker {
               ),
             ),
             const SizedBox(height: 16),
-            Text(title, style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+            Text(
+              title,
+              style: AppTextStyles.heading(size: 17, weight: FontWeight.w800),
+            ),
             const SizedBox(height: 4),
             const Text(
               'Select file source for upload (PDF, PNG, JPG supported up to 10MB)',
@@ -191,15 +236,94 @@ class AppFilePicker {
     );
 
     if (action == null) return null;
+    if (!context.mounted) return null;
 
     switch (action) {
       case PickerAction.document:
         return await pickDocument(allowedExtensions: allowedExtensions);
       case PickerAction.gallery:
-        return await pickImage(source: ImageSource.gallery);
+        return await pickImage(context: context, source: ImageSource.gallery);
       case PickerAction.camera:
-        return await pickImage(source: ImageSource.camera);
+        return await pickImage(context: context, source: ImageSource.camera);
     }
+  }
+
+  static Future<bool> _ensurePermission(
+    BuildContext context, {
+    required Permission permission,
+    required String title,
+    required String purpose,
+  }) async {
+    var status = await permission.status;
+    if (status.isGranted || status.isLimited) return true;
+
+    if (!context.mounted) return false;
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      await _showPermissionDialog(
+        context,
+        title: title,
+        purpose: purpose,
+        settingsRequired: true,
+        denied: true,
+      );
+      return false;
+    }
+
+    final proceed = await _showPermissionDialog(
+      context,
+      title: title,
+      purpose: purpose,
+    );
+    if (!proceed || !context.mounted) return false;
+
+    status = await permission.request();
+    if (status.isGranted || status.isLimited) return true;
+    if (!context.mounted) return false;
+
+    await _showPermissionDialog(
+      context,
+      title: title,
+      purpose: purpose,
+      settingsRequired: status.isPermanentlyDenied || status.isRestricted,
+      denied: true,
+    );
+    return false;
+  }
+
+  static Future<bool> _showPermissionDialog(
+    BuildContext context, {
+    required String title,
+    required String purpose,
+    bool settingsRequired = false,
+    bool denied = false,
+  }) async {
+    final continueLabel = settingsRequired ? 'Open Settings' : 'Continue';
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(denied ? 'Permission needed' : title),
+        content: Text(
+          '$purpose\n\n'
+          '${denied ? 'Access is currently unavailable. You can enable it in Settings and return to Scrapify to continue.' : 'We ask at the moment you choose this action so the operating system can protect your files and camera.'}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Not now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(continueLabel),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && settingsRequired) {
+      await openAppSettings();
+      return false;
+    }
+    return result == true;
   }
 
   static Widget _pickerOption({
@@ -221,10 +345,7 @@ class AppFilePicker {
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
               child: Icon(icon, color: AppColors.white, size: 20),
             ),
             const SizedBox(height: 10),

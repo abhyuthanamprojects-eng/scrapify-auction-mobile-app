@@ -675,7 +675,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             ),
             TextButton.icon(
               onPressed: () async {
-                final photos = await AppFilePicker.pickMultiImages();
+                final photos = await AppFilePicker.pickMultiImages(
+                  context: context,
+                );
                 if (photos.isNotEmpty) {
                   setState(() {
                     _auctionPhotos.addAll(photos);

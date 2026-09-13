@@ -245,14 +245,6 @@ class ApiClient {
         statusCode: status,
         message: e.message ?? 'Request failed',
       );
-
-  Future<List<int>> downloadBytes(String path) async {
-    final response = await _dio.get<List<int>>(
-      path,
-      options: Options(responseType: ResponseType.bytes),
-    );
-    return response.data ?? <int>[];
-  }
     } on ApiException {
       rethrow;
     } catch (e) {
@@ -260,6 +252,23 @@ class ApiClient {
         statusCode: 0,
         message: 'An unexpected error occurred: ${e.toString()}',
       );
+    }
+  }
+
+  Future<List<int>> downloadBytes(String path) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data ?? <int>[];
+    } on DioException catch (e) {
+      final status = e.response?.statusCode ?? 0;
+      final body = e.response?.data;
+      if (body is Map<String, dynamic>) {
+        throw ApiException.fromDioResponse(body, status);
+      }
+      throw ApiException(statusCode: status, message: e.message ?? 'Download failed');
     }
   }
 }

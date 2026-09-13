@@ -82,19 +82,25 @@ class VendorService {
         'contact_name': contactName,
         'email': email,
         'phone': phone,
-        if (location case final value?) 'location': value,
-        if (address case final value?) 'address': value,
-        if (gstNumber case final value?) 'gst_number': value,
-        if (panNumber case final value?) 'pan_number': value,
-        if (licenseNumber case final value?) 'license_number': value,
-        if (bankName case final value?) 'bank_name': value,
-        if (accountNumber case final value?) 'account_number': value,
-        if (ifscCode case final value?) 'ifsc_code': value,
-        if (accountHolderName case final value?) 'account_holder_name': value,
+        ...?location == null ? null : {'location': location},
+        ...?address == null ? null : {'address': address},
+        ...?gstNumber == null ? null : {'gst_number': gstNumber},
+        ...?panNumber == null ? null : {'pan_number': panNumber},
+        ...?licenseNumber == null ? null : {'license_number': licenseNumber},
+        ...?bankName == null ? null : {'bank_name': bankName},
+        ...?accountNumber == null ? null : {'account_number': accountNumber},
+        ...?ifscCode == null ? null : {'ifsc_code': ifscCode},
+        ...?accountHolderName == null
+            ? null
+            : {'account_holder_name': accountHolderName},
         if (businessType != null && businessType.isNotEmpty)
           'business_type': businessType,
-        if (materialInterest case final value?) 'material_interest': value,
-        if (warehouseDetails case final value?) 'warehouse_details': value,
+        ...?materialInterest == null
+            ? null
+            : {'material_interest': materialInterest},
+        ...?warehouseDetails == null
+            ? null
+            : {'warehouse_details': warehouseDetails},
         'terms_accepted': termsAccepted,
       },
     );

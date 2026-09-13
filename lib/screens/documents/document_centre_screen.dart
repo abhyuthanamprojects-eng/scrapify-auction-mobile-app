@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -13,8 +14,10 @@ enum DocStatus { verified, pending, rejected, expiringSoon, expired }
 
 class DocItem {
   final String id;
+  final String key;
   final String title;
   final String category;
+  final bool available;
   final String fileFormat;
   final String fileSize;
   final String uploadedAt;
@@ -24,8 +27,10 @@ class DocItem {
 
   const DocItem({
     required this.id,
+    required this.key,
     required this.title,
     required this.category,
+    required this.available,
     required this.fileFormat,
     required this.fileSize,
     required this.uploadedAt,
@@ -72,8 +77,10 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
         final rawStatus = '${row['status'] ?? 'pending'}'.toLowerCase();
         return DocItem(
           id: '${row['id']}',
+          key: '${row['key'] ?? row['doc_key'] ?? row['kind'] ?? 'document'}',
           title: '${row['name'] ?? row['file_name'] ?? row['kind'] ?? 'Document'}',
           category: '${row['kind'] ?? row['key'] ?? 'Document'}',
+          available: row['available'] != false,
           fileFormat: '${row['file_name'] ?? ''}'.split('.').last.toUpperCase(),
           fileSize: row['size_kb'] == null ? '—' : '${row['size_kb']} KB',
           uploadedAt: '${row['uploaded_at'] ?? ''}'.split('T').first,
@@ -97,7 +104,16 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
   }
 
   void _showReplaceDialog(DocItem doc) {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your vendor account is not available.')),
+      );
+      return;
+    }
+
     PickedAttachment? selectedFile;
+    var uploading = false;
 
     showModalBottomSheet(
       context: context,
@@ -253,33 +269,45 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                      setState(() {
-                        final idx = _documents.indexWhere(
-                          (d) => d.id == doc.id,
-                        );
-                        if (idx != -1) {
-                          _documents[idx] = DocItem(
-                            id: doc.id,
-                            title: doc.title,
-                            category: doc.category,
-                            fileFormat:
-                                selectedFile?.extension.toUpperCase() ?? 'PDF',
-                            fileSize: selectedFile?.formattedSize ?? '1.2 MB',
-                            uploadedAt: 'Just now',
-                            status: DocStatus.pending,
-                          );
-                        }
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            '✓ ${doc.title} replaced and queued for compliance verification',
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: selectedFile == null ||
+                            selectedFile!.path == null
+                        ? null
+                        : () async {
+                            setSheetState(() => uploading = true);
+                            try {
+                              await _vendorService.uploadDocument(
+                                vendorCode: vendorCode,
+                                docKey: doc.key,
+                                kind: doc.category,
+                                filePath: selectedFile!.path!,
+                                fileName: selectedFile!.name,
+                              );
+                              if (!mounted || !ctx.mounted) return;
+                              Navigator.of(ctx).pop();
+                              await _loadDocuments();
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '✓ ${doc.title} replaced and queued for compliance verification',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (_) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Could not upload this document.'),
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (ctx.mounted) {
+                                setSheetState(() => uploading = false);
+                              }
+                            }
+                          },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
                       foregroundColor: AppColors.white,
@@ -289,10 +317,19 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                         ),
                       ),
                     ),
-                    child: const Text(
-                      'Upload & Submit for Review',
-                      style: TextStyle(fontWeight: FontWeight.w800),
-                    ),
+                    child: uploading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Upload & Submit for Review',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
                   ),
                 ),
               ],
@@ -393,35 +430,67 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                                 ),
                               ),
                             ),
-                          Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.picture_as_pdf,
-                                  size: 48,
-                                  color: AppColors.destructive,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  doc.title,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.navy,
+                          if (!['JPG', 'JPEG', 'PNG', 'WEBP'].contains(
+                            doc.fileFormat,
+                          ))
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Icons.picture_as_pdf,
+                                    size: 48,
+                                    color: AppColors.destructive,
                                   ),
-                                ),
-                                Text(
-                                  '${doc.fileFormat} • ${doc.fileSize}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF64748B),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    doc.title,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.navy,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    '${doc.fileFormat} • ${doc.fileSize}',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          if (['JPG', 'JPEG', 'PNG', 'WEBP'].contains(
+                            doc.fileFormat,
+                          ))
+                            Positioned(
+                              left: 12,
+                              right: 12,
+                              bottom: 10,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  child: Text(
+                                    '${doc.title} • ${doc.fileFormat}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.navy,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           // Watermark Overlay
                           Positioned.fill(
                             child: Center(
@@ -645,10 +714,29 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
               ),
             ),
           ],
+          if (!doc.available) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFBEB),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'This document is unavailable on the server. Please replace it.',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF92400E),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Row(
             children: [
-              Expanded(
+              if (doc.available) Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _documentBusy ? null : () => _viewSecureDoc(doc),
                   icon: const Icon(Icons.visibility_outlined, size: 16),
@@ -665,8 +753,8 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              if (doc.available) const SizedBox(width: 8),
+              if (doc.available) Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _documentBusy ? null : () => _downloadDocument(doc),
                   icon: const Icon(Icons.download_outlined, size: 16),
@@ -683,32 +771,29 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                   ),
                 ),
               ),
-              if (doc.status == DocStatus.rejected ||
-                  doc.status == DocStatus.expiringSoon) ...[
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showReplaceDialog(doc),
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text(
-                      'Replace Doc',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12,
-                      ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showReplaceDialog(doc),
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text(
+                    'Replace Doc',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.navy,
-                      foregroundColor: AppColors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusLg,
-                        ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusLg,
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ],
