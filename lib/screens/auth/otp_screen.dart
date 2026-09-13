@@ -18,8 +18,9 @@ class OtpScreen extends ConsumerStatefulWidget {
 }
 
 class _OtpScreenState extends ConsumerState<OtpScreen> {
-  final _controllers = List.generate(6, (_) => TextEditingController());
-  final _focusNodes = List.generate(6, (_) => FocusNode());
+  final _controllers = List.generate(8, (_) => TextEditingController());
+  final _focusNodes = List.generate(8, (_) => FocusNode());
+  int _otpLength = 6;
   bool _isVerifying = false;
   String? _error;
 
@@ -41,14 +42,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _requestOtp() async {
-    await ref.read(authProvider.notifier).requestOtp(widget.identifier);
+    final length = await ref.read(authProvider.notifier).requestOtp(widget.identifier);
+    if (!mounted || length == null) return;
+    setState(() => _otpLength = length);
   }
 
   void _onChanged(int index, String value) {
-    if (value.length == 1 && index < 5) {
+    if (value.length == 1 && index < _otpLength - 1) {
       _focusNodes[index + 1].requestFocus();
     }
-    if (_controllers.every((c) => c.text.isNotEmpty)) {
+    if (_controllers.take(_otpLength).every((c) => c.text.isNotEmpty)) {
       _verify();
     }
   }
@@ -65,7 +68,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   Future<void> _verify() async {
     final code = _controllers.map((c) => c.text).join();
-    if (code.length != 6) return;
+    if (code.length != _otpLength) return;
 
     setState(() {
       _isVerifying = true;
@@ -144,13 +147,13 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'We sent a 6-digit code to ${widget.identifier}',
+                  'We sent a $_otpLength-digit code to ${widget.identifier}',
                   style: AppTextStyles.caption,
                 ),
                 const SizedBox(height: 40),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(6, (i) => _otpField(i)),
+                  children: List.generate(_otpLength, (i) => _otpField(i)),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),

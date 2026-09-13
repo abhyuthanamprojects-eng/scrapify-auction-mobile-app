@@ -38,6 +38,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _emailVerified = false;
   int _mobileTimer = 0;
   int _emailTimer = 0;
+  int _mobileOtpLength = 4;
+  int _emailOtpLength = 6;
 
   // Step 2
   bool _useEmail = true;
@@ -423,7 +425,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 otpController: _mobileOtpCtl,
                 inputLabel: 'Mobile Number',
                 inputHint: '98765 43210',
-                codeHint: '6-digit SMS code',
+                codeHint: 'SMS code',
+                otpLength: _mobileOtpLength,
                 keyboardType: TextInputType.phone,
                 timer: _mobileTimer,
                 valid: mobileValid,
@@ -456,7 +459,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 otpController: _emailOtpCtl,
                 inputLabel: 'Email ID',
                 inputHint: 'you@company.com',
-                codeHint: '6-digit email code',
+                codeHint: 'Email code',
+                otpLength: _emailOtpLength,
                 keyboardType: TextInputType.emailAddress,
                 timer: _emailTimer,
                 valid: emailValid,
@@ -488,6 +492,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     required String inputLabel,
     required String inputHint,
     required String codeHint,
+    required int otpLength,
     required TextInputType keyboardType,
     required int timer,
     required bool valid,
@@ -567,8 +572,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 6),
             _inputField(
               controller: otpController,
-              hint: codeHint,
+              hint: '$otpLength-digit ${title == 'Mobile OTP' ? 'SMS' : 'email'} code',
               keyboardType: TextInputType.number,
+              maxLength: otpLength,
               textAlign: TextAlign.center,
               letterSpacing: 5,
               onChanged: (_) => setState(() {}),
@@ -609,7 +615,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             _primaryButton(
               label: 'Verify',
               color: AppColors.auction,
-              enabled: otpController.text.length == 6 && !_loading,
+              enabled: otpController.text.length == otpLength && !_loading,
               loading: _loading,
               onTap: onVerify,
             ),
@@ -640,16 +646,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
     _setLoading(true);
     final notifier = ref.read(authProvider.notifier);
-    final success = resend
+    final otpLength = resend
         ? await notifier.resendOtp(identifier, purpose: 'register')
         : await notifier.requestOtp(identifier, purpose: 'register');
     if (!mounted) return;
     _setLoading(false);
-    if (!success) {
+    if (otpLength == null) {
       final err = ref.read(authProvider).error;
       _setError(err.isNotEmpty ? err : 'Could not send OTP. Please try again.');
       return;
     }
+    setState(() {
+      if (mobile) {
+        _mobileOtpLength = otpLength;
+      } else {
+        _emailOtpLength = otpLength;
+      }
+    });
     setState(() {
       if (mobile) {
         _mobileOtpSent = true;
@@ -666,13 +679,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _verifyChannelOtp({required bool mobile}) async {
     _setError(null);
-    _setLoading(true);
     final identifier = mobile ? _mobileCtl.text.trim() : _emailCtl.text.trim();
     final code = mobile ? _mobileOtpCtl.text.trim() : _emailOtpCtl.text.trim();
-    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-      _setError('Enter the 6-digit OTP.');
+    final otpLength = mobile ? _mobileOtpLength : _emailOtpLength;
+    if (!RegExp('^\\d{' + otpLength.toString() + '}\$').hasMatch(code)) {
+      _setError('Enter the $otpLength-digit OTP.');
       return;
     }
+    _setLoading(true);
     final success = await ref
         .read(authProvider.notifier)
         .verifyOtp(identifier, code, purpose: 'register');
@@ -1956,6 +1970,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     bool obscure = false,
     bool readOnly = false,
     int maxLines = 1,
+    int? maxLength,
     TextAlign textAlign = TextAlign.start,
     double letterSpacing = 0,
     Widget? prefix,
@@ -1967,6 +1982,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       obscureText: obscure,
       readOnly: readOnly,
       maxLines: maxLines,
+      maxLength: maxLength,
       textAlign: textAlign,
       onChanged: onChanged,
       style: AppTextStyles.body(

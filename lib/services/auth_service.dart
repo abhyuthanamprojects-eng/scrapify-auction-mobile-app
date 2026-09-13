@@ -68,7 +68,7 @@ class AuthService {
     return (user: user, token: token);
   }
 
-  Future<String> requestOtp({
+  Future<int> requestOtp({
     required String identifier,
     String purpose = 'login',
   }) async {
@@ -78,10 +78,10 @@ class AuthService {
       anonymous: true,
     );
 
-    return data['expires_at'] as String? ?? '';
+    return (data['otp_length'] as num?)?.toInt() ?? (identifier.contains('@') ? 6 : 4);
   }
 
-  Future<String> resendOtp({
+  Future<int> resendOtp({
     required String identifier,
     String purpose = 'login',
   }) async {
@@ -91,7 +91,7 @@ class AuthService {
       anonymous: true,
     );
 
-    return data['expires_at'] as String? ?? '';
+    return (data['otp_length'] as num?)?.toInt() ?? (identifier.contains('@') ? 6 : 4);
   }
 
   Future<({AppUser? user, String? token, bool verified})> verifyOtp({

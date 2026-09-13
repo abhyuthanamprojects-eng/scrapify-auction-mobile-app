@@ -66,23 +66,21 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     }
   }
 
-  Future<bool> requestOtp(String identifier, {String purpose = 'login'}) async {
+  Future<int?> requestOtp(String identifier, {String purpose = 'login'}) async {
     try {
-      await _authService.requestOtp(identifier: identifier, purpose: purpose);
-      return true;
+      return await _authService.requestOtp(identifier: identifier, purpose: purpose);
     } on ApiException catch (e) {
       state = state.copyWith(error: e.firstError);
-      return false;
+      return null;
     }
   }
 
-  Future<bool> resendOtp(String identifier, {String purpose = 'login'}) async {
+  Future<int?> resendOtp(String identifier, {String purpose = 'login'}) async {
     try {
-      await _authService.resendOtp(identifier: identifier, purpose: purpose);
-      return true;
+      return await _authService.resendOtp(identifier: identifier, purpose: purpose);
     } on ApiException catch (e) {
       state = state.copyWith(error: e.firstError);
-      return false;
+      return null;
     }
   }
 
