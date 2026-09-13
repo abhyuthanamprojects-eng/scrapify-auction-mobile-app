@@ -8,6 +8,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/constants/asset_paths.dart';
+import '../../services/auth_service.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String identifier;
@@ -20,7 +21,7 @@ class OtpScreen extends ConsumerStatefulWidget {
 class _OtpScreenState extends ConsumerState<OtpScreen> {
   final _controllers = List.generate(8, (_) => TextEditingController());
   final _focusNodes = List.generate(8, (_) => FocusNode());
-  int _otpLength = 6;
+  int _otpLength = AuthService.fixedOtpLength;
   bool _isVerifying = false;
   String? _error;
 
@@ -44,7 +45,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   Future<void> _requestOtp() async {
     final length = await ref.read(authProvider.notifier).requestOtp(widget.identifier);
     if (!mounted || length == null) return;
-    setState(() => _otpLength = length);
+    setState(() => _otpLength = AuthService.fixedOtpLength);
   }
 
   void _onChanged(int index, String value) {

@@ -8,6 +8,8 @@ import '../core/network/token_storage.dart';
 import '../models/user.dart';
 
 class AuthService {
+  static const int fixedOtpLength = 4;
+
   final _api = ApiClient();
 
   Future<({AppUser user, String token})> register({
@@ -72,26 +74,26 @@ class AuthService {
     required String identifier,
     String purpose = 'login',
   }) async {
-    final data = await _api.post(
+    await _api.post(
       Endpoints.requestOtp,
       data: {'identifier': identifier, 'purpose': purpose},
       anonymous: true,
     );
 
-    return (data['otp_length'] as num?)?.toInt() ?? (identifier.contains('@') ? 6 : 4);
+    return fixedOtpLength;
   }
 
   Future<int> resendOtp({
     required String identifier,
     String purpose = 'login',
   }) async {
-    final data = await _api.post(
+    await _api.post(
       Endpoints.resendOtp,
       data: {'identifier': identifier, 'purpose': purpose},
       anonymous: true,
     );
 
-    return (data['otp_length'] as num?)?.toInt() ?? (identifier.contains('@') ? 6 : 4);
+    return fixedOtpLength;
   }
 
   Future<({AppUser? user, String? token, bool verified})> verifyOtp({

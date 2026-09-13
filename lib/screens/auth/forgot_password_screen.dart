@@ -12,6 +12,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  static const int _otpLength = 4;
+
   int _step = 1; // 1: Enter email/phone, 2: Enter OTP, 3: New Password, 4: Success
   final _identifierCtl = TextEditingController(text: 'rahul.sharma@devzign.in');
   final _otpCtl = TextEditingController();
@@ -36,7 +38,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _verifyOtp() {
-    if (_otpCtl.text.trim().length < 4) return;
+    if (_otpCtl.text.trim().length != _otpLength) return;
     setState(() => _loading = true);
     Future.delayed(const Duration(milliseconds: 500), () {
       if (!mounted) return;
@@ -172,17 +174,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           const SizedBox(height: 12),
           Text('Verify Security Code', style: AppTextStyles.heading(size: 18, weight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text('Enter the 6-digit OTP sent to ${_identifierCtl.text}', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          Text('Enter the $_otpLength-digit OTP sent to ${_identifierCtl.text}', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
           const SizedBox(height: 20),
           TextField(
             controller: _otpCtl,
             keyboardType: TextInputType.number,
-            maxLength: 6,
+            maxLength: _otpLength,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 8),
             decoration: const InputDecoration(
               counterText: '',
-              hintText: '• • • • • •',
+              hintText: '• • • •',
               border: OutlineInputBorder(),
             ),
           ),

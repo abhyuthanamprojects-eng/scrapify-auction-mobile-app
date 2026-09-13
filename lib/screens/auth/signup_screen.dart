@@ -12,6 +12,7 @@ import '../../core/constants/asset_paths.dart';
 import '../../core/validation/input_validators.dart';
 import '../../core/utils/file_picker_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/pincode_service.dart';
 import '../../services/vendor_service.dart';
 
@@ -38,8 +39,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _emailVerified = false;
   int _mobileTimer = 0;
   int _emailTimer = 0;
-  int _mobileOtpLength = 4;
-  int _emailOtpLength = 6;
+  int _mobileOtpLength = AuthService.fixedOtpLength;
+  int _emailOtpLength = AuthService.fixedOtpLength;
 
   // Step 2
   bool _useEmail = true;
@@ -658,9 +659,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
     setState(() {
       if (mobile) {
-        _mobileOtpLength = otpLength;
+        _mobileOtpLength = AuthService.fixedOtpLength;
       } else {
-        _emailOtpLength = otpLength;
+        _emailOtpLength = AuthService.fixedOtpLength;
       }
     });
     setState(() {
