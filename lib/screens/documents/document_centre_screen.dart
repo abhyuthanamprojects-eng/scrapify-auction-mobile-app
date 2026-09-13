@@ -37,7 +37,7 @@ class DocumentCentreScreen extends ConsumerStatefulWidget {
   const DocumentCentreScreen({super.key});
 
   @override
-  State<DocumentCentreScreen> createState() => _DocumentCentreScreenState();
+  ConsumerState<DocumentCentreScreen> createState() => _DocumentCentreScreenState();
 }
 
 class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
