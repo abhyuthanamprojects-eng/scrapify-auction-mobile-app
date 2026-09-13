@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -9,12 +10,43 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/validation/input_validators.dart';
 import '../../core/utils/file_picker_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/pincode_service.dart';
 import '../../services/vendor_service.dart';
+
+String _gstValue(dynamic value, List<String> keys) {
+  if (value is! Map) return '';
+  for (final key in keys) {
+    final candidate = value[key];
+    if (candidate is String && candidate.trim().isNotEmpty) {
+      return candidate.trim();
+    }
+  }
+  return '';
+}
+
+String _formatGstAddress(dynamic value) {
+  if (value is String) return value.trim();
+  if (value is! Map) return '';
+  final parts = <String>[
+    _gstValue(value, [
+      'address',
+      'address_line1',
+      'address_line_1',
+      'principal_place_address',
+    ]),
+    _gstValue(value, ['address_line2', 'address_line_2']),
+    _gstValue(value, ['building_name', 'building_number', 'floor_number']),
+    _gstValue(value, ['street', 'locality', 'location', 'district']),
+    _gstValue(value, ['city', 'city_name', 'town']),
+    _gstValue(value, ['pincode', 'pin_code', 'postal_code']),
+  ].where((part) => part.isNotEmpty).toSet().toList();
+  return parts.join(', ');
+}
 
 class SignupScreen extends ConsumerStatefulWidget {
   final String? prefillIdentifier;
@@ -51,6 +83,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _companyCtl = TextEditingController();
   final _addressCtl = TextEditingController();
   final _gstCtl = TextEditingController();
+  final _entityTypeCtl = TextEditingController();
   final _panCtl = TextEditingController();
   final _licenseCtl = TextEditingController();
   final _contactCtl = TextEditingController();
@@ -66,6 +99,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _warehousePincodeCtl = TextEditingController();
   final _warehouseContactCtl = TextEditingController();
   final _pincodeService = PincodeService();
+  final _vendorService = VendorService();
+  Timer? _gstDebounce;
+  int _gstRequestId = 0;
+  bool _gstVerified = false;
+  bool _gstLoading = false;
+  String? _gstProvider;
+  String? _gstStatus;
+  String? _gstError;
+  bool _gstAddressAutofilled = false;
   bool _warehousePincodeResolved = false;
   final Set<String> _materials = {};
   final Map<String, bool> _docs = {
@@ -111,6 +153,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _companyCtl.dispose();
     _addressCtl.dispose();
     _gstCtl.dispose();
+    _entityTypeCtl.dispose();
     _panCtl.dispose();
     _licenseCtl.dispose();
     _contactCtl.dispose();
@@ -125,6 +168,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _warehouseStateCtl.dispose();
     _warehousePincodeCtl.dispose();
     _warehouseContactCtl.dispose();
+    _gstDebounce?.cancel();
     super.dispose();
   }
 
@@ -161,6 +205,100 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _isPincode(String value) => isIndianPincode(value);
   bool _isGstin(String value) => isGstin(value);
   bool _isPan(String value) => isPan(value);
+
+  void _onGstinChanged(String value) {
+    final sanitized = value
+        .replaceAll(RegExp(r'[^A-Za-z0-9]'), '')
+        .toUpperCase();
+    final gstin = sanitized.substring(
+      0,
+      sanitized.length > 15 ? 15 : sanitized.length,
+    );
+    if (_gstCtl.text != gstin) {
+      _gstCtl.value = TextEditingValue(
+        text: gstin,
+        selection: TextSelection.collapsed(offset: gstin.length),
+      );
+    }
+
+    _gstDebounce?.cancel();
+    final requestId = ++_gstRequestId;
+    final clearAutoAddress = _gstAddressAutofilled;
+    setState(() {
+      _gstVerified = false;
+      _gstLoading = false;
+      _gstProvider = null;
+      _gstStatus = null;
+      _gstError = null;
+      _entityTypeCtl.clear();
+      _companyCtl.clear();
+      _panCtl.clear();
+      if (clearAutoAddress) _addressCtl.clear();
+      _gstAddressAutofilled = false;
+    });
+
+    if (!_isGstin(gstin)) return;
+
+    setState(() => _gstLoading = true);
+    _gstDebounce = Timer(const Duration(milliseconds: 500), () async {
+      try {
+        final response = await _vendorService.verifyGstin(gstin);
+        final raw = response['data'];
+        final details = raw is Map
+            ? Map<String, dynamic>.from(raw)
+            : <String, dynamic>{};
+        if (requestId != _gstRequestId) return;
+        if (details['gstin_status'] != 'GSTIN_VERIFIED') {
+          throw StateError(
+            details['last_error_code']?.toString() ??
+                'This GSTIN could not be verified.',
+          );
+        }
+
+        final verifiedGstin = (details['gstin']?.toString() ?? gstin)
+            .toUpperCase();
+        final address = _formatGstAddress(details['gst_registered_address']);
+        if (!mounted || requestId != _gstRequestId) return;
+        setState(() {
+          _gstVerified = true;
+          _gstProvider = details['gstin_provider']?.toString();
+          _gstStatus =
+              details['gst_registration_status']?.toString() ?? 'Active';
+          _entityTypeCtl.text =
+              details['entity_type_label']?.toString() ??
+              details['entity_type']?.toString() ??
+              'Other Legal Entity';
+          _companyCtl.text =
+              details['legal_business_name']?.toString().trim() ?? '';
+          _panCtl.text = verifiedGstin.length >= 12
+              ? verifiedGstin.substring(2, 12)
+              : '';
+          if (address.isNotEmpty) {
+            _addressCtl.text = address;
+            _gstAddressAutofilled = true;
+          }
+          _gstError = null;
+          _error = null;
+        });
+      } catch (e) {
+        if (!mounted || requestId != _gstRequestId) return;
+        final message = e is ApiException
+            ? e.userMessage
+            : e is StateError
+            ? e.message
+            : 'GSTIN verification failed. Please try again.';
+        setState(() {
+          _gstVerified = false;
+          _gstLoading = false;
+          _gstError = message;
+        });
+      } finally {
+        if (mounted && requestId == _gstRequestId) {
+          setState(() => _gstLoading = false);
+        }
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +711,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 6),
             _inputField(
               controller: otpController,
-              hint: '$otpLength-digit ${title == 'Mobile OTP' ? 'SMS' : 'email'} code',
+              hint:
+                  '$otpLength-digit ${title == 'Mobile OTP' ? 'SMS' : 'email'} code',
               keyboardType: TextInputType.number,
               maxLength: otpLength,
               textAlign: TextAlign.center,
@@ -919,6 +1058,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _companyCtl.text.isNotEmpty &&
         _addressCtl.text.isNotEmpty &&
         _gstCtl.text.isNotEmpty &&
+        _entityTypeCtl.text.isNotEmpty &&
         _panCtl.text.isNotEmpty &&
         _licenseCtl.text.isNotEmpty &&
         _materials.isNotEmpty &&
@@ -940,6 +1080,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _isIndianMobile(_bizMobileCtl.text) &&
         _isEmail(_bizEmailCtl.text) &&
         _isGstin(_gstCtl.text) &&
+        _gstVerified &&
         _isPan(_panCtl.text);
     final validWarehouse =
         _registrationRole != 'seller' ||
@@ -954,14 +1095,96 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         Text('All fields required for KYC.', style: AppTextStyles.caption),
         const SizedBox(height: 20),
 
-        _fieldLabel('Company Name', required: true),
+        _fieldLabel('GSTIN', required: true),
         const SizedBox(height: 6),
-        _inputField(controller: _companyCtl),
+        _inputField(
+          controller: _gstCtl,
+          hint: '29ABCDE1234F1Z5',
+          maxLength: 15,
+          onChanged: _onGstinChanged,
+        ),
+        if (_gstLoading) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text('Verifying GSTIN…', style: AppTextStyles.captionMuted),
+            ],
+          ),
+        ],
+        if (_gstVerified) ...[
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.25)),
+            ),
+            child: Text(
+              'GSTIN verified · ${_entityTypeCtl.text} · ${_gstStatus ?? 'Active'}'
+              '${_gstProvider == null ? '' : ' · ${_gstProvider!}'}',
+              style: AppTextStyles.body(
+                size: 12,
+                weight: FontWeight.w600,
+                color: Colors.green.shade800,
+              ),
+            ),
+          ),
+        ],
+        if (_gstError != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _gstError!,
+            style: AppTextStyles.body(size: 12, color: Colors.red.shade700),
+          ),
+        ],
+        const SizedBox(height: 16),
+
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('Company Name', required: true),
+                  const SizedBox(height: 6),
+                  _inputField(controller: _companyCtl, readOnly: _gstVerified),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('Entity Type', required: true),
+                  const SizedBox(height: 6),
+                  _inputField(
+                    controller: _entityTypeCtl,
+                    readOnly: true,
+                    hint: 'Filled from GSTIN',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
 
         _fieldLabel('Registered Address', required: true),
         const SizedBox(height: 6),
-        _inputField(controller: _addressCtl, maxLines: 2),
+        _inputField(
+          controller: _addressCtl,
+          maxLines: 2,
+          readOnly: _gstAddressAutofilled,
+        ),
         const SizedBox(height: 16),
 
         if (_registrationRole == 'seller') ...[
@@ -1044,20 +1267,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _fieldLabel('GST Number', required: true),
+                  _fieldLabel('PAN Number (from GSTIN)', required: true),
                   const SizedBox(height: 6),
-                  _inputField(controller: _gstCtl, hint: '29ABCDE1234F1Z5'),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _fieldLabel('PAN Number', required: true),
-                  const SizedBox(height: 6),
-                  _inputField(controller: _panCtl, hint: 'ABCDE1234F'),
+                  _inputField(
+                    controller: _panCtl,
+                    hint: 'ABCDE1234F',
+                    readOnly: _gstVerified,
+                  ),
                 ],
               ),
             ),
@@ -1244,8 +1460,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             _setError(null);
             _setLoading(true);
             try {
-              final vendorService = VendorService();
-              final registration = await vendorService.register(
+              final registration = await _vendorService.register(
                 companyName: _companyCtl.text.trim(),
                 contactName: _contactCtl.text.trim(),
                 email: _bizEmailCtl.text.trim(),
@@ -1253,6 +1468,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 address: _addressCtl.text.trim(),
                 gstNumber: _gstCtl.text.trim().toUpperCase(),
                 panNumber: _panCtl.text.trim().toUpperCase(),
+                businessType: _entityTypeCtl.text.trim(),
                 licenseNumber: _licenseCtl.text.trim(),
                 bankName: _bankNameCtl.text.trim(),
                 accountNumber: _bankAccountCtl.text.trim(),
@@ -1286,28 +1502,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               }
 
               await Future.wait([
-                vendorService.uploadDocument(
+                _vendorService.uploadDocument(
                   vendorCode: vendorCode,
                   docKey: 'license',
                   kind: 'License',
                   filePath: _docFiles['license']!.path!,
                   fileName: _docFiles['license']!.name,
                 ),
-                vendorService.uploadDocument(
+                _vendorService.uploadDocument(
                   vendorCode: vendorCode,
                   docKey: 'gst',
                   kind: 'GST Certificate',
                   filePath: _docFiles['gst']!.path!,
                   fileName: _docFiles['gst']!.name,
                 ),
-                vendorService.uploadDocument(
+                _vendorService.uploadDocument(
                   vendorCode: vendorCode,
                   docKey: 'pan',
                   kind: 'PAN Card',
                   filePath: _docFiles['pan']!.path!,
                   fileName: _docFiles['pan']!.name,
                 ),
-                vendorService.uploadDocument(
+                _vendorService.uploadDocument(
                   vendorCode: vendorCode,
                   docKey: 'cheque',
                   kind: 'Cancelled Cheque',
@@ -1315,7 +1531,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   fileName: _docFiles['cheque']!.name,
                 ),
               ]);
-              await vendorService.submitKyc(vendorCode);
+              await _vendorService.submitKyc(vendorCode);
               await ref.read(authProvider.notifier).refreshUser();
               if (!mounted) return;
               setState(() {

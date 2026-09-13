@@ -70,6 +70,7 @@ class VendorService {
     String? accountNumber,
     String? ifscCode,
     String? accountHolderName,
+    String? businessType,
     List<String>? materialInterest,
     Map<String, dynamic>? warehouseDetails,
     bool termsAccepted = false,
@@ -90,6 +91,8 @@ class VendorService {
         if (accountNumber != null) 'account_number': accountNumber,
         if (ifscCode != null) 'ifsc_code': ifscCode,
         if (accountHolderName != null) 'account_holder_name': accountHolderName,
+        if (businessType != null && businessType.isNotEmpty)
+          'business_type': businessType,
         if (materialInterest != null) 'material_interest': materialInterest,
         if (warehouseDetails != null) 'warehouse_details': warehouseDetails,
         'terms_accepted': termsAccepted,
@@ -124,7 +127,8 @@ class VendorService {
     data: {
       'pan': pan,
       if (name != null && name.isNotEmpty) 'name': name,
-      if (dateOfBirth != null && dateOfBirth.isNotEmpty) 'date_of_birth': dateOfBirth,
+      if (dateOfBirth != null && dateOfBirth.isNotEmpty)
+        'date_of_birth': dateOfBirth,
     },
   );
 
