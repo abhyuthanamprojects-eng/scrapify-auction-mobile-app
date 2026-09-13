@@ -1183,7 +1183,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _gstCtl.text.isNotEmpty &&
         _entityTypeCtl.text.isNotEmpty &&
         _panCtl.text.isNotEmpty &&
-        _licenseCtl.text.isNotEmpty &&
         _materials.isNotEmpty &&
         _contactCtl.text.isNotEmpty &&
         _bizMobileCtl.text.isNotEmpty &&
@@ -1197,7 +1196,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 _warehouseCityCtl.text.isNotEmpty &&
                 _warehouseStateCtl.text.isNotEmpty &&
                 _warehousePincodeCtl.text.isNotEmpty)) &&
-        _docFiles.values.every((file) => file?.path?.isNotEmpty == true) &&
+        [
+          'gst',
+          'pan',
+          'cheque',
+        ].every((key) => _docFiles[key]?.path?.isNotEmpty == true) &&
         _termsAccepted;
     final validBusinessIdentity =
         _isIndianMobile(_bizMobileCtl.text) &&
@@ -1215,7 +1218,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       children: [
         Text('Company information', style: AppTextStyles.titleMedium),
         const SizedBox(height: 4),
-        Text('All fields required for KYC.', style: AppTextStyles.caption),
+        Text(
+          'Complete the required fields for KYC. A business license or permit is optional.',
+          style: AppTextStyles.caption,
+        ),
         const SizedBox(height: 20),
 
         _fieldLabel('GSTIN', required: true),
@@ -1404,7 +1410,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         const SizedBox(height: 16),
 
-        _fieldLabel('Recycler / Trade Licence Number', required: true),
+        _fieldLabel('Business License / Permit Number (optional)'),
         const SizedBox(height: 6),
         _inputField(controller: _licenseCtl, hint: 'TN/REC/2026/00812'),
         const SizedBox(height: 20),
@@ -1512,8 +1518,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             Expanded(
               child: _inputField(
                 controller: _bankNameCtl,
-                hint: 'Bank name (from provider)',
-                readOnly: true,
+                hint: 'Bank name (enter manually if needed)',
               ),
             ),
           ],
@@ -1552,7 +1557,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
         _fieldLabel('Documents (all 4 required)'),
         const SizedBox(height: 8),
-        _docRow('Recycler / Trade Licence', 'license'),
+        _docRow('Business License / Permit (optional)', 'license'),
         const SizedBox(height: 8),
         _docRow('GST Certificate', 'gst'),
         const SizedBox(height: 8),
@@ -1671,14 +1676,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 );
               }
 
-              await Future.wait([
-                _vendorService.uploadDocument(
-                  vendorCode: vendorCode,
-                  docKey: 'license',
-                  kind: 'License',
-                  filePath: _docFiles['license']!.path!,
-                  fileName: _docFiles['license']!.name,
-                ),
+              final documentUploads = <Future<Map<String, dynamic>>>[
                 _vendorService.uploadDocument(
                   vendorCode: vendorCode,
                   docKey: 'gst',
@@ -1700,7 +1698,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   filePath: _docFiles['cheque']!.path!,
                   fileName: _docFiles['cheque']!.name,
                 ),
-              ]);
+              ];
+              final licenseFile = _docFiles['license'];
+              if (licenseFile?.path?.isNotEmpty == true) {
+                documentUploads.add(
+                  _vendorService.uploadDocument(
+                    vendorCode: vendorCode,
+                    docKey: 'license',
+                    kind: 'Business License / Permit',
+                    filePath: licenseFile!.path!,
+                    fileName: licenseFile.name,
+                  ),
+                );
+              }
+              await Future.wait(documentUploads);
               await _vendorService.submitKyc(vendorCode);
               await ref.read(authProvider.notifier).refreshUser();
               if (!mounted) return;

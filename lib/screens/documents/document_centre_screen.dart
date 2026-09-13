@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/file_picker_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/vendor_service.dart';
 
 enum DocStatus { verified, pending, rejected, expiringSoon, expired }
 
@@ -30,23 +33,57 @@ class DocItem {
   });
 }
 
-class DocumentCentreScreen extends StatefulWidget {
+class DocumentCentreScreen extends ConsumerStatefulWidget {
   const DocumentCentreScreen({super.key});
 
   @override
   State<DocumentCentreScreen> createState() => _DocumentCentreScreenState();
 }
 
-class _DocumentCentreScreenState extends State<DocumentCentreScreen>
+class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtl;
 
   List<DocItem> _documents = [];
+  bool _loading = true;
+  final _vendorService = VendorService();
 
   @override
   void initState() {
     super.initState();
     _tabCtl = TabController(length: 5, vsync: this);
+    _loadDocuments();
+  }
+
+  Future<void> _loadDocuments() async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) {
+      if (mounted) setState(() => _loading = false);
+      return;
+    }
+    try {
+      final response = await _vendorService.getDocuments(vendorCode);
+      final rows = (response['data'] as List<dynamic>? ?? const []);
+      final docs = rows.whereType<Map<String, dynamic>>().map((row) {
+        final rawStatus = '${row['status'] ?? 'pending'}'.toLowerCase();
+        return DocItem(
+          id: '${row['id']}',
+          title: '${row['name'] ?? row['file_name'] ?? row['kind'] ?? 'Document'}',
+          category: '${row['kind'] ?? row['key'] ?? 'Document'}',
+          fileFormat: '${row['file_name'] ?? ''}'.split('.').last.toUpperCase(),
+          fileSize: row['size_kb'] == null ? '—' : '${row['size_kb']} KB',
+          uploadedAt: '${row['uploaded_at'] ?? ''}'.split('T').first,
+          expiryDate: null,
+          status: rawStatus == 'approved' ? DocStatus.verified : rawStatus == 'rejected' ? DocStatus.rejected : DocStatus.pending,
+          rejectionReason: row['reason']?.toString(),
+        );
+      }).toList();
+      if (mounted) setState(() => _documents = docs);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load your documents.')));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override

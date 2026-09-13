@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/network/api_client.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -52,9 +54,77 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       Future<void>.delayed(const Duration(milliseconds: 2400)),
     ]);
     if (!mounted) return;
+    final shouldContinue = await _checkForUpdate();
+    if (!shouldContinue || !mounted) return;
     context.go(
       ref.read(authProvider).isAuthenticated ? '/home' : '/onboarding',
     );
+  }
+
+  Future<bool> _checkForUpdate() async {
+    try {
+      final config = await ApiClient().get('/platform-config');
+      final latest = '${config['mobile_latest_version'] ?? '1.0.0'}';
+      final minimum = '${config['mobile_min_version'] ?? '1.0.0'}';
+      final current = '1.0.0';
+      int compare(String a, String b) {
+        final aa = a.split('.').map((v) => int.tryParse(v) ?? 0).toList();
+        final bb = b.split('.').map((v) => int.tryParse(v) ?? 0).toList();
+        for (var i = 0; i < 3; i++) { final d = (aa[i] - bb[i]); if (d != 0) return d; }
+        return 0;
+      }
+      if (compare(current, latest) >= 0) return true;
+      final url = '${config['mobile_update_url'] ?? ''}';
+      if (url.isEmpty) return true;
+      final force = config['mobile_force_update'] == true && compare(current, minimum) < 0;
+      if (!mounted) return !force;
+      final update = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 28, offset: Offset(0, 12))],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: 190,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFFD9DCFF), Color(0xFFB8C4FF)]),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Center(child: Image.asset(AssetPaths.appIcon, width: 112, height: 112)),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                  child: Column(
+                    children: [
+                      const Text('App Update Required!', textAlign: TextAlign.center, style: TextStyle(fontSize: 25, fontWeight: FontWeight.w800, color: Colors.black87)),
+                      const SizedBox(height: 14),
+                      Text('${config['mobile_update_notes'] ?? 'We have added new features and fixed some bugs to make your experience seamless.'}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, height: 1.45, color: Color(0xFF424242))),
+                      const SizedBox(height: 26),
+                      SizedBox(width: double.infinity, height: 58, child: ElevatedButton(
+                        onPressed: () async { await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication); },
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5659BD), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), elevation: 8, shadowColor: const Color(0x665659BD)),
+                        child: const Text('Update App', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                      )),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      return update ?? !force;
+    } catch (_) { return true; }
   }
 
   @override

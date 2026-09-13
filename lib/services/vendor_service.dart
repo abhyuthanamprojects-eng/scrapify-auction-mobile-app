@@ -118,6 +118,10 @@ class VendorService {
     );
   }
 
+  Future<Map<String, dynamic>> getDocuments(String vendorCode) async {
+    return await _api.get(Endpoints.vendorDocuments(vendorCode));
+  }
+
   Future<Map<String, dynamic>> verifyPan({
     required String pan,
     String? name,
