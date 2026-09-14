@@ -140,6 +140,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Map<String, dynamic>? _promoPricing;
 
   bool _loading = false;
+  bool _mobileOtpLoading = false;
+  bool _emailOtpLoading = false;
   String? _error;
 
   @override
@@ -250,6 +252,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   void _setError(String? e) => setState(() => _error = e);
   void _setLoading(bool v) => setState(() => _loading = v);
+  void _setOtpLoading(bool mobile, bool value) => setState(() {
+    if (mobile) {
+      _mobileOtpLoading = value;
+    } else {
+      _emailOtpLoading = value;
+    }
+  });
 
   bool _isIndianMobile(String value) {
     return isIndianMobile(value);
@@ -495,24 +504,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
+                    Column(
                       children: [
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Text('Buyer'),
-                            selected: _registrationRole == 'buyer',
-                            onSelected: (_) =>
-                                setState(() => _registrationRole = 'buyer'),
-                          ),
+                        _registrationRoleCard(
+                          role: 'buyer',
+                          title: 'Buyer',
+                          subtitle: 'Participate in auctions',
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ChoiceChip(
-                            label: const Text('Seller'),
-                            selected: _registrationRole == 'seller',
-                            onSelected: (_) =>
-                                setState(() => _registrationRole = 'seller'),
-                          ),
+                        const SizedBox(height: 10),
+                        _registrationRoleCard(
+                          role: 'seller',
+                          title: 'Seller',
+                          subtitle: 'Create and manage auctions',
                         ),
                       ],
                     ),
@@ -727,65 +730,59 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           style: AppTextStyles.caption,
         ),
         const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Column(
           children: [
-            Expanded(
-              child: _otpChannelCard(
-                title: 'Mobile OTP',
-                verified: _mobileVerified,
-                controller: _mobileCtl,
-                otpController: _mobileOtpCtl,
-                inputLabel: 'Mobile Number',
-                inputHint: '98765 43210',
-                codeHint: 'SMS code',
-                otpLength: _mobileOtpLength,
-                keyboardType: TextInputType.phone,
-                timer: _mobileTimer,
-                valid: mobileValid,
-                onSend: _sendMobileOtp,
-                onResend: _resendMobileOtp,
-                onVerify: _verifyMobileOtp,
-                onChange: () => setState(() {
-                  _mobileVerified = false;
-                  _mobileOtpSent = false;
-                  _mobileOtpCtl.clear();
-                }),
-                prefix: Padding(
-                  padding: const EdgeInsets.only(left: 12, right: 4),
-                  child: Text(
-                    '+91',
-                    style: AppTextStyles.body(
-                      size: 14,
-                      weight: FontWeight.w700,
-                    ),
-                  ),
+            _otpChannelCard(
+              title: 'Mobile OTP',
+              verified: _mobileVerified,
+              controller: _mobileCtl,
+              otpController: _mobileOtpCtl,
+              inputLabel: 'Mobile Number',
+              inputHint: '98765 43210',
+              codeHint: 'SMS code',
+              otpLength: _mobileOtpLength,
+              keyboardType: TextInputType.phone,
+              timer: _mobileTimer,
+              valid: mobileValid,
+              onSend: _sendMobileOtp,
+              onResend: _resendMobileOtp,
+              onVerify: _verifyMobileOtp,
+              loading: _mobileOtpLoading,
+              onChange: () => setState(() {
+                _mobileVerified = false;
+                _mobileOtpSent = false;
+                _mobileOtpCtl.clear();
+              }),
+              prefix: Padding(
+                padding: const EdgeInsets.only(left: 12, right: 4),
+                child: Text(
+                  '+91',
+                  style: AppTextStyles.body(size: 14, weight: FontWeight.w700),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _otpChannelCard(
-                title: 'Email OTP',
-                verified: _emailVerified,
-                controller: _emailCtl,
-                otpController: _emailOtpCtl,
-                inputLabel: 'Email ID',
-                inputHint: 'you@company.com',
-                codeHint: 'Email code',
-                otpLength: _emailOtpLength,
-                keyboardType: TextInputType.emailAddress,
-                timer: _emailTimer,
-                valid: emailValid,
-                onSend: _sendEmailOtp,
-                onResend: _resendEmailOtp,
-                onVerify: _verifyEmailOtp,
-                onChange: () => setState(() {
-                  _emailVerified = false;
-                  _emailOtpSent = false;
-                  _emailOtpCtl.clear();
-                }),
-              ),
+            const SizedBox(height: 16),
+            _otpChannelCard(
+              title: 'Email OTP',
+              verified: _emailVerified,
+              controller: _emailCtl,
+              otpController: _emailOtpCtl,
+              inputLabel: 'Email ID',
+              inputHint: 'you@company.com',
+              codeHint: 'Email code',
+              otpLength: _emailOtpLength,
+              keyboardType: TextInputType.emailAddress,
+              timer: _emailTimer,
+              valid: emailValid,
+              onSend: _sendEmailOtp,
+              onResend: _resendEmailOtp,
+              onVerify: _verifyEmailOtp,
+              loading: _emailOtpLoading,
+              onChange: () => setState(() {
+                _emailVerified = false;
+                _emailOtpSent = false;
+                _emailOtpCtl.clear();
+              }),
             ),
           ],
         ),
@@ -809,6 +806,57 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     );
   }
 
+  Widget _registrationRoleCard({
+    required String role,
+    required String title,
+    required String subtitle,
+  }) {
+    final selected = _registrationRole == role;
+    return GestureDetector(
+      onTap: () => setState(() => _registrationRole = role),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.auction.withValues(alpha: 0.1)
+              : AppColors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+          border: Border.all(
+            color: selected
+                ? AppColors.auction
+                : AppColors.blackWithOpacity(0.08),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.check_circle : Icons.radio_button_unchecked,
+              color: selected
+                  ? AppColors.auction
+                  : AppColors.navyWithOpacity(0.4),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AppTextStyles.body(weight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _otpChannelCard({
     required String title,
     required bool verified,
@@ -824,6 +872,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     required VoidCallback onSend,
     required VoidCallback onResend,
     required VoidCallback onVerify,
+    required bool loading,
     required VoidCallback onChange,
     Widget? prefix,
   }) {
@@ -886,8 +935,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 10),
             _primaryButton(
               label: title == 'Mobile OTP' ? 'Send SMS OTP' : 'Send email OTP',
-              enabled: valid && !_loading,
-              loading: _loading,
+              enabled: valid && !loading,
+              loading: loading,
               onTap: onSend,
             ),
           ],
@@ -939,8 +988,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             _primaryButton(
               label: 'Verify',
               color: AppColors.auction,
-              enabled: otpController.text.length == otpLength && !_loading,
-              loading: _loading,
+              enabled: otpController.text.length == otpLength && !loading,
+              loading: loading,
               onTap: onVerify,
             ),
           ],
@@ -968,33 +1017,35 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _setError('Enter a valid email address.');
       return;
     }
-    _setLoading(true);
-    final notifier = ref.read(authProvider.notifier);
-    final otpLength = resend
-        ? await notifier.resendOtp(identifier, purpose: 'register')
-        : await notifier.requestOtp(identifier, purpose: 'register');
-    if (!mounted) return;
-    _setLoading(false);
-    if (otpLength == null) {
-      final err = ref.read(authProvider).error;
-      _setError(err.isNotEmpty ? err : 'Could not send OTP. Please try again.');
-      return;
+    _setOtpLoading(mobile, true);
+    try {
+      final notifier = ref.read(authProvider.notifier);
+      final otpLength = resend
+          ? await notifier.resendOtp(identifier, purpose: 'register')
+          : await notifier.requestOtp(identifier, purpose: 'register');
+      if (!mounted) return;
+      if (otpLength == null) {
+        final err = ref.read(authProvider).error;
+        _setError(
+          err.isNotEmpty ? err : 'Could not send OTP. Please try again.',
+        );
+        return;
+      }
+      setState(() {
+        if (mobile) {
+          _mobileOtpLength = AuthService.fixedOtpLength;
+          _mobileOtpSent = true;
+        } else {
+          _emailOtpLength = AuthService.fixedOtpLength;
+          _emailOtpSent = true;
+        }
+      });
+      _startTimer(mobile: mobile);
+    } catch (e) {
+      if (mounted) _setError(e.toString());
+    } finally {
+      if (mounted) _setOtpLoading(mobile, false);
     }
-    setState(() {
-      if (mobile) {
-        _mobileOtpLength = AuthService.fixedOtpLength;
-      } else {
-        _emailOtpLength = AuthService.fixedOtpLength;
-      }
-    });
-    setState(() {
-      if (mobile) {
-        _mobileOtpSent = true;
-      } else {
-        _emailOtpSent = true;
-      }
-    });
-    _startTimer(mobile: mobile);
   }
 
   Future<void> _verifyMobileOtp() => _verifyChannelOtp(mobile: true);
@@ -1010,27 +1061,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _setError('Enter the $otpLength-digit OTP.');
       return;
     }
-    _setLoading(true);
-    final success = await ref
-        .read(authProvider.notifier)
-        .verifyOtp(identifier, code, purpose: 'register');
-    if (!mounted) return;
-    _setLoading(false);
-    if (!success) {
-      final err = ref.read(authProvider).error;
-      _setError(err.isNotEmpty ? err : 'Invalid OTP. Please try again.');
-      return;
-    }
-    final complete = mobile ? _emailVerified : _mobileVerified;
-    setState(() {
-      if (mobile) {
-        _mobileVerified = true;
-      } else {
-        _emailVerified = true;
+    _setOtpLoading(mobile, true);
+    try {
+      final success = await ref
+          .read(authProvider.notifier)
+          .verifyOtp(identifier, code, purpose: 'register');
+      if (!mounted) return;
+      if (!success) {
+        final err = ref.read(authProvider).error;
+        _setError(err.isNotEmpty ? err : 'Invalid OTP. Please try again.');
+        return;
       }
-      if (complete) _step = 2;
-      _error = null;
-    });
+      final complete = mobile ? _emailVerified : _mobileVerified;
+      setState(() {
+        if (mobile) {
+          _mobileVerified = true;
+          _mobileOtpSent = false;
+          _mobileOtpCtl.clear();
+        } else {
+          _emailVerified = true;
+          _emailOtpSent = false;
+          _emailOtpCtl.clear();
+        }
+        if (complete) _step = 2;
+        _error = null;
+      });
+    } catch (e) {
+      if (mounted) _setError(e.toString());
+    } finally {
+      if (mounted) _setOtpLoading(mobile, false);
+    }
   }
 
   Future<void> _onWarehousePincodeChanged(String value) async {
@@ -1181,10 +1241,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     phone: _mobileCtl.text.trim(),
                     password: _passwordCtl.text,
                     role: _registrationRole,
+                    activateSession: false,
                   );
               if (!mounted) return;
               final state = ref.read(authProvider);
-              if (state.isAuthenticated) {
+              // Registration intentionally keeps the session unauthenticated
+              // until KYC, documents, and payment are completed so the public
+              // auth guard cannot skip directly to the under-review screen.
+              if (state.user != null) {
                 setState(() {
                   _step = 3;
                   _error = null;
@@ -1775,7 +1839,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               }
               await Future.wait(documentUploads);
               await _vendorService.submitKyc(vendorCode);
-              await ref.read(authProvider.notifier).refreshUser();
+              await ref
+                  .read(authProvider.notifier)
+                  .refreshUser(activateSession: false);
               if (!mounted) return;
               setState(() {
                 _step = 4;
@@ -2474,6 +2540,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       keyboardType: keyboardType,
       obscureText: obscure,
       readOnly: readOnly,
+      enableInteractiveSelection: true,
       maxLines: maxLines,
       maxLength: maxLength,
       textAlign: textAlign,

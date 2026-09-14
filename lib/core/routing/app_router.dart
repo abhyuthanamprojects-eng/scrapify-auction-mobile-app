@@ -3,6 +3,7 @@ import '../../screens/splash/splash_screen.dart';
 import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/profile/business_verification_screen.dart';
 import '../../screens/auth/login_screen.dart';
+import '../../screens/auth/biometric_lock_screen.dart';
 import '../../screens/auth/otp_screen.dart';
 import '../../screens/auth/role_screen.dart';
 import '../../screens/auth/signup_screen.dart';
@@ -67,6 +68,10 @@ abstract final class AppRouter {
       GoRoute(
         path: '/business-verification',
         builder: (_, _) => const BusinessVerificationScreen(),
+      ),
+      GoRoute(
+        path: '/biometric-lock',
+        builder: (_, _) => const BiometricLockScreen(),
       ),
       GoRoute(
         path: '/login',

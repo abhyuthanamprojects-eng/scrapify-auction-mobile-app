@@ -10,6 +10,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/network/api_client.dart';
+import '../../services/biometric_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -56,9 +57,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
     final shouldContinue = await _checkForUpdate();
     if (!shouldContinue || !mounted) return;
-    context.go(
-      ref.read(authProvider).isAuthenticated ? '/home' : '/onboarding',
-    );
+
+    if (ref.read(authProvider).isAuthenticated) {
+      final showLock = await BiometricService.shouldShowLockScreen;
+      if (!mounted) return;
+      context.go(showLock ? '/biometric-lock' : '/home');
+    } else {
+      context.go('/onboarding');
+    }
   }
 
   Future<bool> _checkForUpdate() async {

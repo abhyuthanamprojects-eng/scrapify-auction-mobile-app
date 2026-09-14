@@ -22,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isBuyer = true;
+  bool _useOtp = false;
   bool _obscurePassword = true;
   bool _biometricAvailable = false;
   String? _identifierError;
@@ -33,9 +34,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _checkBiometric() async {
-    final available = await BiometricService.isAvailable;
-    final hasSaved = await BiometricService.hasSavedSession;
-    if (mounted) setState(() => _biometricAvailable = available && hasSaved);
+    final show = await BiometricService.shouldShowLockScreen;
+    if (mounted) setState(() => _biometricAvailable = show);
   }
 
   @override
@@ -75,7 +75,102 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
     final state = ref.read(authProvider);
     if (state.isAuthenticated && mounted) {
+      await _offerBiometricOptIn();
+      if (!mounted) return;
       context.go(state.isSeller ? '/seller' : '/home');
+    }
+  }
+
+  Future<void> _offerBiometricOptIn() async {
+    final alreadyEnabled = await BiometricService.isEnabled;
+    if (alreadyEnabled) return;
+    final available = await BiometricService.isAvailable;
+    if (!available || !mounted) return;
+
+    final enable = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.auction.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.face_unlock_rounded,
+                  size: 32,
+                  color: AppColors.auction.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Enable Face ID?',
+                style: AppTextStyles.heading(
+                  size: 20,
+                  weight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Use Face ID to quickly unlock Scrapify Auctions next time you open the app.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enable Face ID',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text(
+                  'Not now',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (enable == true) {
+      final authenticated = await BiometricService.authenticate();
+      if (authenticated) {
+        await BiometricService.setEnabled(true);
+      }
     }
   }
 
@@ -189,6 +284,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 20),
                   _buildRoleToggle(),
+                  const SizedBox(height: 14),
+                  _buildLoginModeToggle(),
                   const SizedBox(height: 18),
                   Text(
                     'Corporate Email or Mobile',
@@ -210,45 +307,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       border: OutlineInputBorder(),
                     ).copyWith(errorText: _identifierError),
                   ),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Password', style: AppTextStyles.labelMedium),
-                      GestureDetector(
-                        onTap: () => context.push('/forgot-password'),
-                        child: const Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.auction,
+                  if (!_useOtp) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Password', style: AppTextStyles.labelMedium),
+                        GestureDetector(
+                          onTap: () => context.push('/forgot-password'),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.auction,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: 'Enter password',
-                      prefixIcon: const Icon(Icons.lock_outline, size: 18),
-                      suffixIcon: GestureDetector(
-                        onTap: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
-                        ),
-                        child: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                          size: 18,
-                        ),
-                      ),
-                      border: const OutlineInputBorder(),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      decoration: InputDecoration(
+                        hintText: 'Enter password',
+                        prefixIcon: const Icon(Icons.lock_outline, size: 18),
+                        suffixIcon: GestureDetector(
+                          onTap: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                          child: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            size: 18,
+                          ),
+                        ),
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'We\'ll send a one-time code to your email or mobile number.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                   if (authState.hasError) ...[
                     const SizedBox(height: 8),
                     Text(
@@ -266,7 +374,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: authState.authState == AuthState.loading
                           ? null
-                          : _login,
+                          : _useOtp ? _loginWithOtp : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.navy,
                         foregroundColor: AppColors.white,
@@ -285,71 +393,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: AppColors.white,
                               ),
                             )
-                          : const Text(
-                              'Sign In to Scrapify Auctions',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                          : Text(
+                              _useOtp ? 'Send OTP' : 'Sign In',
+                              style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 44,
-                          child: OutlinedButton(
-                            onPressed: _loginWithOtp,
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusLg,
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              'Sign in with OTP',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: AppColors.navy,
-                              ),
+                  if (_biometricAvailable) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: _loginWithBiometric,
+                        icon: const Icon(
+                          Icons.fingerprint,
+                          color: AppColors.auction,
+                          size: 20,
+                        ),
+                        label: const Text(
+                          'Sign in with Face ID',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: AppColors.navy,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
                             ),
                           ),
                         ),
                       ),
-                      if (_biometricAvailable) ...[
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: SizedBox(
-                            height: 44,
-                            child: OutlinedButton.icon(
-                              onPressed: _loginWithBiometric,
-                              icon: const Icon(
-                                Icons.fingerprint,
-                                color: AppColors.auction,
-                                size: 20,
-                              ),
-                              label: const Text(
-                                'Face ID',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                  color: AppColors.navy,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusLg,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Center(
                     child: TextButton(
@@ -379,6 +458,71 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoginModeToggle() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.appBg,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _useOtp = true;
+                _passwordController.clear();
+                ref.read(authProvider.notifier).clearError();
+              }),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: _useOtp ? AppColors.auction : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                ),
+                child: Center(
+                  child: Text(
+                    'Login with OTP',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: _useOtp ? AppColors.white : AppColors.navy,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() {
+                _useOtp = false;
+                ref.read(authProvider.notifier).clearError();
+              }),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: !_useOtp ? AppColors.auction : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                ),
+                child: Center(
+                  child: Text(
+                    'Login with Password',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: !_useOtp ? AppColors.white : AppColors.navy,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

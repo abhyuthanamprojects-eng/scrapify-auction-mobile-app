@@ -9,6 +9,8 @@ import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart';
+import '../../core/theme/app_spacing.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String identifier;
@@ -84,6 +86,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     if (success) {
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
+        await _offerBiometricOptIn();
+        if (!mounted) return;
         context.go('/home');
       } else {
         context.push('/signup', extra: widget.identifier);
@@ -99,6 +103,98 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
         }
         _focusNodes[0].requestFocus();
       });
+    }
+  }
+
+  Future<void> _offerBiometricOptIn() async {
+    final alreadyEnabled = await BiometricService.isEnabled;
+    if (alreadyEnabled) return;
+    final available = await BiometricService.isAvailable;
+    if (!available || !mounted) return;
+
+    final enable = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.auction.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.face_unlock_rounded,
+                  size: 32,
+                  color: AppColors.auction.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Enable Face ID?',
+                style: AppTextStyles.displayMedium,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Use Face ID to quickly unlock Scrapify Auctions next time you open the app.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusXl,
+                      ),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enable Face ID',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text(
+                  'Not now',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (enable == true) {
+      final authenticated = await BiometricService.authenticate();
+      if (authenticated) {
+        await BiometricService.setEnabled(true);
+      }
     }
   }
 
@@ -207,6 +303,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           focusNode: _focusNodes[index],
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
+          enableInteractiveSelection: true,
           maxLength: 1,
           style: AppTextStyles.heading(size: 22, weight: FontWeight.w800),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],

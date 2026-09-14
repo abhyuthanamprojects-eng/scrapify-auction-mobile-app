@@ -4,6 +4,7 @@ import '../core/network/api_exception.dart';
 import '../core/network/token_storage.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import '../services/biometric_service.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated }
 
@@ -43,6 +44,7 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     required String password,
     String role = 'buyer',
     String? companyName,
+    bool activateSession = true,
   }) async {
     state = state.copyWith(authState: AuthState.loading, error: '');
     try {
@@ -55,7 +57,9 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
         companyName: companyName,
       );
       state = state.copyWith(
-        authState: AuthState.authenticated,
+        authState: activateSession
+            ? AuthState.authenticated
+            : AuthState.unauthenticated,
         user: result.user,
       );
     } on ApiException catch (e) {
@@ -89,14 +93,21 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     String code, {
     String purpose = 'login',
   }) async {
-    state = state.copyWith(authState: AuthState.loading, error: '');
+    final isLogin = purpose == 'login';
+    if (isLogin) {
+      state = state.copyWith(authState: AuthState.loading, error: '');
+    } else {
+      // Registration OTP verification must not trigger the global auth guard;
+      // otherwise the signup screen is replaced by the app loading screen.
+      state = state.copyWith(error: '');
+    }
     try {
       final result = await _authService.verifyOtp(
         identifier: identifier,
         code: code,
         purpose: purpose,
       );
-      if (result.user != null) {
+      if (isLogin && result.user != null) {
         state = state.copyWith(
           authState: AuthState.authenticated,
           user: result.user,
@@ -104,21 +115,26 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
         return true;
       }
       // Verified but no user (pre-registration)
-      state = state.copyWith(authState: AuthState.unauthenticated);
+      if (isLogin) {
+        state = state.copyWith(authState: AuthState.unauthenticated);
+      }
       return result.verified;
     } on ApiException catch (e) {
       state = state.copyWith(
-        authState: AuthState.unauthenticated,
+        authState: isLogin ? AuthState.unauthenticated : null,
         error: e.firstError,
       );
       return false;
     }
   }
 
-  Future<void> refreshUser() async {
+  Future<void> refreshUser({bool activateSession = true}) async {
     try {
       final user = await _authService.me();
-      state = state.copyWith(user: user, authState: AuthState.authenticated);
+      state = state.copyWith(
+        user: user,
+        authState: activateSession ? AuthState.authenticated : null,
+      );
     } on ApiException catch (e) {
       if (e.isUnauthorized) {
         state = const AuthStateData(authState: AuthState.unauthenticated);
@@ -138,6 +154,7 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
   Future<void> logout() async {
     try {
       await _authService.logout();
+      await BiometricService.clear();
     } finally {
       state = const AuthStateData(authState: AuthState.unauthenticated);
     }
