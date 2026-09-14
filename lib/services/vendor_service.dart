@@ -153,10 +153,28 @@ class VendorService {
     required String method,
     required String reference,
     required double amount,
+    String? promoCode,
   }) async {
     return await _api.post(
       Endpoints.vendorPayment(vendorCode),
-      data: {'method': method, 'reference': reference, 'amount': amount},
+      data: {
+        'method': method,
+        'reference': reference,
+        'amount': amount,
+        if (promoCode != null && promoCode.trim().isNotEmpty)
+          'promo_code': promoCode.trim().toUpperCase(),
+      },
     );
   }
+
+  Future<Map<String, dynamic>> quotePayment({
+    required String vendorCode,
+    String? promoCode,
+  }) => _api.post(
+    '${Endpoints.vendorPayment(vendorCode)}/quote',
+    data: {'promo_code': promoCode},
+  );
+
+  Future<Map<String, dynamic>> getPlatformConfig() =>
+      _api.get(Endpoints.platformConfig);
 }

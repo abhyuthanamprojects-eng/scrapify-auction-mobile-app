@@ -10,6 +10,7 @@ abstract final class Endpoints {
 
   // Profile
   static const profile = '/profile';
+  static const platformConfig = '/platform-config';
   static const addresses = '/profile/addresses';
   static String address(int id) => '/profile/addresses/$id';
   static const paymentMethods = '/profile/payment-methods';

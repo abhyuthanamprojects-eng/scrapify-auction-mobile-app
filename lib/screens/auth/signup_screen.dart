@@ -135,6 +135,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   // Step 4
   String? _paymentMethod;
   String _phase = 'review'; // review | payment | pending | approved
+  final _promoCodeCtl = TextEditingController();
+  double _registrationFee = 5000;
+  Map<String, dynamic>? _promoPricing;
 
   bool _loading = false;
   String? _error;
@@ -147,6 +150,46 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _emailCtl.text = id;
     } else if (id.isNotEmpty) {
       _mobileCtl.text = id;
+    }
+    _loadRegistrationFee();
+  }
+
+  Future<void> _loadRegistrationFee() async {
+    try {
+      final config = await _vendorService.getPlatformConfig();
+      final fee = config['vendor_registration_fee'];
+      if (mounted && fee is num) {
+        setState(() => _registrationFee = fee.toDouble());
+      }
+    } catch (_) {
+      // The server default remains visible if configuration is unavailable.
+    }
+  }
+
+  Future<void> _applyPromoCode() async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    final code = _promoCodeCtl.text.trim();
+    if (vendorCode == null || code.isEmpty) {
+      return;
+    }
+    _setLoading(true);
+    _setError(null);
+    try {
+      final response = await _vendorService.quotePayment(
+        vendorCode: vendorCode,
+        promoCode: code,
+      );
+      if (mounted) {
+        setState(
+          () => _promoPricing =
+              response['pricing'] as Map<String, dynamic>? ?? response,
+        );
+      }
+    } catch (e) {
+      if (mounted) setState(() => _promoPricing = null);
+      if (mounted) _setError(e.toString());
+    } finally {
+      if (mounted) _setLoading(false);
     }
   }
 
@@ -177,6 +220,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _warehouseStateCtl.dispose();
     _warehousePincodeCtl.dispose();
     _warehouseContactCtl.dispose();
+    _promoCodeCtl.dispose();
     _gstDebounce?.cancel();
     _bankDebounce?.cancel();
     super.dispose();
@@ -849,9 +893,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 GestureDetector(
                   onTap: timer > 0 ? null : onResend,
                   child: Text(
-                    timer > 0
-                        ? 'Resend in ${timer}s'
-                        : 'Resend',
+                    timer > 0 ? 'Resend in ${timer}s' : 'Resend',
                     style: AppTextStyles.body(
                       size: 11,
                       weight: FontWeight.w700,
@@ -2075,7 +2117,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '₹5,000',
+                '₹${(_promoPricing?['payable_amount'] as num? ?? _registrationFee).toStringAsFixed(2)}',
                 style: AppTextStyles.heading(
                   size: 28,
                   weight: FontWeight.w900,
@@ -2093,6 +2135,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 20),
+        _fieldLabel('Promo code (optional)'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _inputField(
+                controller: _promoCodeCtl,
+                hint: 'Enter offer code',
+                onChanged: (_) => setState(() => _promoPricing = null),
+              ),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: _loading ? null : _applyPromoCode,
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+        if ((_promoPricing?['discount_amount'] as num? ?? 0) > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Discount applied: ₹${(_promoPricing!['discount_amount'] as num).toStringAsFixed(2)}',
+              style: const TextStyle(
+                color: AppColors.success,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         const SizedBox(height: 20),
         _fieldLabel('Choose payment method'),
         const SizedBox(height: 8),
@@ -2174,7 +2246,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   vendorCode: user!.vendorCode!,
                   method: _paymentMethod!,
                   reference: 'REG-${DateTime.now().millisecondsSinceEpoch}',
-                  amount: 5000,
+                  amount:
+                      (_promoPricing?['payable_amount'] as num?)?.toDouble() ??
+                      _registrationFee,
+                  promoCode: _promoCodeCtl.text,
                 );
               }
               if (!mounted) return;

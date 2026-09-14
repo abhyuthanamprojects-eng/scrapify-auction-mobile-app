@@ -13,6 +13,7 @@ import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../seller/seller_home_screen.dart';
 import '../seller/my_auctions_screen.dart';
+import '../../widgets/shared/kyc_required_screen.dart';
 
 final tabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -27,6 +28,13 @@ class AppShell extends ConsumerWidget {
     final isSeller = authData.isSeller;
     final kycVerified = authData.user?.kycVerified ?? false;
     final isPendingKyc = isAuthenticated && !kycVerified;
+
+    if (isPendingKyc) {
+      return const KycRequiredScreen(
+        featureName: 'Auction participation',
+        showBack: false,
+      );
+    }
 
     final screenWidgets = isSeller
         ? const <Widget>[
@@ -46,10 +54,7 @@ class AppShell extends ConsumerWidget {
 
     final screens = [
       for (int i = 0; i < screenWidgets.length; i++)
-        FocusScope(
-          canRequestFocus: tabIndex == i,
-          child: screenWidgets[i],
-        ),
+        FocusScope(canRequestFocus: tabIndex == i, child: screenWidgets[i]),
     ];
 
     return Scaffold(

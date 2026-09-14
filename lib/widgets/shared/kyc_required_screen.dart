@@ -24,7 +24,10 @@ class KycRequiredScreen extends StatelessWidget {
             if (showBack)
               Padding(
                 padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.screenPaddingH, 8, AppSpacing.screenPaddingH, 0,
+                  AppSpacing.screenPaddingH,
+                  8,
+                  AppSpacing.screenPaddingH,
+                  0,
                 ),
                 child: Row(
                   children: [
@@ -38,7 +41,11 @@ class KycRequiredScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(color: AppColors.cardBorder),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.navy),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 16,
+                          color: AppColors.navy,
+                        ),
                       ),
                     ),
                   ],
@@ -76,7 +83,7 @@ class KycRequiredScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
                       Text(
-                        'VERIFICATION REQUIRED',
+                        'VERIFICATION PENDING',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w800,
@@ -86,13 +93,16 @@ class KycRequiredScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Complete Your KYC',
-                        style: AppTextStyles.heading(size: 24, weight: FontWeight.w900),
+                        'Your profile is under review',
+                        style: AppTextStyles.heading(
+                          size: 24,
+                          weight: FontWeight.w900,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Complete your KYC & business verification to access $featureName.',
+                        '$featureName and other protected actions are unavailable until an administrator approves your KYC.',
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,
@@ -101,22 +111,22 @@ class KycRequiredScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 40),
-                      SizedBox(
+                      Container(
                         width: double.infinity,
                         height: AppSpacing.buttonXl,
-                        child: ElevatedButton.icon(
-                          onPressed: () => context.push('/business-verification'),
-                          icon: const Icon(Icons.verified_outlined, size: 18),
-                          label: const Text(
-                            'Start Verification',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.blackWithOpacity(0.06),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusLg,
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.navy,
-                            foregroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                            ),
+                          border: Border.all(color: AppColors.cardBorder),
+                        ),
+                        child: const Text(
+                          'Your profile is under review',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
