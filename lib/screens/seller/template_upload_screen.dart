@@ -297,15 +297,18 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
   }
 
   Future<void> _uploadTemplate(AuctionTemplate template) async {
+    if (_isUploading) return;
+    setState(() => _isUploading = true);
+
     final picked = await AppFilePicker.pickDocument(
       allowedExtensions: ['xlsx', 'xls', 'csv'],
     );
-    if (picked == null || picked.path == null) return;
+    if (picked == null || picked.path == null) {
+      if (mounted) setState(() => _isUploading = false);
+      return;
+    }
 
-    setState(() {
-      _isUploading = true;
-      _uploadResult = null;
-    });
+    setState(() => _uploadResult = null);
 
     try {
       final result = await _templateService.uploadTemplate(

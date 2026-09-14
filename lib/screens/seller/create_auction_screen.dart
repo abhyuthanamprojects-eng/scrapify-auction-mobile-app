@@ -1257,6 +1257,77 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     );
                     return;
                   }
+                  if (_selectedCategory == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please select a category.'),
+                      ),
+                    );
+                    return;
+                  }
+                }
+                if (_step == 1) {
+                  if (_materialTypeController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Please enter a material description.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  final qty =
+                      double.tryParse(_quantityController.text.trim());
+                  if (qty == null || qty <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Please enter a valid quantity.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                }
+                if (_step == 3) {
+                  final reserve = double.tryParse(
+                    _reservePriceController.text.trim(),
+                  );
+                  final starting = double.tryParse(
+                    _startingPriceController.text.trim(),
+                  );
+                  final increment = double.tryParse(
+                    _bidIncrementController.text.trim(),
+                  );
+                  if (reserve == null || reserve <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter a reserve price.'),
+                      ),
+                    );
+                    return;
+                  }
+                  if (starting == null || starting <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Please enter a starting price.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  if (increment == null || increment <= 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Please enter a bid increment.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
                 }
                 if (_step < 3) {
                   setState(() => _step++);
@@ -1314,6 +1385,14 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please choose a valid auction start and end time.'),
+        ),
+      );
+      return;
+    }
+    if (start.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Auction start time cannot be in the past.'),
         ),
       );
       return;
