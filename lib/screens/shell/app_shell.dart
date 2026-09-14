@@ -127,8 +127,9 @@ class AppShell extends ConsumerWidget {
               currentIndex: tabIndex,
               isSeller: isSeller,
               onTap: (i) {
+                final messenger = ScaffoldMessenger.of(context);
                 if (isPendingKyc && (i == 2 || i == 3)) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text(
                         'This feature is available after KYC verification.',
@@ -138,6 +139,7 @@ class AppShell extends ConsumerWidget {
                   );
                   return;
                 }
+                messenger.hideCurrentSnackBar();
                 ref.read(tabIndexProvider.notifier).state = i;
               },
             )
