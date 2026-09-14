@@ -789,6 +789,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
           ],
         ),
+        if (_mobileVerified && _emailVerified) ...[
+          const SizedBox(height: 16),
+          _primaryButton(
+            label: 'Continue to Login Details',
+            enabled: !_loading,
+            loading: _loading,
+            onTap: () => setState(() {
+              _step = 2;
+              _error = null;
+            }),
+          ),
+        ],
         if (_error != null) ...[
           const SizedBox(height: 16),
           _errorBanner(_error!),
