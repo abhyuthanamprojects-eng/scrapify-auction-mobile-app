@@ -47,20 +47,22 @@ class _TrustedDevicesScreenState extends State<TrustedDevicesScreen> {
   ];
 
   void _terminateDevice(String id) {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _devices.removeWhere((d) => d['id'] == id);
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✓ Device session terminated successfully')),
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Device session terminated successfully')),
     );
   }
 
   void _terminateAllOthers() {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _devices = _devices.where((d) => d['isCurrent'] == true).toList();
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✓ All other active corporate sessions have been signed out')),
+    messenger.showSnackBar(
+      const SnackBar(content: Text('All other active corporate sessions have been signed out')),
     );
   }
 
