@@ -46,7 +46,7 @@ class TemplateUploadResult {
   final bool valid;
   final List<Map<String, dynamic>> errors;
   final int rowCount;
-  final int totalQuantity;
+  final double totalQuantity;
   final double totalReferenceValue;
   final int? uploadId;
   final List<Map<String, dynamic>> rows;
@@ -67,7 +67,7 @@ class TemplateUploadResult {
       valid: data['valid'] as bool? ?? false,
       errors: List<Map<String, dynamic>>.from(data['errors'] as List? ?? []),
       rowCount: data['row_count'] as int? ?? 0,
-      totalQuantity: data['total_quantity'] as int? ?? 0,
+      totalQuantity: (data['total_quantity'] as num?)?.toDouble() ?? 0,
       totalReferenceValue: (data['total_reference_value'] as num?)?.toDouble() ?? 0,
       uploadId: (data['upload'] as Map<String, dynamic>?)?['id'] as int?,
       rows: List<Map<String, dynamic>>.from(data['rows'] as List? ?? []),

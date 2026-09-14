@@ -376,7 +376,7 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
           if (isValid) ...[
             const SizedBox(height: 10),
             _summaryRow('Rows', '${result.rowCount}'),
-            _summaryRow('Total Quantity', '${result.totalQuantity}'),
+            _summaryRow('Total Quantity', result.totalQuantity == result.totalQuantity.roundToDouble() ? '${result.totalQuantity.toInt()}' : result.totalQuantity.toStringAsFixed(2)),
             _summaryRow(
               'Total Reference Value',
               'Rs ${result.totalReferenceValue.toStringAsFixed(2)}',
@@ -384,31 +384,79 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
           ],
           if (!isValid) ...[
             const SizedBox(height: 10),
-            ...result.errors.map((err) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '• ',
-                        style: TextStyle(
-                          color: AppColors.destructive,
-                          fontWeight: FontWeight.bold,
+            Text(
+              '${result.errors.length} validation error${result.errors.length == 1 ? '' : 's'}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.destructive,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...result.errors.take(20).map((err) {
+              final row = err['row'] ?? '?';
+              final col = err['column'] ?? err['field'] ?? '';
+              final val = err['value'] ?? '';
+              final msg = err['message'] ?? err['error'] ?? 'Invalid';
+              final isFileLevel = row == 0 || row == '0';
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.destructive.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.destructive.withValues(alpha: 0.15),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isFileLevel)
+                      Text(
+                        'Row $row${col.toString().isNotEmpty ? '  •  Column: $col' : ''}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.navy,
                         ),
                       ),
-                      Expanded(
-                        child: Text(
-                          'Row ${err['row'] ?? '?'}, Col ${err['column'] ?? '?'}: ${err['message'] ?? 'Unknown error'}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.navy,
-                            height: 1.4,
-                          ),
+                    if (val.toString().isNotEmpty && !isFileLevel) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Value: $val',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontFamily: 'monospace',
                         ),
                       ),
                     ],
-                  ),
-                )),
+                    if (!isFileLevel) const SizedBox(height: 2),
+                    Text(
+                      msg.toString(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.destructive,
+                        fontWeight: isFileLevel ? FontWeight.w600 : FontWeight.w400,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            if (result.errors.length > 20) ...[
+              const SizedBox(height: 4),
+              Text(
+                '+ ${result.errors.length - 20} more errors not shown',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -444,6 +492,10 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
 
   Widget _previewSection() {
     final rows = _uploadResult!.rows;
+    final result = _uploadResult!;
+    final totalQty = result.totalQuantity;
+    final totalRefValue = result.totalReferenceValue;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -452,6 +504,35 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
           style: AppTextStyles.labelMedium,
         ),
         const SizedBox(height: 8),
+
+        // Summary totals
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.auction.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(
+              color: AppColors.auction.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              _totalChip('Items', '${result.rowCount}'),
+              const SizedBox(width: 12),
+              _totalChip('Total Qty', totalQty == totalQty.roundToDouble() ? '${totalQty.toInt()}' : totalQty.toStringAsFixed(2)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _totalChip(
+                  'Total Ref. Value',
+                  'Rs ${totalRefValue.toStringAsFixed(2)}',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Item list
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.cardBorder),
@@ -462,56 +543,103 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
             child: ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: rows.length > 20 ? 20 : rows.length,
+              itemCount: rows.length > 25 ? 25 : rows.length,
               separatorBuilder: (_, _) =>
                   const Divider(height: 1, color: AppColors.cardBorder),
               itemBuilder: (_, i) {
                 final row = rows[i];
-                final name = row['material_name'] ??
-                    row['name'] ??
-                    row['item'] ??
-                    'Item ${i + 1}';
-                final qty = row['quantity'] ?? '';
-                final uom = row['uom'] ?? '';
-                final ref = row['reference_value'] ?? row['reserve_price'] ?? '';
-                return ListTile(
-                  dense: true,
-                  title: Text(
-                    name.toString(),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.navy,
-                    ),
+                final d = row['data'] as Map<String, dynamic>? ?? row;
+                final rowNum = row['row_number'] ?? (i + 1);
+                final name = d['item_name'] ??
+                    d['product_name'] ??
+                    d['material_name'] ??
+                    d['description'] ??
+                    d['name'] ??
+                    'Item $rowNum';
+                final brand = d['brand'] ?? '';
+                final qty = _parseNum(d['quantity'] ?? '1');
+                final uom = d['unit'] ?? d['uom'] ?? 'PCS';
+                final refVal = _parseNum(
+                  d['reference_value'] ?? d['reserve_value'] ?? '0',
+                );
+                final lineTotal = qty * refVal;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                  subtitle: Text(
-                    'Qty: $qty $uom   Ref: Rs $ref',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  leading: CircleAvatar(
-                    radius: 14,
-                    backgroundColor: AppColors.auction.withValues(alpha: 0.1),
-                    child: Text(
-                      '${i + 1}',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.auction,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor:
+                            AppColors.auction.withValues(alpha: 0.1),
+                        child: Text(
+                          '$rowNum',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.auction,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name.toString(),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.navy,
+                              ),
+                            ),
+                            if (brand.toString().isNotEmpty)
+                              Text(
+                                brand.toString(),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                _detailChip('Qty', '${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} $uom'),
+                                const SizedBox(width: 8),
+                                if (refVal > 0)
+                                  _detailChip('Ref', 'Rs ${refVal.toStringAsFixed(2)}'),
+                              ],
+                            ),
+                            if (lineTotal > 0) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Line total: Rs ${lineTotal.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.navy,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
           ),
         ),
-        if (rows.length > 20) ...[
+        if (rows.length > 25) ...[
           const SizedBox(height: 6),
           Text(
-            '+ ${rows.length - 20} more items not shown',
+            '+ ${rows.length - 25} more items not shown',
             style: const TextStyle(
               fontSize: 11,
               color: AppColors.textSecondary,
@@ -521,6 +649,55 @@ class _TemplateUploadScreenState extends ConsumerState<TemplateUploadScreen> {
         ],
       ],
     );
+  }
+
+  Widget _totalChip(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            color: AppColors.navy,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _detailChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.navy.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: AppColors.navy,
+        ),
+      ),
+    );
+  }
+
+  double _parseNum(dynamic value) {
+    if (value is num) return value.toDouble();
+    final cleaned = value.toString().replaceAll(RegExp(r'[,₹$ ]'), '');
+    return double.tryParse(cleaned) ?? 0;
   }
 
   // ---------------------------------------------------------------------------

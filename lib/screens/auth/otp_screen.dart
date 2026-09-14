@@ -10,7 +10,6 @@ import '../../providers/auth_provider.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../services/auth_service.dart';
 import '../../services/biometric_service.dart';
-import '../../core/theme/app_spacing.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String identifier;

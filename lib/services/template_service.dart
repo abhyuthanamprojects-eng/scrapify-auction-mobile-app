@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
+import '../core/network/api_exception.dart';
 import '../models/auction_template.dart';
 
 class TemplateService {
@@ -36,11 +37,18 @@ class TemplateService {
       'template_id': templateId,
       'file': await MultipartFile.fromFile(filePath, filename: fileName),
     });
-    final data = await _api.uploadFile(
-      Endpoints.templateUpload(auctionCode),
-      data: formData,
-    );
-    return TemplateUploadResult.fromJson(data);
+    try {
+      final data = await _api.uploadFile(
+        Endpoints.templateUpload(auctionCode),
+        data: formData,
+      );
+      return TemplateUploadResult.fromJson(data);
+    } on ApiException catch (e) {
+      if (e.statusCode == 422 && e.raw != null) {
+        return TemplateUploadResult.fromJson(e.raw!);
+      }
+      rethrow;
+    }
   }
 
   /// Confirm a previously uploaded template import.

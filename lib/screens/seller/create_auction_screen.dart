@@ -1293,6 +1293,13 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   }
 
   Future<void> _submitAuction() async {
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category.')),
+      );
+      return;
+    }
+
     final start = _scheduleStart;
     final end = _scheduleEnd;
     final initialSlotMinutes =
@@ -1441,15 +1448,15 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           ),
         );
         // If the auction has a category, offer template upload
-        if (created.categoryId != null && created.categoryId! > 0) {
-          context.push('/seller/template-upload', extra: {
+        final catId = created.categoryId ?? _selectedSubcategory?.id ?? _selectedCategory?.id;
+        if (catId != null && catId > 0) {
+          await context.push<bool>('/seller/template-upload', extra: {
             'auction_code': created.code,
-            'category_id': created.categoryId,
+            'category_id': catId,
             'direction': _direction,
           });
-        } else {
-          context.pop();
         }
+        if (mounted) context.pop();
       }
     } catch (e) {
       if (mounted) {

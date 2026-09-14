@@ -2,13 +2,15 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
   final Map<String, List<String>> fieldErrors;
-  final String? errorType; // For distinguishing between timeout, network, etc.
+  final String? errorType;
+  final Map<String, dynamic>? raw;
 
   const ApiException({
     required this.statusCode,
     required this.message,
     this.fieldErrors = const {},
     this.errorType,
+    this.raw,
   });
 
   String? firstFieldError(String field) {
@@ -67,6 +69,7 @@ class ApiException implements Exception {
       message: message,
       fieldErrors: fieldErrors,
       errorType: (status == 522 || status == 524 || status == 504) ? 'timeout' : null,
+      raw: data,
     );
   }
 
