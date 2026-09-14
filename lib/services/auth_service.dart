@@ -29,7 +29,7 @@ class AuthService {
         'password': password,
         'role': role,
         'registration_type': role,
-        if (companyName != null) 'company_name': companyName,
+        'company_name': ?companyName,
       },
       anonymous: true,
     );

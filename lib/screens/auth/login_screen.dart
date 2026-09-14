@@ -73,8 +73,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _loginWithOtp() {
-    if (_identifierController.text.isEmpty) return;
-    context.push('/otp', extra: _identifierController.text.trim());
+    final identifier = _identifierController.text.trim();
+    if (identifier.isEmpty ||
+        (identifier.contains('@') && !isEmail(identifier)) ||
+        (!identifier.contains('@') && !isIndianMobile(identifier))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter a valid email or Indian mobile number.'),
+        ),
+      );
+      return;
+    }
+    context.push('/otp', extra: identifier);
   }
 
   Future<void> _loginWithBiometric() async {
