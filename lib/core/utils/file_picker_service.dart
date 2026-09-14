@@ -202,29 +202,38 @@ class AppFilePicker {
             Row(
               children: [
                 Expanded(
-                  child: _pickerOption(
-                    icon: Icons.description_outlined,
-                    label: 'Browse PDF / Files',
-                    color: AppColors.auction,
-                    onTap: () => Navigator.of(ctx).pop(PickerAction.document),
+                  child: SizedBox(
+                    height: 128,
+                    child: _pickerOption(
+                      icon: Icons.description_outlined,
+                      label: 'Browse PDF / Files',
+                      color: AppColors.auction,
+                      onTap: () => Navigator.of(ctx).pop(PickerAction.document),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _pickerOption(
-                    icon: Icons.photo_library_outlined,
-                    label: 'Photo Gallery',
-                    color: AppColors.accentBlue,
-                    onTap: () => Navigator.of(ctx).pop(PickerAction.gallery),
+                  child: SizedBox(
+                    height: 128,
+                    child: _pickerOption(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Photo Gallery',
+                      color: AppColors.accentBlue,
+                      onTap: () => Navigator.of(ctx).pop(PickerAction.gallery),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _pickerOption(
-                    icon: Icons.camera_alt_outlined,
-                    label: 'Take Photo',
-                    color: AppColors.navy,
-                    onTap: () => Navigator.of(ctx).pop(PickerAction.camera),
+                  child: SizedBox(
+                    height: 128,
+                    child: _pickerOption(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Take Photo',
+                      color: AppColors.navy,
+                      onTap: () => Navigator.of(ctx).pop(PickerAction.camera),
+                    ),
                   ),
                 ),
               ],

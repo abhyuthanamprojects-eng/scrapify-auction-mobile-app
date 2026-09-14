@@ -61,7 +61,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           slivers: [
             _buildTopHero(
               context,
-              name: user?.name ?? '',
+              name: user?.displayName ?? '',
               company: user?.companyName ?? '',
               balance: walletAsync.valueOrNull?.balanceInr ?? 0,
               liveAuctionCount: liveAsync.valueOrNull?.length ?? 0,

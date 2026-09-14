@@ -46,7 +46,14 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     String? companyName,
     bool activateSession = true,
   }) async {
-    state = state.copyWith(authState: AuthState.loading, error: '');
+    if (activateSession) {
+      state = state.copyWith(authState: AuthState.loading, error: '');
+    } else {
+      // Keep the public signup guard mounted while onboarding continues.
+      // The API token/user are retained, but authentication is activated only
+      // after KYC, documents, and payment are complete.
+      state = state.copyWith(error: '');
+    }
     try {
       final result = await _authService.register(
         name: name,
@@ -64,7 +71,7 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
       );
     } on ApiException catch (e) {
       state = state.copyWith(
-        authState: AuthState.unauthenticated,
+        authState: activateSession ? AuthState.unauthenticated : null,
         error: e.firstError,
       );
     }

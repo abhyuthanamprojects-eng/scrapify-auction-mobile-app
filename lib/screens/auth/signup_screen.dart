@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -304,18 +305,27 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _gstAddressAutofilled = false;
     });
 
-    if (!_isGstin(gstin)) return;
+    // Start the lookup once the user has entered the complete 15-character
+    // value. The API remains the source of truth for provider validation; a
+    // strict local format check here previously skipped requests silently.
+    if (gstin.length != 15) return;
 
     setState(() => _gstLoading = true);
     _gstDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final response = await _vendorService.verifyGstin(gstin);
-        final raw = response['data'];
+        final response = await _vendorService.verifyGstin(
+          gstin,
+          businessName: _companyCtl.text.trim(),
+        );
+        // The API normally wraps provider data in `data`, but keep this in
+        // sync with the website and accept a direct provider response too.
+        final raw = response['data'] ?? response;
         final details = raw is Map
             ? Map<String, dynamic>.from(raw)
             : <String, dynamic>{};
         if (requestId != _gstRequestId) return;
-        if (details['gstin_status'] != 'GSTIN_VERIFIED') {
+        if (details['gstin_status']?.toString().toUpperCase() !=
+            'GSTIN_VERIFIED') {
           throw StateError(
             details['last_error_code']?.toString() ??
                 'This GSTIN could not be verified.',
@@ -425,11 +435,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _bankLoading = true);
     _bankDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
-        final lookupResponse = await _vendorService.lookupIfsc(normalizedIfsc).catchError((_) => <String, dynamic>{});
-        final lookupRaw = lookupResponse['data'];
-        final lookupDetails = lookupRaw is Map ? Map<String, dynamic>.from(lookupRaw) : <String, dynamic>{};
-        final lookupBankName = lookupDetails['bank_name']?.toString().trim() ?? '';
-        if (mounted && requestId == _bankRequestId && lookupBankName.isNotEmpty) {
+        final lookupResponse = await _vendorService
+            .lookupIfsc(normalizedIfsc)
+            .catchError((_) => <String, dynamic>{});
+        final lookupRaw = lookupResponse['data'] ?? lookupResponse;
+        final lookupDetails = lookupRaw is Map
+            ? Map<String, dynamic>.from(lookupRaw)
+            : <String, dynamic>{};
+        final lookupBankName =
+            lookupDetails['bank_name']?.toString().trim() ?? '';
+        if (mounted &&
+            requestId == _bankRequestId &&
+            lookupBankName.isNotEmpty) {
           _bankNameCtl.text = lookupBankName;
         }
         final response = await _vendorService.verifyBank(
@@ -443,12 +460,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               ? _bizMobileCtl.text.trim()
               : _mobileCtl.text.trim(),
         );
-        final raw = response['data'];
+        // Accept both Laravel's wrapped response and a direct provider
+        // payload, matching the website implementation.
+        final raw = response['data'] ?? response;
         final details = raw is Map
             ? Map<String, dynamic>.from(raw)
             : <String, dynamic>{};
         if (!mounted || requestId != _bankRequestId) return;
-        if (details['bank_verification_status'] != 'BANK_VERIFIED') {
+        if (details['bank_verification_status']?.toString().toUpperCase() !=
+            'BANK_VERIFIED') {
           throw StateError(
             details['last_error_code']?.toString() ??
                 'This bank account could not be verified.',
@@ -459,7 +479,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _bankProvider = details['bank_provider']?.toString();
           _bankHolderName =
               details['bank_account_holder_name']?.toString().trim() ?? '';
-          _bankNameCtl.text = details['bank_name']?.toString().trim() ?? lookupBankName;
+          _bankNameCtl.text =
+              details['bank_name']?.toString().trim() ?? lookupBankName;
           _bankHolderCtl.text = _bankHolderName;
           _bankError = null;
           _error = null;
@@ -915,6 +936,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             keyboardType: keyboardType,
             prefix: prefix,
             readOnly: verified,
+            maxLength: title == 'Mobile OTP' ? 10 : null,
+            inputFormatters: title == 'Mobile OTP'
+                ? [FilteringTextInputFormatter.digitsOnly]
+                : null,
             onChanged: (_) {
               if (!verified && sent) {
                 setState(() {
@@ -1356,6 +1381,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           hint: '29ABCDE1234F1Z5',
           maxLength: 15,
           onChanged: _onGstinChanged,
+          onEditingComplete: () => _onGstinChanged(_gstCtl.text),
         ),
         if (_gstLoading) ...[
           const SizedBox(height: 8),
@@ -1463,32 +1489,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _fieldLabel('Warehouse City', required: true),
-                    const SizedBox(height: 6),
-                    _inputField(controller: _warehouseCityCtl, readOnly: true),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _fieldLabel('Warehouse State', required: true),
-                    const SizedBox(height: 6),
-                    _inputField(controller: _warehouseStateCtl, readOnly: true),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
                     _fieldLabel('Warehouse PIN Code', required: true),
                     const SizedBox(height: 6),
                     _inputField(
@@ -1507,6 +1507,32 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     _fieldLabel('Site Contact', required: false),
                     const SizedBox(height: 6),
                     _inputField(controller: _warehouseContactCtl),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Warehouse City', required: true),
+                    const SizedBox(height: 6),
+                    _inputField(controller: _warehouseCityCtl, readOnly: true),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _fieldLabel('Warehouse State', required: true),
+                    const SizedBox(height: 6),
+                    _inputField(controller: _warehouseStateCtl, readOnly: true),
                   ],
                 ),
               ),
@@ -1595,8 +1621,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const SizedBox(height: 6),
                   _inputField(
                     controller: _bizMobileCtl,
-                    hint: '+91 …',
+                    hint: '10-digit mobile',
                     keyboardType: TextInputType.phone,
+                    maxLength: 10,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   ),
                 ],
               ),
@@ -1627,6 +1655,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           keyboardType: TextInputType.number,
           maxLength: 40,
           onChanged: (value) => _onBankChanged(account: value),
+          onEditingComplete: () =>
+              _onBankChanged(account: _bankAccountCtl.text),
         ),
         const SizedBox(height: 8),
         Row(
@@ -1636,7 +1666,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 controller: _bankIfscCtl,
                 hint: 'IFSC',
                 maxLength: 11,
+                showCounter: false,
                 onChanged: (value) => _onBankChanged(ifsc: value),
+                onEditingComplete: () =>
+                    _onBankChanged(ifsc: _bankIfscCtl.text),
               ),
             ),
             const SizedBox(width: 12),
@@ -2338,6 +2371,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   promoCode: _promoCodeCtl.text,
                 );
               }
+              // Registration keeps the session inactive while onboarding is
+              // incomplete. Once payment is recorded, refresh the complete
+              // vendor/user payload and activate the session before opening
+              // the dashboard; otherwise seller role guards see a stale
+              // unauthenticated state and redirect protected actions to login.
+              await ref.read(authProvider.notifier).refreshUser();
               if (!mounted) return;
               setState(() {
                 _phase = 'pending';
@@ -2530,10 +2569,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     bool readOnly = false,
     int maxLines = 1,
     int? maxLength,
+    bool showCounter = true,
+    List<TextInputFormatter>? inputFormatters,
     TextAlign textAlign = TextAlign.start,
     double letterSpacing = 0,
     Widget? prefix,
     ValueChanged<String>? onChanged,
+    VoidCallback? onEditingComplete,
   }) {
     return TextField(
       controller: controller,
@@ -2543,14 +2585,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       enableInteractiveSelection: true,
       maxLines: maxLines,
       maxLength: maxLength,
+      inputFormatters: inputFormatters,
       textAlign: textAlign,
       onChanged: onChanged,
+      onEditingComplete: onEditingComplete,
       style: AppTextStyles.body(
         size: 14,
         weight: FontWeight.w500,
       ).copyWith(letterSpacing: letterSpacing),
       decoration: InputDecoration(
         hintText: hint,
+        counterText: showCounter ? null : '',
         prefixIcon: prefix,
         prefixIconConstraints: prefix != null
             ? const BoxConstraints(minWidth: 0)

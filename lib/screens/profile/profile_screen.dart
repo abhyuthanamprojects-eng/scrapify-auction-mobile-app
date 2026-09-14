@@ -14,6 +14,51 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final isSeller = user?.isSeller ?? false;
+
+    final corporateItems = <Widget>[
+      if (!isSeller)
+        _menuItem(
+          Icons.emoji_events_outlined,
+          'My Awards & Fallback Offers',
+          () => context.push('/awards'),
+        ),
+      if (!isSeller)
+        _menuItem(
+          Icons.local_shipping_outlined,
+          'Fulfilment & Gate Passes',
+          () => context.push('/orders'),
+        ),
+      _menuItem(
+        Icons.folder_shared_outlined,
+        'Document Vault & Certificates',
+        () => context.push('/documents'),
+      ),
+      _menuItem(
+        Icons.star_outline_rounded,
+        'Vendor Scorecard & Tier',
+        () => context.push('/performance'),
+      ),
+    ];
+
+    final financialItems = <Widget>[
+      _menuItem(
+        Icons.account_balance_wallet_outlined,
+        'Payments & EMD Escrow',
+        () => context.push('/payments'),
+      ),
+      if (!isSeller)
+        _menuItem(
+          Icons.receipt_long_outlined,
+          'My Live Bids & History',
+          () => context.push('/my-bids'),
+        ),
+      _menuItem(
+        Icons.shield_outlined,
+        'Disputes & Claims',
+        () => context.push('/disputes'),
+      ),
+    ];
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -32,46 +77,9 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 8),
           ],
 
-          _section('Corporate & Operations', [
-            _menuItem(
-              Icons.emoji_events_outlined,
-              'My Awards & Fallback Offers',
-              () => context.push('/awards'),
-            ),
-            _menuItem(
-              Icons.local_shipping_outlined,
-              'Fulfilment & Gate Passes',
-              () => context.push('/orders'),
-            ),
-            _menuItem(
-              Icons.folder_shared_outlined,
-              'Document Vault & Certificates',
-              () => context.push('/documents'),
-            ),
-            _menuItem(
-              Icons.star_outline_rounded,
-              'Vendor Scorecard & Tier',
-              () => context.push('/performance'),
-            ),
-          ]),
+          _section('Corporate & Operations', corporateItems),
 
-          _section('Financials & Escrow', [
-            _menuItem(
-              Icons.account_balance_wallet_outlined,
-              'Payments & EMD Escrow',
-              () => context.push('/payments'),
-            ),
-            _menuItem(
-              Icons.receipt_long_outlined,
-              'My Live Bids & History',
-              () => context.push('/my-bids'),
-            ),
-            _menuItem(
-              Icons.shield_outlined,
-              'Disputes & Claims',
-              () => context.push('/disputes'),
-            ),
-          ]),
+          _section('Financials & Escrow', financialItems),
 
           _section('Compliance & Settings', [
             _menuItem(
@@ -194,7 +202,7 @@ class ProfileScreen extends ConsumerWidget {
     final kycStatus = user?.kycStatus ?? 'pending';
     final isApproved = user?.kycVerified ?? false;
     final isRejected = user?.isKycRejected ?? false;
-    final userName = user?.name ?? '';
+    final userName = user?.displayName ?? '';
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
     final displayName = userName.isNotEmpty ? userName : 'Registered User';
     final userCompany = user?.companyName;

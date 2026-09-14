@@ -24,7 +24,10 @@ class SellerHomeScreen extends ConsumerWidget {
         onPressed: () => context.push('/seller/create-auction'),
         backgroundColor: AppColors.auction,
         icon: const Icon(Icons.add, color: AppColors.white),
-        label: const Text('New Auction', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w700)),
+        label: const Text(
+          'New Auction',
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w700),
+        ),
       ),
       body: CustomScrollView(
         slivers: [
@@ -41,11 +44,21 @@ class SellerHomeScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hello, ${(user?.name ?? "Seller").split(" ").first}',
-                    style: AppTextStyles.heading(size: 22, weight: FontWeight.w800, color: AppColors.white),
+                    'Hello, ${(user?.displayName ?? "Seller").split(" ").first}',
+                    style: AppTextStyles.heading(
+                      size: 22,
+                      weight: FontWeight.w800,
+                      color: AppColors.white,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Seller Dashboard', style: AppTextStyles.body(size: 13, color: AppColors.whiteWithOpacity(0.6))),
+                  Text(
+                    'Seller Dashboard',
+                    style: AppTextStyles.body(
+                      size: 13,
+                      color: AppColors.whiteWithOpacity(0.6),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   _earningsCard(),
                 ],
@@ -55,13 +68,24 @@ class SellerHomeScreen extends ConsumerWidget {
           SliverToBoxAdapter(child: _statsGrid(auctionsAsync)),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 16, AppSpacing.screenPaddingH, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                16,
+                AppSpacing.screenPaddingH,
+                8,
+              ),
               child: Text('Active Auctions', style: AppTextStyles.titleSmall),
             ),
           ),
           auctionsAsync.when(
             data: (auctions) {
-              final active = auctions.where((a) => a.status == AuctionStatus.live || a.status == AuctionStatus.published).toList();
+              final active = auctions
+                  .where(
+                    (a) =>
+                        a.status == AuctionStatus.live ||
+                        a.status == AuctionStatus.published,
+                  )
+                  .toList();
               return SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (_, i) => _auctionCard(context, active[i]),
@@ -69,8 +93,14 @@ class SellerHomeScreen extends ConsumerWidget {
                 ),
               );
             },
-            loading: () => const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(20), child: ListSkeleton(count: 2))),
-            error: (e, _) => SliverToBoxAdapter(child: Center(child: Text('$e'))),
+            loading: () => const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: ListSkeleton(count: 2),
+              ),
+            ),
+            error: (e, _) =>
+                SliverToBoxAdapter(child: Center(child: Text('$e'))),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
@@ -91,16 +121,33 @@ class SellerHomeScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Total Earnings', style: AppTextStyles.body(size: 11, color: AppColors.whiteWithOpacity(0.8), weight: FontWeight.w600)),
+                Text(
+                  'Total Earnings',
+                  style: AppTextStyles.body(
+                    size: 11,
+                    color: AppColors.whiteWithOpacity(0.8),
+                    weight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('—', style: AppTextStyles.heading(size: 24, weight: FontWeight.w800, color: AppColors.white)),
+                Text(
+                  '—',
+                  style: AppTextStyles.heading(
+                    size: 24,
+                    weight: FontWeight.w800,
+                    color: AppColors.white,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: AppColors.whiteWithOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: AppColors.whiteWithOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: const Icon(Icons.trending_up, color: AppColors.white),
           ),
         ],
@@ -112,7 +159,9 @@ class SellerHomeScreen extends ConsumerWidget {
     final auctions = auctionsAsync.valueOrNull ?? [];
     final total = auctions.length;
     final live = auctions.where((a) => a.isLive).length;
-    final closed = auctions.where((a) => a.status == AuctionStatus.closed).length;
+    final closed = auctions
+        .where((a) => a.status == AuctionStatus.closed)
+        .length;
 
     final stats = [
       ('$total', 'Total Auctions'),
@@ -121,7 +170,12 @@ class SellerHomeScreen extends ConsumerWidget {
       ('—', 'Revenue'),
     ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 16, AppSpacing.screenPaddingH, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        16,
+        AppSpacing.screenPaddingH,
+        0,
+      ),
       child: GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
@@ -129,22 +183,32 @@ class SellerHomeScreen extends ConsumerWidget {
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
         childAspectRatio: 2.2,
-        children: stats.map((s) => Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            border: Border.all(color: AppColors.blackWithOpacity(0.05)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(s.$1, style: AppTextStyles.heading(size: 20, weight: FontWeight.w800)),
-              Text(s.$2, style: AppTextStyles.captionMuted),
-            ],
-          ),
-        )).toList(),
+        children: stats
+            .map(
+              (s) => Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+                  border: Border.all(color: AppColors.blackWithOpacity(0.05)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      s.$1,
+                      style: AppTextStyles.heading(
+                        size: 20,
+                        weight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(s.$2, style: AppTextStyles.captionMuted),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -153,7 +217,12 @@ class SellerHomeScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: () => context.push('/seller/auctions'),
       child: Container(
-        margin: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 0, AppSpacing.screenPaddingH, 8),
+        margin: const EdgeInsets.fromLTRB(
+          AppSpacing.screenPaddingH,
+          0,
+          AppSpacing.screenPaddingH,
+          8,
+        ),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.white,
@@ -170,12 +239,24 @@ class SellerHomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(auction.code, style: AppTextStyles.mono),
-                      Text(auction.materialType ?? auction.category ?? auction.title, style: AppTextStyles.labelMedium),
+                      Text(
+                        auction.materialType ??
+                            auction.category ??
+                            auction.title,
+                        style: AppTextStyles.labelMedium,
+                      ),
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 10, color: AppColors.navyWithOpacity(0.5)),
+                          Icon(
+                            Icons.location_on,
+                            size: 10,
+                            color: AppColors.navyWithOpacity(0.5),
+                          ),
                           const SizedBox(width: 2),
-                          Text('${auction.company} · ${auction.plant ?? auction.location ?? ''}', style: AppTextStyles.captionMuted),
+                          Text(
+                            '${auction.company} · ${auction.plant ?? auction.location ?? ''}',
+                            style: AppTextStyles.captionMuted,
+                          ),
                         ],
                       ),
                     ],
@@ -187,16 +268,29 @@ class SellerHomeScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.inventory_2_outlined, size: 12, color: AppColors.navyWithOpacity(0.5)),
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 12,
+                  color: AppColors.navyWithOpacity(0.5),
+                ),
                 const SizedBox(width: 4),
                 Text(
-                  auction.isLotWise ? '${auction.subLots.length} sub-lots' : '${auction.quantity ?? '-'} ${auction.uom ?? ''}',
+                  auction.isLotWise
+                      ? '${auction.subLots.length} sub-lots'
+                      : '${auction.quantity ?? '-'} ${auction.uom ?? ''}',
                   style: AppTextStyles.captionMuted,
                 ),
                 const Spacer(),
-                Icon(Icons.access_time, size: 12, color: AppColors.navyWithOpacity(0.5)),
+                Icon(
+                  Icons.access_time,
+                  size: 12,
+                  color: AppColors.navyWithOpacity(0.5),
+                ),
                 const SizedBox(width: 4),
-                Text(auction.scheduleStart ?? '—', style: AppTextStyles.captionMuted),
+                Text(
+                  auction.scheduleStart ?? '—',
+                  style: AppTextStyles.captionMuted,
+                ),
               ],
             ),
           ],

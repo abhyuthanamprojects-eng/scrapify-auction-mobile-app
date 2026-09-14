@@ -44,7 +44,8 @@ class DocumentCentreScreen extends ConsumerStatefulWidget {
   const DocumentCentreScreen({super.key});
 
   @override
-  ConsumerState<DocumentCentreScreen> createState() => _DocumentCentreScreenState();
+  ConsumerState<DocumentCentreScreen> createState() =>
+      _DocumentCentreScreenState();
 }
 
 class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
@@ -55,7 +56,8 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
   bool _loading = true;
   final _vendorService = VendorService();
   Uint8List? _previewBytes;
-  bool _documentBusy = false;
+  String? _documentBusyId;
+  String? _documentBusyAction;
 
   @override
   void initState() {
@@ -78,20 +80,29 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
         return DocItem(
           id: '${row['id']}',
           key: '${row['key'] ?? row['doc_key'] ?? row['kind'] ?? 'document'}',
-          title: '${row['name'] ?? row['file_name'] ?? row['kind'] ?? 'Document'}',
+          title:
+              '${row['name'] ?? row['file_name'] ?? row['kind'] ?? 'Document'}',
           category: '${row['kind'] ?? row['key'] ?? 'Document'}',
           available: row['available'] != false,
           fileFormat: '${row['file_name'] ?? ''}'.split('.').last.toUpperCase(),
           fileSize: row['size_kb'] == null ? '—' : '${row['size_kb']} KB',
           uploadedAt: '${row['uploaded_at'] ?? ''}'.split('T').first,
           expiryDate: null,
-          status: rawStatus == 'approved' ? DocStatus.verified : rawStatus == 'rejected' ? DocStatus.rejected : DocStatus.pending,
+          status: rawStatus == 'approved'
+              ? DocStatus.verified
+              : rawStatus == 'rejected'
+              ? DocStatus.rejected
+              : DocStatus.pending,
           rejectionReason: row['reason']?.toString(),
         );
       }).toList();
       if (mounted) setState(() => _documents = docs);
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not load your documents.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load your documents.')),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -269,8 +280,8 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: selectedFile == null ||
-                            selectedFile!.path == null
+                    onPressed:
+                        selectedFile == null || selectedFile!.path == null
                         ? null
                         : () async {
                             setSheetState(() => uploading = true);
@@ -298,7 +309,9 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Could not upload this document.'),
+                                    content: Text(
+                                      'Could not upload this document.',
+                                    ),
                                   ),
                                 );
                               }
@@ -343,7 +356,10 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
   Future<void> _viewSecureDoc(DocItem doc) async {
     final vendorCode = ref.read(authProvider).user?.vendorCode;
     if (vendorCode == null || vendorCode.isEmpty) return;
-    setState(() => _documentBusy = true);
+    setState(() {
+      _documentBusyId = doc.id;
+      _documentBusyAction = 'view';
+    });
     try {
       final bytes = await _vendorService.downloadDocument(vendorCode, doc.id);
       if (!mounted) return;
@@ -356,7 +372,12 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
       }
       return;
     } finally {
-      if (mounted) setState(() => _documentBusy = false);
+      if (mounted) {
+        setState(() {
+          _documentBusyId = null;
+          _documentBusyAction = null;
+        });
+      }
     }
     if (!mounted || _previewBytes == null) return;
     showDialog(
@@ -430,9 +451,12 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                                 ),
                               ),
                             ),
-                          if (!['JPG', 'JPEG', 'PNG', 'WEBP'].contains(
-                            doc.fileFormat,
-                          ))
+                          if (![
+                            'JPG',
+                            'JPEG',
+                            'PNG',
+                            'WEBP',
+                          ].contains(doc.fileFormat))
                             Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -462,9 +486,12 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                                 ],
                               ),
                             ),
-                          if (['JPG', 'JPEG', 'PNG', 'WEBP'].contains(
-                            doc.fileFormat,
-                          ))
+                          if ([
+                            'JPG',
+                            'JPEG',
+                            'PNG',
+                            'WEBP',
+                          ].contains(doc.fileFormat))
                             Positioned(
                               left: 12,
                               right: 12,
@@ -551,7 +578,10 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
   Future<void> _downloadDocument(DocItem doc) async {
     final vendorCode = ref.read(authProvider).user?.vendorCode;
     if (vendorCode == null || vendorCode.isEmpty) return;
-    setState(() => _documentBusy = true);
+    setState(() {
+      _documentBusyId = doc.id;
+      _documentBusyAction = 'download';
+    });
     try {
       final bytes = await _vendorService.downloadDocument(vendorCode, doc.id);
       final path = await FilePicker.platform.saveFile(
@@ -571,7 +601,12 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
         );
       }
     } finally {
-      if (mounted) setState(() => _documentBusy = false);
+      if (mounted) {
+        setState(() {
+          _documentBusyId = null;
+          _documentBusyAction = null;
+        });
+      }
     }
   }
 
@@ -734,67 +769,111 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
             ),
           ],
           const SizedBox(height: 14),
-          Row(
-            children: [
-              if (doc.available) Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _documentBusy ? null : () => _viewSecureDoc(doc),
-                  icon: const Icon(Icons.visibility_outlined, size: 16),
-                  label: const Text(
-                    'View Document',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.navy,
-                    side: const BorderSide(color: AppColors.cardBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    ),
-                  ),
-                ),
-              ),
-              if (doc.available) const SizedBox(width: 8),
-              if (doc.available) Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _documentBusy ? null : () => _downloadDocument(doc),
-                  icon: const Icon(Icons.download_outlined, size: 16),
-                  label: const Text(
-                    'Download',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.navy,
-                    side: const BorderSide(color: AppColors.cardBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _showReplaceDialog(doc),
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text(
-                    'Replace Doc',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navy,
-                    foregroundColor: AppColors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.radiusLg,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final viewBusy =
+                  _documentBusyId == doc.id && _documentBusyAction == 'view';
+              final downloadBusy =
+                  _documentBusyId == doc.id &&
+                  _documentBusyAction == 'download';
+              final canReplace = doc.status != DocStatus.verified;
+              return Row(
+                children: [
+                  if (doc.available)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: viewBusy ? null : () => _viewSecureDoc(doc),
+                        icon: viewBusy
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.visibility_outlined, size: 16),
+                        label: const Text(
+                          'View',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.navy,
+                          side: const BorderSide(color: AppColors.cardBorder),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ],
+                  if (doc.available) const SizedBox(width: 8),
+                  if (doc.available)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: downloadBusy
+                            ? null
+                            : () => _downloadDocument(doc),
+                        icon: downloadBusy
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.download_outlined, size: 16),
+                        label: const Text(
+                          'Download',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.navy,
+                          side: const BorderSide(color: AppColors.cardBorder),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (canReplace) ...[
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _documentBusyId == doc.id
+                            ? null
+                            : () => _showReplaceDialog(doc),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text(
+                          'Replace',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navy,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusLg,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),

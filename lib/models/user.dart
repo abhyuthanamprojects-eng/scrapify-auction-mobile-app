@@ -80,6 +80,14 @@ class AppUser {
 
   String? get companyName => vendor?.companyName ?? organization?.companyName;
 
+  /// Prefer the registered vendor contact name in the workspace UI. The
+  /// account name can be a login username (for example, `amitsinhadeveloper`)
+  /// and should not replace the person's business contact name.
+  String get displayName {
+    final contactName = vendor?.contactName?.trim();
+    return contactName != null && contactName.isNotEmpty ? contactName : name;
+  }
+
   String get kycStatus => vendor?.status ?? (isAdmin ? 'approved' : 'draft');
   bool get kycVerified => vendor?.status == 'approved' || isAdmin;
   bool get isKycPending =>
@@ -167,6 +175,19 @@ class VendorInfo {
   bool get isApproved => status == 'approved';
   bool get isRejected => status == 'rejected';
 
+  static List<Map<String, dynamic>> _parseWarehouseDetails(dynamic raw) {
+    if (raw is Map) {
+      return [Map<String, dynamic>.from(raw)];
+    }
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((item) => Map<String, dynamic>.from(item))
+          .toList();
+    }
+    return const [];
+  }
+
   factory VendorInfo.fromJson(Map<String, dynamic> json) => VendorInfo(
     code: json['code'] as String? ?? json['id'] as String? ?? '',
     companyName: json['company_name'] as String? ?? '',
@@ -200,12 +221,7 @@ class VendorInfo {
     operatingStates:
         (json['operating_states'] as List?)?.whereType<String>().toList() ??
         const [],
-    warehouseDetails:
-        (json['warehouse_details'] as List?)
-            ?.whereType<Map>()
-            .map((item) => Map<String, dynamic>.from(item))
-            .toList() ??
-        const [],
+    warehouseDetails: _parseWarehouseDetails(json['warehouse_details']),
   );
 
   Map<String, dynamic> toJson() => {
