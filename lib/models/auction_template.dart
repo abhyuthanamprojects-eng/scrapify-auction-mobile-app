@@ -65,12 +65,16 @@ class TemplateUploadResult {
     final data = json['data'] as Map<String, dynamic>? ?? json;
     return TemplateUploadResult(
       valid: data['valid'] as bool? ?? false,
-      errors: List<Map<String, dynamic>>.from(data['errors'] as List? ?? []),
+      errors: (data['errors'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .toList(),
       rowCount: data['row_count'] as int? ?? 0,
       totalQuantity: (data['total_quantity'] as num?)?.toDouble() ?? 0,
       totalReferenceValue: (data['total_reference_value'] as num?)?.toDouble() ?? 0,
       uploadId: (data['upload'] as Map<String, dynamic>?)?['id'] as int?,
-      rows: List<Map<String, dynamic>>.from(data['rows'] as List? ?? []),
+      rows: (data['rows'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .toList(),
     );
   }
 }

@@ -38,6 +38,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   final _auctionService = AuctionService();
   int _step = 0;
   bool _isSubmitting = false;
+  String? _createdAuctionCode;
 
   // Step 1: Identification
   final _titleController = TextEditingController();
@@ -1421,8 +1422,15 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             .toList();
       }
 
-      final created = await _auctionService.create(body);
-      await _auctionService.updateConfiguration(created.code, {
+      String auctionCode;
+      if (_createdAuctionCode != null) {
+        auctionCode = _createdAuctionCode!;
+      } else {
+        final created = await _auctionService.create(body);
+        auctionCode = created.code;
+        _createdAuctionCode = auctionCode;
+      }
+      await _auctionService.updateConfiguration(auctionCode, {
         'emd_required':
             (double.tryParse(_emdAmountController.text.trim()) ?? 0) > 0,
         'emd_type': 'FIXED',
@@ -1442,16 +1450,16 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Auction #${created.code} submitted successfully for review!',
+              'Auction #$auctionCode submitted successfully for review!',
             ),
             backgroundColor: AppColors.success,
           ),
         );
         // If the auction has a category, offer template upload
-        final catId = created.categoryId ?? _selectedSubcategory?.id ?? _selectedCategory?.id;
+        final catId = _selectedSubcategory?.id ?? _selectedCategory?.id;
         if (catId != null && catId > 0) {
           await context.push<bool>('/seller/template-upload', extra: {
-            'auction_code': created.code,
+            'auction_code': auctionCode,
             'category_id': catId,
             'direction': _direction,
           });
