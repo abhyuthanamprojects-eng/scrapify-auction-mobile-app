@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,13 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../widgets/shared/app_button.dart';
 import '../../core/utils/file_picker_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/network/api_config.dart';
+import '../../core/network/api_endpoints.dart';
 import '../../services/auction_service.dart';
+import '../../services/pincode_service.dart';
+import '../../services/template_service.dart';
+import '../../models/auction_template.dart';
 import '../../providers/seller_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../models/category.dart';
@@ -36,6 +43,10 @@ class _SubLotItem {
 
 class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   final _auctionService = AuctionService();
+  final _pincodeService = PincodeService();
+  Timer? _pincodeLookupTimer;
+  int _pincodeLookupRequest = 0;
+  bool _pincodeLoading = false;
   int _step = 0;
   bool _isSubmitting = false;
   String? _createdAuctionCode;
@@ -54,6 +65,17 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   Category? _selectedCategory;
   Category? _selectedSubcategory;
   String _direction = 'forward';
+
+  // Template state
+  final _templateService = TemplateService();
+  AuctionTemplate? _templateInfo;
+  bool _templateLoading = false;
+  int? _lastTemplateCategoryId;
+  String? _templateFilePath;
+  String? _templateFileName;
+  TemplateUploadResult? _templateUploadResult;
+  bool _templateUploading = false;
+  bool _templateDownloading = false;
 
   // Step 2: Preparation
   String _auctionType = 'single'; // 'single' or 'lot_wise'
@@ -120,6 +142,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
 
   @override
   void dispose() {
+    _pincodeLookupTimer?.cancel();
     _titleController.dispose();
     _companyController.dispose();
     _plantController.dispose();
@@ -155,6 +178,123 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       item.dispose();
     }
     super.dispose();
+  }
+
+  void _lookupWarehousePincode(String value) {
+    _pincodeLookupTimer?.cancel();
+    final pincode = value.trim();
+    if (pincode.length != 6 || !RegExp(r'^[1-9]\d{5}$').hasMatch(pincode)) {
+      if (_pincodeLoading && mounted) {
+        setState(() => _pincodeLoading = false);
+      }
+      return;
+    }
+
+    final request = ++_pincodeLookupRequest;
+    setState(() => _pincodeLoading = true);
+    _pincodeLookupTimer = Timer(const Duration(milliseconds: 400), () async {
+      final result = await _pincodeService.lookup(pincode);
+      if (!mounted || request != _pincodeLookupRequest) return;
+      setState(() => _pincodeLoading = false);
+      if (result == null) return;
+
+      _warehouseCityController.text = result.city;
+      _warehouseStateController.text = result.state;
+      _locationController.text = '${result.city}, ${result.state}';
+      if (_inspectionLocationController.text.trim().isEmpty ||
+          _inspectionLocationController.text == _locationController.text) {
+        _inspectionLocationController.text = _locationController.text;
+      }
+    });
+  }
+
+  void _fetchTemplateForCategory() {
+    final catId = _selectedSubcategory?.id ?? _selectedCategory?.id;
+    if (catId == null || catId == _lastTemplateCategoryId) return;
+    _lastTemplateCategoryId = catId;
+    setState(() {
+      _templateLoading = true;
+      _templateInfo = null;
+      _templateFilePath = null;
+      _templateFileName = null;
+      _templateUploadResult = null;
+    });
+    _templateService
+        .getTemplate(catId, direction: _direction)
+        .then((t) {
+      if (mounted) setState(() => _templateInfo = t);
+    }).catchError((_) {
+      // No template for this category — that's OK
+    }).whenComplete(() {
+      if (mounted) setState(() => _templateLoading = false);
+    });
+  }
+
+  Future<void> _downloadTemplate() async {
+    if (_templateInfo == null || _templateDownloading) return;
+    setState(() => _templateDownloading = true);
+    try {
+      final url = Uri.parse(
+        '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}${Endpoints.templateDownload(_templateInfo!.id)}',
+      );
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open download link.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _templateDownloading = false);
+    }
+  }
+
+  Future<void> _pickAndUploadTemplate() async {
+    if (_templateUploading || _templateInfo == null || _createdAuctionCode == null) return;
+    setState(() => _templateUploading = true);
+
+    final picked = await AppFilePicker.pickDocument(
+      allowedExtensions: ['xlsx', 'xls', 'csv'],
+    );
+    if (picked == null || picked.path == null) {
+      if (mounted) setState(() => _templateUploading = false);
+      return;
+    }
+
+    _templateFilePath = picked.path;
+    _templateFileName = picked.name;
+    setState(() => _templateUploadResult = null);
+
+    try {
+      final result = await _templateService.uploadTemplate(
+        auctionCode: _createdAuctionCode!,
+        templateId: _templateInfo!.id,
+        filePath: picked.path!,
+        fileName: picked.name,
+      );
+      if (mounted) setState(() => _templateUploadResult = result);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _templateUploading = false);
+    }
+  }
+
+  double _parseNum(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    final cleaned = value.toString().replaceAll(RegExp(r'[,₹$ ]'), '');
+    return double.tryParse(cleaned) ?? 0;
   }
 
   @override
@@ -348,15 +488,34 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           children: [
             Expanded(
               child: TextField(
-                controller: _warehouseCityController,
-                decoration: const InputDecoration(hintText: 'City'),
+                controller: _warehousePincodeController,
+                decoration: const InputDecoration(hintText: 'Pincode'),
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                onChanged: _lookupWarehousePincode,
+                buildCounter:
+                    (
+                      _, {
+                      required currentLength,
+                      required isFocused,
+                      maxLength,
+                    }) => _pincodeLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: TextField(
-                controller: _warehouseStateController,
-                decoration: const InputDecoration(hintText: 'State'),
+                controller: _warehouseContactController,
+                decoration: const InputDecoration(
+                  hintText: 'Contact',
+                ),
+                keyboardType: TextInputType.phone,
               ),
             ),
           ],
@@ -366,19 +525,15 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           children: [
             Expanded(
               child: TextField(
-                controller: _warehousePincodeController,
-                decoration: const InputDecoration(hintText: 'Pincode'),
-                keyboardType: TextInputType.number,
+                controller: _warehouseCityController,
+                decoration: const InputDecoration(hintText: 'City'),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: TextField(
-                controller: _warehouseContactController,
-                decoration: const InputDecoration(
-                  hintText: 'Warehouse contact',
-                ),
-                keyboardType: TextInputType.phone,
+                controller: _warehouseStateController,
+                decoration: const InputDecoration(hintText: 'State'),
               ),
             ),
           ],
@@ -556,9 +711,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         ),
                         const SizedBox(width: 8),
                         SizedBox(
-                          width: 90,
+                          width: 86,
                           child: DropdownButtonFormField<String>(
                             value: item.uom,
+                            isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: 'MT', child: Text('MT')),
                               DropdownMenuItem(value: 'KG', child: Text('KG')),
@@ -589,8 +745,349 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               );
             }),
         ],
+
+        // ---- Template Download / Upload Section ----
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 16),
+        Text('Import from Template', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Download the Excel template for your selected category, fill in your product details & prices, then upload it here.',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+
+        if (_templateLoading)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.navyWithOpacity(0.03),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 12),
+                Text('Checking for category template...', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+
+        if (!_templateLoading && _selectedCategory != null && _templateInfo == null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.amber.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'No official template available for ${_selectedCategory?.name ?? 'this category'}. Add lots manually above.',
+                    style: TextStyle(fontSize: 12, color: Colors.amber.shade800),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        if (_templateInfo != null) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.navyWithOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.navyWithOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.description_outlined, size: 18, color: AppColors.navy),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _templateInfo!.name,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy),
+                          ),
+                          if (_templateInfo!.version.isNotEmpty)
+                            Text('v${_templateInfo!.version}', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Download button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _templateDownloading ? null : _downloadTemplate,
+                    icon: _templateDownloading
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.download, size: 16),
+                    label: Text(_templateDownloading ? 'Opening...' : 'Download Template'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      side: const BorderSide(color: AppColors.navy),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Upload button
+                if (_createdAuctionCode != null) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _templateUploading ? null : _pickAndUploadTemplate,
+                      icon: _templateUploading
+                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.upload_file, size: 16),
+                      label: Text(_templateUploading ? 'Uploading...' : 'Upload Completed Template'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.navy,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 14, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Download the template, fill it with your product details. You can upload it after completing all steps and submitting the auction.',
+                            style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Selected file name
+                if (_templateFileName != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.appBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.cardBorder),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.insert_drive_file, size: 16, color: AppColors.navy),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(_templateFileName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() {
+                            _templateFilePath = null;
+                            _templateFileName = null;
+                            _templateUploadResult = null;
+                          }),
+                          child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Upload result — errors
+                if (_templateUploadResult != null && !_templateUploadResult!.valid && _templateUploadResult!.errors.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.error_outline, size: 16, color: Colors.red.shade700),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Validation Errors (${_templateUploadResult!.errors.length})',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ..._templateUploadResult!.errors.take(10).map((e) => Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                '${e['row'] != null && e['row'] != 0 ? "Row ${e['row']}: " : ""}${e['error'] ?? e['message'] ?? 'Unknown error'}',
+                                style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+                              ),
+                            )),
+                        if (_templateUploadResult!.errors.length > 10)
+                          Text(
+                            '+${_templateUploadResult!.errors.length - 10} more errors',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Upload result — success preview
+                if (_templateUploadResult != null && _templateUploadResult!.valid && _templateUploadResult!.rows.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.check_circle, size: 16, color: AppColors.success),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_templateUploadResult!.rowCount} item(s) parsed successfully',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.success),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Summary stats
+                  Row(
+                    children: [
+                      _statChip('Items', '${_templateUploadResult!.rowCount}'),
+                      const SizedBox(width: 8),
+                      _statChip('Total Qty', _templateUploadResult!.totalQuantity.toStringAsFixed(
+                        _templateUploadResult!.totalQuantity == _templateUploadResult!.totalQuantity.roundToDouble() ? 0 : 2,
+                      )),
+                      const SizedBox(width: 8),
+                      _statChip('Ref. Value', '₹${NumberFormat('#,##,###', 'en_IN').format(_templateUploadResult!.totalReferenceValue)}'),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Item list preview
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.cardBorder),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _templateUploadResult!.rows.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final row = _templateUploadResult!.rows[i];
+                        final d = row['data'] as Map<String, dynamic>? ?? row;
+                        final name = d['item_name'] ?? d['product_name'] ?? d['name'] ?? 'Item ${i + 1}';
+                        final qty = _parseNum(d['quantity']);
+                        final refVal = _parseNum(d['reference_value'] ?? d['reserve_value']);
+                        return ListTile(
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          title: Text(name.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          subtitle: Text(
+                            'Qty: ${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} ${d['unit'] ?? 'PCS'}',
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          trailing: refVal > 0
+                              ? Text('₹${NumberFormat('#,##,###', 'en_IN').format(refVal)}',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.navy))
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Confirm import button
+                  if (_templateUploadResult!.uploadId != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _confirmTemplateImport(),
+                        icon: const Icon(Icons.check, size: 16),
+                        label: const Text('Confirm Import'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ],
     );
+  }
+
+  Widget _statChip(String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.navyWithOpacity(0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.navyWithOpacity(0.15)),
+        ),
+        child: Column(
+          children: [
+            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.navy)),
+            const SizedBox(height: 2),
+            Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmTemplateImport() async {
+    if (_createdAuctionCode == null || _templateUploadResult?.uploadId == null) return;
+    try {
+      await _templateService.confirmUpload(
+        auctionCode: _createdAuctionCode!,
+        uploadId: _templateUploadResult!.uploadId!,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_templateUploadResult!.rowCount} items imported successfully!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Confirm failed: $e'), backgroundColor: AppColors.destructive),
+        );
+      }
+    }
   }
 
   Widget _step3Inspection() {
@@ -1125,8 +1622,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     final categoriesAsync = ref.watch(categoriesProvider);
     return categoriesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Failed to load categories',
-          style: TextStyle(color: Colors.red.shade700)),
+      error: (e, _) => Text(
+        'Failed to load categories',
+        style: TextStyle(color: Colors.red.shade700),
+      ),
       data: (categories) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1136,26 +1635,32 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               decoration: const InputDecoration(hintText: 'Select category'),
               isExpanded: true,
               items: categories
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(c.name)),
-                            if (c.templateRequired)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 4),
-                                child: Icon(Icons.description_outlined,
-                                    size: 16, color: AppColors.auction),
+                  .map(
+                    (c) => DropdownMenuItem(
+                      value: c,
+                      child: Row(
+                        children: [
+                          Expanded(child: Text(c.name)),
+                          if (c.templateRequired)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.description_outlined,
+                                size: 16,
+                                color: AppColors.auction,
                               ),
-                          ],
-                        ),
-                      ))
+                            ),
+                        ],
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (val) {
                 setState(() {
                   _selectedCategory = val;
                   _selectedSubcategory = null;
                 });
+                _fetchTemplateForCategory();
               },
             ),
             if (_selectedCategory != null &&
@@ -1165,27 +1670,34 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               const SizedBox(height: 8),
               DropdownButtonFormField<Category>(
                 value: _selectedSubcategory,
-                decoration:
-                    const InputDecoration(hintText: 'Select subcategory'),
+                decoration: const InputDecoration(
+                  hintText: 'Select subcategory',
+                ),
                 isExpanded: true,
                 items: _selectedCategory!.children
-                    .map((c) => DropdownMenuItem(
-                          value: c,
-                          child: Row(
-                            children: [
-                              Expanded(child: Text(c.name)),
-                              if (c.templateRequired)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 4),
-                                  child: Icon(Icons.description_outlined,
-                                      size: 16, color: AppColors.auction),
+                    .map(
+                      (c) => DropdownMenuItem(
+                        value: c,
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(c.name)),
+                            if (c.templateRequired)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(
+                                  Icons.description_outlined,
+                                  size: 16,
+                                  color: AppColors.auction,
                                 ),
-                            ],
-                          ),
-                        ))
+                              ),
+                          ],
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (val) {
                   setState(() => _selectedSubcategory = val);
+                  _fetchTemplateForCategory();
                 },
               ),
             ],
@@ -1270,21 +1782,16 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   if (_materialTypeController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Please enter a material description.',
-                        ),
+                        content: Text('Please enter a material description.'),
                       ),
                     );
                     return;
                   }
-                  final qty =
-                      double.tryParse(_quantityController.text.trim());
+                  final qty = double.tryParse(_quantityController.text.trim());
                   if (qty == null || qty <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Please enter a valid quantity.',
-                        ),
+                        content: Text('Please enter a valid quantity.'),
                       ),
                     );
                     return;
@@ -1311,9 +1818,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   if (starting == null || starting <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Please enter a starting price.',
-                        ),
+                        content: Text('Please enter a starting price.'),
                       ),
                     );
                     return;
@@ -1321,9 +1826,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   if (increment == null || increment <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          'Please enter a bid increment.',
-                        ),
+                        content: Text('Please enter a bid increment.'),
                       ),
                     );
                     return;
@@ -1436,7 +1939,8 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         'company': _companyController.text.trim().isNotEmpty
             ? _companyController.text.trim()
             : 'Enterprise Seller',
-        'category': _selectedSubcategory?.name ?? _selectedCategory?.name ?? 'Ferrous',
+        'category':
+            _selectedSubcategory?.name ?? _selectedCategory?.name ?? 'Ferrous',
         if (_selectedSubcategory != null)
           'subcategory_id': _selectedSubcategory!.id,
         'direction': _direction,
@@ -1522,28 +2026,35 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         'continuation_mode': 'MANUAL_ADMIN',
       });
 
-      // Invalidate seller auctions provider to refresh list
+      // Upload template file if one was selected
+      if (_templateFilePath != null && _templateInfo != null) {
+        final uploadResult = await _templateService.uploadTemplate(
+          auctionCode: auctionCode,
+          templateId: _templateInfo!.id,
+          filePath: _templateFilePath!,
+          fileName: _templateFileName ?? 'template.xlsx',
+        );
+        if (uploadResult.valid && uploadResult.uploadId != null) {
+          await _templateService.confirmUpload(
+            auctionCode: auctionCode,
+            uploadId: uploadResult.uploadId!,
+          );
+        }
+      }
+
+      // Invalidate is already called above but call again after template
       ref.invalidate(sellerAuctionsProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Auction #$auctionCode submitted successfully for review!',
+              'Auction #$auctionCode submitted successfully!',
             ),
             backgroundColor: AppColors.success,
           ),
         );
-        // If the auction has a category, offer template upload
-        final catId = _selectedSubcategory?.id ?? _selectedCategory?.id;
-        if (catId != null && catId > 0) {
-          await context.push<bool>('/seller/template-upload', extra: {
-            'auction_code': auctionCode,
-            'category_id': catId,
-            'direction': _direction,
-          });
-        }
-        if (mounted) context.pop();
+        context.pop();
       }
     } catch (e) {
       if (mounted) {
