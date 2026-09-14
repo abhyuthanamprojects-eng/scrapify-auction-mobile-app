@@ -147,6 +147,10 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     state = state.copyWith(onboardingComplete: true);
   }
 
+  void setUser(AppUser user) {
+    state = state.copyWith(user: user);
+  }
+
   void clearError() {
     state = state.copyWith(error: '');
   }

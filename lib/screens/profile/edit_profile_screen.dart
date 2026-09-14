@@ -5,19 +5,68 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/profile_service.dart';
 import '../../widgets/shared/screen_header.dart';
 
-class EditProfileScreen extends ConsumerWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  bool _saving = false;
+  bool _initialized = false;
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final updated = await ProfileService().update(
+        name: _nameCtrl.text.trim(),
+        phone: _phoneCtrl.text.trim(),
+      );
+      ref.read(authProvider.notifier).setUser(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
     final isLocked = user?.isKycPending ?? false;
     final name = user?.name ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : 'U';
     final gstin = user?.vendor?.gstNumber;
     final pan = user?.vendor?.panNumber;
+
+    if (!_initialized) {
+      _nameCtrl.text = name;
+      _phoneCtrl.text = user?.phone ?? '';
+      _initialized = true;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
@@ -79,26 +128,23 @@ class EditProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _field('Full Name', name),
-                _field('Email', user?.email ?? '', readOnly: true),
-                _field('Phone', user?.phone ?? ''),
-                _field('Company Name', user?.companyName ?? '', readOnly: isLocked),
-                _field('Vendor Code', user?.vendorCode ?? 'Pending Assignment', readOnly: true),
+                _editableField('Full Name', _nameCtrl),
+                _readOnlyField('Email', user?.email ?? ''),
+                _editableField('Phone', _phoneCtrl),
+                _readOnlyField('Company Name', user?.companyName ?? ''),
+                _readOnlyField('Vendor Code', user?.vendorCode ?? 'Pending Assignment'),
                 if (gstin != null && gstin.isNotEmpty)
-                  _field('GSTIN', gstin, readOnly: true),
+                  _readOnlyField('GSTIN', gstin),
                 if (pan != null && pan.isNotEmpty)
-                  _field('PAN', pan, readOnly: true),
+                  _readOnlyField('PAN', pan),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity, height: AppSpacing.buttonXl,
                   child: ElevatedButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Profile details updated successfully')),
-                      );
-                      context.pop();
-                    },
-                    child: const Text('Save Changes'),
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('Save Changes'),
                   ),
                 ),
               ],
@@ -109,7 +155,21 @@ class EditProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _field(String label, String value, {bool readOnly = false}) {
+  Widget _editableField(String label, TextEditingController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: AppTextStyles.labelMedium),
+          const SizedBox(height: 6),
+          TextFormField(controller: controller),
+        ],
+      ),
+    );
+  }
+
+  Widget _readOnlyField(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -119,17 +179,16 @@ class EditProfileScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(label, style: AppTextStyles.labelMedium),
-              if (readOnly)
-                const Text('LOCKED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF94A3B8))),
+              const Text('LOCKED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF94A3B8))),
             ],
           ),
           const SizedBox(height: 6),
           TextFormField(
             initialValue: value,
-            readOnly: readOnly,
-            decoration: InputDecoration(
-              filled: readOnly,
-              fillColor: readOnly ? const Color(0xFFF1F5F9) : AppColors.white,
+            readOnly: true,
+            decoration: const InputDecoration(
+              filled: true,
+              fillColor: Color(0xFFF1F5F9),
             ),
           ),
         ],
