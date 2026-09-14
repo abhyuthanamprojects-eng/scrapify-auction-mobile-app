@@ -55,25 +55,30 @@ abstract final class AppRouter {
       GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
       GoRoute(
         path: '/onboarding',
-        builder: (_, _) => const OnboardingScreen(),
+        builder: (_, _) => const PublicAuthGuard(child: OnboardingScreen()),
       ),
       GoRoute(
         path: '/vendor-onboarding',
-        builder: (_, _) => const VendorOnboardingScreen(),
+        builder: (_, _) => const PublicAuthGuard(child: VendorOnboardingScreen()),
       ),
       GoRoute(
         path: '/business-verification',
         builder: (_, _) => const BusinessVerificationScreen(),
       ),
-      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        builder: (_, _) => const PublicAuthGuard(child: LoginScreen()),
+      ),
       GoRoute(
         path: '/otp',
         builder: (_, state) =>
-            OtpScreen(identifier: state.extra as String? ?? ''),
+            PublicAuthGuard(
+              child: OtpScreen(identifier: state.extra as String? ?? ''),
+            ),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, _) => const ForgotPasswordScreen(),
+        builder: (_, _) => const PublicAuthGuard(child: ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/session-expired',
@@ -98,11 +103,16 @@ abstract final class AppRouter {
         path: '/support',
         builder: (_, _) => const SupportCenterScreen(),
       ),
-      GoRoute(path: '/role', builder: (_, _) => const RoleScreen()),
+      GoRoute(
+        path: '/role',
+        builder: (_, _) => const PublicAuthGuard(child: RoleScreen()),
+      ),
       GoRoute(
         path: '/signup',
         builder: (_, state) =>
-            SignupScreen(prefillIdentifier: state.extra as String?),
+            PublicAuthGuard(
+              child: SignupScreen(prefillIdentifier: state.extra as String?),
+            ),
       ),
       GoRoute(path: '/home', builder: (_, _) => const AppShell()),
       GoRoute(path: '/auctions', builder: (_, _) => const AuctionsScreen()),

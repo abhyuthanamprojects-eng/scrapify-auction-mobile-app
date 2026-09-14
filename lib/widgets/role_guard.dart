@@ -56,6 +56,51 @@ class _RoleGuardState extends ConsumerState<RoleGuard> {
   }
 }
 
+/// Prevents an existing session from returning to public authentication and
+/// onboarding screens through a stale deep link or manual URL entry.
+class PublicAuthGuard extends ConsumerStatefulWidget {
+  final Widget child;
+
+  const PublicAuthGuard({super.key, required this.child});
+
+  @override
+  ConsumerState<PublicAuthGuard> createState() => _PublicAuthGuardState();
+}
+
+class _PublicAuthGuardState extends ConsumerState<PublicAuthGuard> {
+  bool _redirectScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (ref.read(authProvider).authState == AuthState.initial) {
+      Future<void>(() => ref.read(authProvider.notifier).checkSession());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = ref.watch(authProvider);
+    if (auth.authState == AuthState.initial ||
+        auth.authState == AuthState.loading) {
+      return const _GuardLoading();
+    }
+    if (auth.isAuthenticated) {
+      _redirectHome(context);
+      return const _GuardLoading();
+    }
+    return widget.child;
+  }
+
+  void _redirectHome(BuildContext context) {
+    if (_redirectScheduled) return;
+    _redirectScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.go('/home');
+    });
+  }
+}
+
 class _GuardLoading extends StatelessWidget {
   const _GuardLoading();
 
