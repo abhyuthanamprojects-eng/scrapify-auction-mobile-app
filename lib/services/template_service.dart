@@ -17,7 +17,10 @@ class TemplateService {
       Endpoints.categoryTemplate(categoryId),
       queryParameters: {'direction': direction},
     );
-    final inner = data['data'] as Map<String, dynamic>? ?? data;
+    final inner = data['data'] as Map<String, dynamic>?;
+    if (inner == null || inner['id'] == null) {
+      throw Exception('No active template for this category.');
+    }
     return AuctionTemplate.fromJson(inner);
   }
 
