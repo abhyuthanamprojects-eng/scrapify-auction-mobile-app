@@ -66,6 +66,11 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
   Future<void> _loadAuction() async {
     try {
       final auction = await AuctionService().show(widget.lotId);
+      if (!auction.isRegistered) {
+        throw Exception(auction.registrationOpen
+            ? 'You are not registered for this auction.'
+            : 'Auction registration has closed. This auction is view-only.');
+      }
       final bids = await AuctionService().bids(widget.lotId);
       final live = await AuctionService().liveState(widget.lotId);
       final end = ((live['active_slot'] as Map<String, dynamic>?)?['ends_at'] ??
@@ -212,9 +217,12 @@ class _LiveAuctionScreenState extends ConsumerState<LiveAuctionScreen> {
                         _isAutoBidEnabled = true;
                         _bannerNotice = 'Auto-bid enabled up to ${Formatters.formatINR(ceiling)}';
                       });
-                      Navigator.of(ctx).pop();
+                      if (!mounted) return;
+                      Navigator.of(context).pop();
                     } catch (error) {
-                      if (mounted) setState(() => _bannerNotice = 'Auto-bid rejected: $error');
+                      if (mounted) {
+                        setState(() => _bannerNotice = 'Auto-bid rejected: $error');
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

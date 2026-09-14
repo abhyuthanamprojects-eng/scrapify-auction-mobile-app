@@ -70,6 +70,11 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   Future<void> _loadAuction() async {
     try {
       final auction = await AuctionService().show(widget.lotId);
+      if (!auction.isRegistered) {
+        throw Exception(auction.registrationOpen
+            ? 'You are not registered for this auction.'
+            : 'Auction registration has closed. This auction is view-only.');
+      }
       final bids = await AuctionService().bids(widget.lotId);
       final live = await AuctionService().liveState(widget.lotId);
       final end = ((live['active_slot'] as Map<String, dynamic>?)?['ends_at'] ??

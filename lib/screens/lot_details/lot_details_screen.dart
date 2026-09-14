@@ -1104,7 +1104,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     VoidCallback onCta;
     Color buttonColor = AppColors.auction;
 
-    if (!a.termsAccepted) {
+    if (!a.isRegistered) {
+      ctaLabel = a.registrationOpen ? 'Register to participate' : 'Registration closed — view only';
+      onCta = () {};
+      buttonColor = AppColors.navy;
+    } else if (!a.termsAccepted) {
       ctaLabel = 'Accept Terms & Conditions';
       onCta = () => context.push('/terms/${a.code}');
     } else if (a.inspectionRequired) {
@@ -1149,7 +1153,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             child: SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: onCta,
+                onPressed: a.isRegistered ? onCta : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: buttonColor,
                   foregroundColor: AppColors.white,

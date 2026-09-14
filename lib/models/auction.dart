@@ -145,6 +145,9 @@ class Auction extends Equatable {
   final String? submittedAt;
   final String? scheduleStart;
   final String? scheduleEnd;
+  final String? registrationEnd;
+  final bool isRegistered;
+  final bool registrationOpen;
   final bool inspectionRequired;
   final String? inspectionDate;
   final String? inspectionTime;
@@ -207,6 +210,9 @@ class Auction extends Equatable {
     this.submittedAt,
     this.scheduleStart,
     this.scheduleEnd,
+    this.registrationEnd,
+    this.isRegistered = false,
+    this.registrationOpen = true,
     this.inspectionRequired = false,
     this.inspectionDate,
     this.inspectionTime,
@@ -270,6 +276,7 @@ class Auction extends Equatable {
         submittedAt: json['submitted_at'] as String?,
         scheduleStart: json['schedule_start'] as String?,
         scheduleEnd: json['schedule_end'] as String?,
+        registrationEnd: json['registration_end'] as String?,
         inspectionRequired: json['inspection_required'] as bool? ?? false,
         inspectionDate: json['inspection_date'] as String?,
         inspectionTime: json['inspection_time'] as String?,
@@ -279,6 +286,11 @@ class Auction extends Equatable {
         termsVersion: json['terms_version'] as int? ?? 1,
         termsAccepted: json['terms_accepted'] as bool? ?? false,
         emdPaid: json['emd_paid'] as bool? ?? false,
+        isRegistered: json['is_registered'] as bool? ??
+            ((json['terms_accepted'] as bool? ?? false) ||
+                (json['emd_paid'] as bool? ?? false) ||
+                json['my_rank'] != null),
+        registrationOpen: json['registration_open'] as bool? ?? true,
         isInvited: json['is_invited'] as bool? ?? false,
         myRank: json['my_rank'] as int?,
         myLastBidInr: json['my_last_bid_inr'] != null ? _num(json['my_last_bid_inr']) : null,
@@ -495,4 +507,3 @@ class AuctionExtension {
 }
 
 double _num(dynamic v) => (v as num?)?.toDouble() ?? 0;
-
