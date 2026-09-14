@@ -59,7 +59,7 @@ class _VendorOnboardingScreenState
   final _signatoryPhoneCtl = TextEditingController();
 
   // Step 7: Capabilities & Turnover
-  String _turnoverBand = '< ₹5 Cr';
+  String _turnoverBand = '';
   String _yearsInBusiness = '1 - 3 Years';
   final _annualCapacityCtl = TextEditingController();
 
@@ -823,7 +823,7 @@ class _VendorOnboardingScreenState
         ),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _turnoverBand,
+          value: _turnoverBand.isEmpty ? null : _turnoverBand,
           isExpanded: true,
           decoration: const InputDecoration(
             labelText: 'Annual Scrap Turnover *',
@@ -1211,6 +1211,9 @@ class _VendorOnboardingScreenState
         }
         return null;
       case 6:
+        if (_turnoverBand.isEmpty) {
+          return 'Select the annual scrap turnover range.';
+        }
         return _annualCapacityCtl.text.trim().isEmpty
             ? 'Enter the handling capacity.'
             : null;
