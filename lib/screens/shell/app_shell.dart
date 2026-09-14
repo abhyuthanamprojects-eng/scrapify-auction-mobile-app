@@ -28,21 +28,29 @@ class AppShell extends ConsumerWidget {
     final kycVerified = authData.user?.kycVerified ?? false;
     final isPendingKyc = isAuthenticated && !kycVerified;
 
-    final screens = isSeller
-        ? const [
+    final screenWidgets = isSeller
+        ? const <Widget>[
             SellerHomeScreen(),
             SellerMyAuctionsScreen(),
             AuctionsScreen(),
             NotificationsScreen(),
             ProfileScreen(),
           ]
-        : const [
+        : const <Widget>[
             HomeScreen(),
             AuctionsScreen(),
             MyBidsScreen(),
             OrdersScreen(),
             ProfileScreen(),
           ];
+
+    final screens = [
+      for (int i = 0; i < screenWidgets.length; i++)
+        FocusScope(
+          canRequestFocus: tabIndex == i,
+          child: screenWidgets[i],
+        ),
+    ];
 
     return Scaffold(
       body: Column(
