@@ -41,6 +41,7 @@ import '../../screens/profile/edit_profile_screen.dart';
 import '../../screens/profile/notif_settings_screen.dart';
 import '../../screens/seller/create_auction_screen.dart';
 import '../../screens/seller/my_auctions_screen.dart';
+import '../../screens/seller/template_upload_screen.dart';
 import '../../screens/customer/reg_status_screen.dart';
 import '../../screens/customer/auction_register_screen.dart';
 import '../../screens/customer/payable_summary_screen.dart';
@@ -243,6 +244,20 @@ abstract final class AppRouter {
           allowedRoles: {'seller'},
           child: CreateAuctionScreen(),
         ),
+      ),
+      GoRoute(
+        path: '/seller/template-upload',
+        builder: (ctx, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return RoleGuard(
+            allowedRoles: const {'seller'},
+            child: TemplateUploadScreen(
+              auctionCode: extra['auction_code'] as String? ?? '',
+              categoryId: extra['category_id'] as int? ?? 0,
+              direction: extra['direction'] as String? ?? 'forward',
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/reg-status',

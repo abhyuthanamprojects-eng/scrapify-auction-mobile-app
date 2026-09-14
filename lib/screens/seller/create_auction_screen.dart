@@ -6,11 +6,12 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/constants/app_constants.dart';
 import '../../widgets/shared/app_button.dart';
 import '../../core/utils/file_picker_service.dart';
 import '../../services/auction_service.dart';
 import '../../providers/seller_provider.dart';
+import '../../providers/category_provider.dart';
+import '../../models/category.dart';
 
 class CreateAuctionScreen extends ConsumerStatefulWidget {
   const CreateAuctionScreen({super.key});
@@ -49,7 +50,8 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   final _warehousePincodeController = TextEditingController();
   final _warehouseContactController = TextEditingController();
   final _locationController = TextEditingController();
-  String? _selectedCategory = 'Ferrous';
+  Category? _selectedCategory;
+  Category? _selectedSubcategory;
   String _direction = 'forward';
 
   // Step 2: Preparation
@@ -383,16 +385,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 24),
         Text('Scrap Category *', style: AppTextStyles.labelMedium),
         const SizedBox(height: 8),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          children: AppConstants.categories
-              .map((c) => _categoryTile(c))
-              .toList(),
-        ),
+        _buildCategoryDropdowns(),
       ],
     );
   }
@@ -1127,34 +1120,77 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     );
   }
 
-  Widget _categoryTile(String category) {
-    final isSelected = _selectedCategory == category;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = category),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.auction.withValues(alpha: 0.1)
-              : AppColors.navyWithOpacity(0.03),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.auction
-                : AppColors.blackWithOpacity(0.05),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            category,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? AppColors.auction : AppColors.navy,
+  Widget _buildCategoryDropdowns() {
+    final categoriesAsync = ref.watch(categoriesProvider);
+    return categoriesAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Failed to load categories',
+          style: TextStyle(color: Colors.red.shade700)),
+      data: (categories) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<Category>(
+              value: _selectedCategory,
+              decoration: const InputDecoration(hintText: 'Select category'),
+              isExpanded: true,
+              items: categories
+                  .map((c) => DropdownMenuItem(
+                        value: c,
+                        child: Row(
+                          children: [
+                            Expanded(child: Text(c.name)),
+                            if (c.templateRequired)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 4),
+                                child: Icon(Icons.description_outlined,
+                                    size: 16, color: AppColors.auction),
+                              ),
+                          ],
+                        ),
+                      ))
+                  .toList(),
+              onChanged: (val) {
+                setState(() {
+                  _selectedCategory = val;
+                  _selectedSubcategory = null;
+                });
+              },
             ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+            if (_selectedCategory != null &&
+                _selectedCategory!.children.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('Subcategory', style: AppTextStyles.labelMedium),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<Category>(
+                value: _selectedSubcategory,
+                decoration:
+                    const InputDecoration(hintText: 'Select subcategory'),
+                isExpanded: true,
+                items: _selectedCategory!.children
+                    .map((c) => DropdownMenuItem(
+                          value: c,
+                          child: Row(
+                            children: [
+                              Expanded(child: Text(c.name)),
+                              if (c.templateRequired)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Icon(Icons.description_outlined,
+                                      size: 16, color: AppColors.auction),
+                                ),
+                            ],
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (val) {
+                  setState(() => _selectedSubcategory = val);
+                },
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -1313,7 +1349,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         'company': _companyController.text.trim().isNotEmpty
             ? _companyController.text.trim()
             : 'Enterprise Seller',
-        'category': _selectedCategory ?? 'Ferrous',
+        'category': _selectedSubcategory?.name ?? _selectedCategory?.name ?? 'Ferrous',
+        if (_selectedSubcategory != null)
+          'subcategory_id': _selectedSubcategory!.id,
         'direction': _direction,
         'lot_type': _auctionType,
         'plant': _plantController.text.trim(),
@@ -1402,7 +1440,16 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        context.pop();
+        // If the auction has a category, offer template upload
+        if (created.categoryId != null && created.categoryId! > 0) {
+          context.push('/seller/template-upload', extra: {
+            'auction_code': created.code,
+            'category_id': created.categoryId,
+            'direction': _direction,
+          });
+        } else {
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
