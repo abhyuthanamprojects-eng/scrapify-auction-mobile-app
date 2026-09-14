@@ -633,12 +633,15 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
           unselectedLabelColor: AppColors.white.withValues(alpha: 0.7),
           indicatorColor: AppColors.auction,
           indicatorWeight: 3,
-          tabs: const [
-            Tab(text: 'All Docs (6)'),
-            Tab(text: 'Verified (3)'),
-            Tab(text: 'Pending (1)'),
-            Tab(text: 'Expiring Soon (1)'),
-            Tab(text: 'Rejected (1)'),
+          tabs: [
+            Tab(text: 'All Docs (${_documents.length})'),
+            Tab(text: 'Verified (${_countDocuments(DocStatus.verified)})'),
+            Tab(text: 'Pending (${_countDocuments(DocStatus.pending)})'),
+            Tab(
+              text:
+                  'Expiring Soon (${_countDocuments(DocStatus.expiringSoon)})',
+            ),
+            Tab(text: 'Rejected (${_countDocuments(DocStatus.rejected)})'),
           ],
         ),
       ),
@@ -653,6 +656,10 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
         ],
       ),
     );
+  }
+
+  int _countDocuments(DocStatus status) {
+    return _documents.where((document) => document.status == status).length;
   }
 
   Widget _buildDocList(DocStatus? filter) {

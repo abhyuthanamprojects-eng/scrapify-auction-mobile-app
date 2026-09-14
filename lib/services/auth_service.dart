@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
-
 import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
 import '../core/network/token_storage.dart';
@@ -54,13 +50,6 @@ class AuthService {
       },
       anonymous: true,
     );
-
-    if (kDebugMode) {
-      debugPrint('[AUTH_LOGIN] Response keys: ${data.keys.toList()}');
-      debugPrint(
-        '[AUTH_LOGIN] Full response: ${const JsonEncoder.withIndent("  ").convert(data)}',
-      );
-    }
 
     final inner = data['data'] as Map<String, dynamic>? ?? data;
     final token = (inner['token'] ?? data['token']) as String;

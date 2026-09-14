@@ -10,6 +10,10 @@ import 'token_storage.dart';
 typedef LogoutCallback = void Function();
 
 class ApiClient {
+  // Keep request/response bodies out of the device log. They can contain
+  // personal, KYC, and financial data and are not useful during normal runs.
+  static const bool _enableNetworkLogging = false;
+
   late final Dio _dio;
   LogoutCallback? _onForceLogout;
 
@@ -17,21 +21,25 @@ class ApiClient {
   factory ApiClient() => _instance;
 
   ApiClient._() {
-    _dio = Dio(BaseOptions(
-      baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
-      connectTimeout: ApiConfig.connectTimeout,
-      receiveTimeout: ApiConfig.receiveTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: '${ApiConfig.baseUrl}${ApiConfig.apiPrefix}',
+        connectTimeout: ApiConfig.connectTimeout,
+        receiveTimeout: ApiConfig.receiveTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
 
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: _onRequest,
-      onError: _onError,
-      onResponse: _onResponse,
-    ));
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: _onRequest,
+        onError: _onError,
+        onResponse: _onResponse,
+      ),
+    );
   }
 
   void setLogoutCallback(LogoutCallback cb) => _onForceLogout = cb;
@@ -45,7 +53,7 @@ class ApiClient {
       options.headers['Authorization'] = 'Bearer $token';
     }
 
-    if (kDebugMode) {
+    if (kDebugMode && _enableNetworkLogging) {
       _logRequest(options);
     }
 
@@ -75,7 +83,9 @@ class ApiClient {
     final authHeader = headers['Authorization'];
     if (authHeader is String && authHeader.startsWith('Bearer ')) {
       final token = authHeader.substring(7);
-      final maskedToken = token.length > 4 ? '***${token.substring(token.length - 4)}' : '***';
+      final maskedToken = token.length > 4
+          ? '***${token.substring(token.length - 4)}'
+          : '***';
       headers['Authorization'] = 'Bearer $maskedToken';
     } else if (authHeader == null) {
       headers.remove('Authorization');
@@ -86,7 +96,8 @@ class ApiClient {
       'method': options.method,
       'url': '${options.baseUrl}${options.path}',
       'headers': headers,
-      if (options.queryParameters.isNotEmpty) 'queryParams': options.queryParameters,
+      if (options.queryParameters.isNotEmpty)
+        'queryParams': options.queryParameters,
       if (options.data != null) 'body': options.data,
     };
 
@@ -97,12 +108,14 @@ class ApiClient {
     Response response,
     ResponseInterceptorHandler handler,
   ) async {
-    if (kDebugMode) {
+    if (kDebugMode && _enableNetworkLogging) {
       try {
         _logResponse(response);
       } catch (e) {
         debugPrint('[API_RESPONSE_LOG_ERROR] $e');
-        debugPrint('[API_RESPONSE_RAW] statusCode=${response.statusCode} path=${response.requestOptions.path}');
+        debugPrint(
+          '[API_RESPONSE_RAW] statusCode=${response.statusCode} path=${response.requestOptions.path}',
+        );
         debugPrint('[API_RESPONSE_RAW] dataType=${response.data.runtimeType}');
         debugPrint('[API_RESPONSE_RAW] data=${response.data}');
       }
@@ -115,11 +128,15 @@ class ApiClient {
       'timestamp': DateTime.now().toIso8601String(),
       'statusCode': response.statusCode,
       'method': response.requestOptions.method,
-      'url': '${response.requestOptions.baseUrl}${response.requestOptions.path}',
+      'url':
+          '${response.requestOptions.baseUrl}${response.requestOptions.path}',
       'body': response.data,
     };
 
-    _prettyLog('API RESPONSE ← ${response.statusCode} ${response.requestOptions.path}', logData);
+    _prettyLog(
+      'API RESPONSE ← ${response.statusCode} ${response.requestOptions.path}',
+      logData,
+    );
   }
 
   Future<void> _onError(
@@ -147,62 +164,62 @@ class ApiClient {
       'message': error.message,
       'error': error.error?.toString(),
       'errorType': error.error?.runtimeType.toString(),
-      if (error.requestOptions.data != null) 'requestBody': error.requestOptions.data,
+      if (error.requestOptions.data != null)
+        'requestBody': error.requestOptions.data,
       if (error.response?.data != null) 'responseBody': error.response?.data,
     };
 
-    _prettyLog('API ERROR ✗ ${error.requestOptions.method} ${error.requestOptions.path}', logData);
+    _prettyLog(
+      'API ERROR ✗ ${error.requestOptions.method} ${error.requestOptions.path}',
+      logData,
+    );
   }
 
   Future<Map<String, dynamic>> get(
     String path, {
     Map<String, dynamic>? queryParameters,
     bool anonymous = false,
-  }) =>
-      _request(() => _dio.get(
-            path,
-            queryParameters: queryParameters,
-            options: anonymous ? Options(headers: {'Authorization': null}) : null,
-          ));
+  }) => _request(
+    () => _dio.get(
+      path,
+      queryParameters: queryParameters,
+      options: anonymous ? Options(headers: {'Authorization': null}) : null,
+    ),
+  );
 
   Future<Map<String, dynamic>> post(
     String path, {
     dynamic data,
     bool anonymous = false,
-  }) =>
-      _request(() => _dio.post(
-            path,
-            data: data,
-            options: anonymous ? Options(headers: {'Authorization': null}) : null,
-          ));
+  }) => _request(
+    () => _dio.post(
+      path,
+      data: data,
+      options: anonymous ? Options(headers: {'Authorization': null}) : null,
+    ),
+  );
 
-  Future<Map<String, dynamic>> patch(
-    String path, {
-    dynamic data,
-  }) =>
+  Future<Map<String, dynamic>> patch(String path, {dynamic data}) =>
       _request(() => _dio.patch(path, data: data));
 
-  Future<Map<String, dynamic>> put(
-    String path, {
-    dynamic data,
-  }) =>
+  Future<Map<String, dynamic>> put(String path, {dynamic data}) =>
       _request(() => _dio.put(path, data: data));
 
   Future<Map<String, dynamic>> delete(
     String path, {
     Map<String, dynamic>? queryParameters,
-  }) =>
-      _request(() => _dio.delete(path, queryParameters: queryParameters));
+  }) => _request(() => _dio.delete(path, queryParameters: queryParameters));
 
   Future<Map<String, dynamic>> uploadFile(
     String path, {
     required FormData data,
-  }) =>
-      _request(() => _dio.post(
-            path,
-            data: data,
-            options: Options(contentType: Headers.multipartFormDataContentType),
-          ));
+  }) => _request(
+    () => _dio.post(
+      path,
+      data: data,
+      options: Options(contentType: Headers.multipartFormDataContentType),
+    ),
+  );
 
   Future<Map<String, dynamic>> _request(
     Future<Response> Function() call,
@@ -268,7 +285,10 @@ class ApiClient {
       if (body is Map<String, dynamic>) {
         throw ApiException.fromDioResponse(body, status);
       }
-      throw ApiException(statusCode: status, message: e.message ?? 'Download failed');
+      throw ApiException(
+        statusCode: status,
+        message: e.message ?? 'Download failed',
+      );
     }
   }
 }
