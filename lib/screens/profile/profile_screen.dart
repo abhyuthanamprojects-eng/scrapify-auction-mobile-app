@@ -27,18 +27,50 @@ class ProfileScreen extends ConsumerWidget {
         children: [
           _buildProfileHeader(context, user),
           const SizedBox(height: 16),
+          if (user?.vendor != null) ...[
+            _buildBusinessDetails(user!.vendor!),
+            const SizedBox(height: 8),
+          ],
 
           _section('Corporate & Operations', [
-            _menuItem(Icons.emoji_events_outlined, 'My Awards & Fallback Offers', () => context.push('/awards')),
-            _menuItem(Icons.local_shipping_outlined, 'Fulfilment & Gate Passes', () => context.push('/orders')),
-            _menuItem(Icons.folder_shared_outlined, 'Document Vault & Certificates', () => context.push('/documents')),
-            _menuItem(Icons.star_outline_rounded, 'Vendor Scorecard & Tier', () => context.push('/performance')),
+            _menuItem(
+              Icons.emoji_events_outlined,
+              'My Awards & Fallback Offers',
+              () => context.push('/awards'),
+            ),
+            _menuItem(
+              Icons.local_shipping_outlined,
+              'Fulfilment & Gate Passes',
+              () => context.push('/orders'),
+            ),
+            _menuItem(
+              Icons.folder_shared_outlined,
+              'Document Vault & Certificates',
+              () => context.push('/documents'),
+            ),
+            _menuItem(
+              Icons.star_outline_rounded,
+              'Vendor Scorecard & Tier',
+              () => context.push('/performance'),
+            ),
           ]),
 
           _section('Financials & Escrow', [
-            _menuItem(Icons.account_balance_wallet_outlined, 'Payments & EMD Escrow', () => context.push('/payments')),
-            _menuItem(Icons.receipt_long_outlined, 'My Live Bids & History', () => context.push('/my-bids')),
-            _menuItem(Icons.shield_outlined, 'Disputes & Claims', () => context.push('/disputes')),
+            _menuItem(
+              Icons.account_balance_wallet_outlined,
+              'Payments & EMD Escrow',
+              () => context.push('/payments'),
+            ),
+            _menuItem(
+              Icons.receipt_long_outlined,
+              'My Live Bids & History',
+              () => context.push('/my-bids'),
+            ),
+            _menuItem(
+              Icons.shield_outlined,
+              'Disputes & Claims',
+              () => context.push('/disputes'),
+            ),
           ]),
 
           _section('Compliance & Settings', [
@@ -46,16 +78,113 @@ class ProfileScreen extends ConsumerWidget {
               Icons.verified_user_outlined,
               'KYC & Company Verification',
               () => context.push('/business-verification'),
-              trailing: _kycBadge(user?.kycStatus ?? 'pending', user?.kycVerified ?? false, user?.isKycRejected ?? false),
+              trailing: _kycBadge(
+                user?.kycStatus ?? 'pending',
+                user?.kycVerified ?? false,
+                user?.isKycRejected ?? false,
+              ),
             ),
-            _menuItem(Icons.notifications_none_outlined, 'Notifications', () => context.push('/notifications')),
-            _menuItem(Icons.support_agent_outlined, 'Help Centre & Support Desk', () => _showHelpSheet(context)),
+            _menuItem(
+              Icons.notifications_none_outlined,
+              'Notifications',
+              () => context.push('/notifications'),
+            ),
+            _menuItem(
+              Icons.support_agent_outlined,
+              'Help Centre & Support Desk',
+              () => _showHelpSheet(context),
+            ),
           ]),
 
           const SizedBox(height: 20),
           _logoutButton(context, ref),
           const SizedBox(height: 24),
           _aboutBranding(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBusinessDetails(VendorInfo vendor) {
+    final address = [
+      vendor.address ?? vendor.addressLine1,
+      vendor.city,
+      vendor.state,
+      vendor.pincode,
+    ].where((value) => value != null && value.trim().isNotEmpty).join(', ');
+    final states = vendor.operatingStates.join(', ');
+
+    return _section('Business & Verification', [
+      _detailItem(
+        Icons.business_outlined,
+        'Business type',
+        vendor.businessType,
+      ),
+      _detailItem(Icons.badge_outlined, 'Contact person', vendor.contactName),
+      _detailItem(Icons.email_outlined, 'Business email', vendor.email),
+      _detailItem(Icons.phone_outlined, 'Business phone', vendor.phone),
+      _detailItem(Icons.location_on_outlined, 'Registered address', address),
+      _detailItem(Icons.receipt_long_outlined, 'GST number', vendor.gstNumber),
+      _detailItem(Icons.credit_card_outlined, 'PAN number', vendor.panNumber),
+      _detailItem(
+        Icons.description_outlined,
+        'Business name / licence reference',
+        vendor.licenseNumber,
+      ),
+      _detailItem(
+        Icons.trending_up_outlined,
+        'Annual scrap turnover',
+        vendor.turnoverBand,
+      ),
+      _detailItem(
+        Icons.calendar_today_outlined,
+        'Years in business',
+        vendor.yearsInBusiness,
+      ),
+      _detailItem(Icons.account_balance_outlined, 'Bank name', vendor.bankName),
+      _detailItem(
+        Icons.person_outline,
+        'Account holder',
+        vendor.accountHolderName,
+      ),
+      if (states.isNotEmpty)
+        _detailItem(Icons.public_outlined, 'Operating states', states),
+    ]);
+  }
+
+  Widget _detailItem(IconData icon, String label, String? value) {
+    final display = value?.trim();
+    if (display == null || display.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 19, color: AppColors.navy),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  display,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -95,14 +224,19 @@ class ProfileScreen extends ConsumerWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  gradient: isApproved ? AppColors.gradientGold : AppColors.gradientNoir,
+                  gradient: isApproved
+                      ? AppColors.gradientGold
+                      : AppColors.gradientNoir,
                   shape: BoxShape.circle,
                   boxShadow: AppColors.shadowSm,
                 ),
                 child: Center(
                   child: Text(
                     initial,
-                    style: AppTextStyles.heading(size: 22, color: AppColors.white),
+                    style: AppTextStyles.heading(
+                      size: 22,
+                      color: AppColors.white,
+                    ),
                   ),
                 ),
               ),
@@ -113,17 +247,20 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     Text(
                       displayName,
-                      style: AppTextStyles.heading(size: 16, weight: FontWeight.w800),
+                      style: AppTextStyles.heading(
+                        size: 16,
+                        weight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      companyName,
-                      style: AppTextStyles.captionMuted,
-                    ),
+                    Text(companyName, style: AppTextStyles.captionMuted),
                     const SizedBox(height: 2),
                     Text(
                       user?.email ?? '',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
                 ),
@@ -145,32 +282,60 @@ class ProfileScreen extends ConsumerWidget {
               ],
             ),
           ],
-          if (isRejected && rejectionReason != null && rejectionReason.isNotEmpty) ...[
+          if (isRejected &&
+              rejectionReason != null &&
+              rejectionReason.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.destructive.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.destructive.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: AppColors.destructive, size: 20),
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppColors.destructive,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('KYC Action Required', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.destructive)),
+                        const Text(
+                          'KYC Action Required',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.destructive,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(rejectionReason, style: const TextStyle(fontSize: 11, color: Color(0xFF475569))),
+                        Text(
+                          rejectionReason,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF475569),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   TextButton(
                     onPressed: () => context.push('/business-verification'),
-                    child: const Text('Fix Now', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.destructive)),
+                    child: const Text(
+                      'Fix Now',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.destructive,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -185,9 +350,23 @@ class ProfileScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(), style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8))),
+        Text(
+          label.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF94A3B8),
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.navy)),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: AppColors.navy,
+          ),
+        ),
       ],
     );
   }
@@ -200,7 +379,13 @@ class ProfileScreen extends ConsumerWidget {
           padding: const EdgeInsets.only(top: 16, bottom: 8),
           child: Text(
             title.toUpperCase(),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF64748B),
+              letterSpacing: 0.5,
+            ),
           ),
         ),
         Container(
@@ -216,7 +401,12 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _menuItem(IconData icon, String label, VoidCallback onTap, {Widget? trailing}) {
+  Widget _menuItem(
+    IconData icon,
+    String label,
+    VoidCallback onTap, {
+    Widget? trailing,
+  }) {
     return InkWell(
       onTap: onTap,
       child: Padding(
@@ -226,9 +416,23 @@ class ProfileScreen extends ConsumerWidget {
             Icon(icon, size: 20, color: AppColors.navy),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.navy)),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.navy,
+                ),
+              ),
             ),
-            if (trailing != null) trailing else const Icon(Icons.chevron_right, size: 18, color: Color(0xFF94A3B8)),
+            if (trailing != null)
+              trailing
+            else
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: Color(0xFF94A3B8),
+              ),
           ],
         ),
       ),
@@ -275,10 +479,18 @@ class ProfileScreen extends ConsumerWidget {
           if (context.mounted) context.go('/login');
         },
         icon: const Icon(Icons.logout, color: AppColors.destructive, size: 18),
-        label: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.destructive)),
+        label: const Text(
+          'Sign Out',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppColors.destructive,
+          ),
+        ),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: AppColors.destructive.withValues(alpha: 0.3)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+          ),
         ),
       ),
     );
@@ -288,9 +500,19 @@ class ProfileScreen extends ConsumerWidget {
     return Center(
       child: Column(
         children: [
-          Text('${AppConstants.appName} Enterprise v2.4.0', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
+          Text(
+            '${AppConstants.appName} Enterprise v2.4.0',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF64748B),
+            ),
+          ),
           const SizedBox(height: 2),
-          const Text('Secure Multi-Category Auction & Procurement Platform', style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8))),
+          const Text(
+            'Secure Multi-Category Auction & Procurement Platform',
+            style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8)),
+          ),
         ],
       ),
     );
@@ -314,13 +536,22 @@ class ProfileScreen extends ConsumerWidget {
               child: Container(
                 width: 40,
                 height: 4,
-                decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFCBD5E1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 14),
-            Text('Support & Help Desk', style: AppTextStyles.heading(size: 17, weight: FontWeight.w800)),
+            Text(
+              'Support & Help Desk',
+              style: AppTextStyles.heading(size: 17, weight: FontWeight.w800),
+            ),
             const SizedBox(height: 12),
-            _helpRow('Toll-Free Auction Helpline', '1800 200 4890 (Mon-Sat, 9AM-8PM)'),
+            _helpRow(
+              'Toll-Free Auction Helpline',
+              '1800 200 4890 (Mon-Sat, 9AM-8PM)',
+            ),
             _helpRow('Enterprise Support Email', 'support@scrapify.io'),
             _helpRow('Arbitration Desk', 'disputes@scrapify.io'),
             const SizedBox(height: 16),
@@ -348,8 +579,22 @@ class ProfileScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(k, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B))),
-          Text(v, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.navy)),
+          Text(
+            k,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF64748B),
+            ),
+          ),
+          Text(
+            v,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.navy,
+            ),
+          ),
         ],
       ),
     );

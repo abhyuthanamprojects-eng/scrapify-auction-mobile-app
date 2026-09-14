@@ -98,6 +98,12 @@ class AppUser {
 class VendorInfo {
   final String code;
   final String companyName;
+  final String? tradeName;
+  final String? businessType;
+  final String? cinNumber;
+  final String? turnoverBand;
+  final String? yearsInBusiness;
+  final String? annualCapacity;
   final String status;
   final bool canBid;
   final String? rejectionReason;
@@ -108,14 +114,28 @@ class VendorInfo {
   final String? accountNumber;
   final String? ifscCode;
   final String? accountHolderName;
+  final String? contactName;
+  final String? email;
+  final String? phone;
+  final String? location;
+  final String? address;
+  final String? licenseNumber;
   final String? addressLine1;
   final String? city;
   final String? state;
   final String? pincode;
+  final List<String> operatingStates;
+  final List<Map<String, dynamic>> warehouseDetails;
 
   const VendorInfo({
     required this.code,
     required this.companyName,
+    this.tradeName,
+    this.businessType,
+    this.cinNumber,
+    this.turnoverBand,
+    this.yearsInBusiness,
+    this.annualCapacity,
     required this.status,
     this.canBid = false,
     this.rejectionReason,
@@ -126,10 +146,18 @@ class VendorInfo {
     this.accountNumber,
     this.ifscCode,
     this.accountHolderName,
+    this.contactName,
+    this.email,
+    this.phone,
+    this.location,
+    this.address,
+    this.licenseNumber,
     this.addressLine1,
     this.city,
     this.state,
     this.pincode,
+    this.operatingStates = const [],
+    this.warehouseDetails = const [],
   });
 
   bool get isPending =>
@@ -142,6 +170,12 @@ class VendorInfo {
   factory VendorInfo.fromJson(Map<String, dynamic> json) => VendorInfo(
     code: json['code'] as String? ?? json['id'] as String? ?? '',
     companyName: json['company_name'] as String? ?? '',
+    tradeName: json['trade_name'] as String?,
+    businessType: json['business_type'] as String?,
+    cinNumber: json['cin_number'] as String?,
+    turnoverBand: json['turnover_band'] as String?,
+    yearsInBusiness: json['years_in_business']?.toString(),
+    annualCapacity: json['annual_capacity']?.toString(),
     status: json['status'] as String? ?? 'pending',
     canBid: json['can_bid'] as bool? ?? (json['status'] == 'approved'),
     rejectionReason: json['rejection_reason'] as String?,
@@ -152,17 +186,38 @@ class VendorInfo {
     accountNumber: json['account_number'] as String?,
     ifscCode: json['ifsc_code'] as String?,
     accountHolderName: json['account_holder_name'] as String?,
+    contactName: json['contact_name'] as String?,
+    email: json['email'] as String?,
+    phone: json['phone'] as String?,
+    location: json['location'] as String?,
+    address: json['address'] as String?,
+    licenseNumber: json['license_number'] as String?,
     addressLine1:
         json['address_line1'] as String? ?? json['address'] as String?,
     city: json['city'] as String?,
     state: json['state'] as String?,
     pincode: json['pincode'] as String?,
+    operatingStates:
+        (json['operating_states'] as List?)?.whereType<String>().toList() ??
+        const [],
+    warehouseDetails:
+        (json['warehouse_details'] as List?)
+            ?.whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList() ??
+        const [],
   );
 
   Map<String, dynamic> toJson() => {
     'id': code,
     'code': code,
     'company_name': companyName,
+    'trade_name': tradeName,
+    'business_type': businessType,
+    'cin_number': cinNumber,
+    'turnover_band': turnoverBand,
+    'years_in_business': yearsInBusiness,
+    'annual_capacity': annualCapacity,
     'status': status,
     'can_bid': canBid,
     'rejection_reason': rejectionReason,
@@ -173,10 +228,18 @@ class VendorInfo {
     'account_number': accountNumber,
     'ifsc_code': ifscCode,
     'account_holder_name': accountHolderName,
+    'contact_name': contactName,
+    'email': email,
+    'phone': phone,
+    'location': location,
+    'address': address,
+    'license_number': licenseNumber,
     'address_line1': addressLine1,
     'city': city,
     'state': state,
     'pincode': pincode,
+    'operating_states': operatingStates,
+    'warehouse_details': warehouseDetails,
   };
 }
 
