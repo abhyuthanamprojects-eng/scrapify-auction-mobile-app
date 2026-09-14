@@ -79,16 +79,9 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
           children: [
             // Top Bar
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 20, 8),
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.navy),
-                    onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
-                    padding: const EdgeInsets.all(4),
-                    constraints: const BoxConstraints(),
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Explore Auctions',
