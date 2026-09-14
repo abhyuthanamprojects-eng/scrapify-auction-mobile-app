@@ -84,8 +84,9 @@ class _MyBidsScreenState extends ConsumerState<MyBidsScreen>
     );
   }
 
-  TabBar _tabs() => const TabBar(
-        tabs: [
+  TabBar _tabs() => TabBar(
+        controller: _tabController,
+        tabs: const [
           Tab(text: 'All Bids'),
           Tab(text: 'Leading'),
           Tab(text: 'Outbid'),
