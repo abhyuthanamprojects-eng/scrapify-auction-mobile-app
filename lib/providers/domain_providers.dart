@@ -3,7 +3,6 @@ import '../models/award.dart';
 import '../models/order.dart';
 import '../models/fulfilment.dart';
 import '../models/dispute.dart';
-import '../models/team_member.dart';
 import '../models/performance.dart';
 import '../models/rfx.dart';
 import '../models/inspection.dart';
@@ -94,102 +93,6 @@ class DisputesNotifier extends StateNotifier<List<DisputeItem>> {
       createdDate: DateTime.now().toIso8601String().split('T').first,
     );
     state = [item, ...state];
-  }
-}
-
-// Team Members
-final teamMembersProvider =
-    StateNotifierProvider<TeamNotifier, List<TeamMember>>((ref) {
-      return TeamNotifier();
-    });
-
-class TeamNotifier extends StateNotifier<List<TeamMember>> {
-  TeamNotifier() : super(const []) {
-    loadMembers();
-  }
-
-  Future<void> loadMembers() async {
-    try {
-      final list = await AuctionService().getTeamMembers();
-      state = list.map((json) => _mapToMember(json)).toList();
-    } catch (_) {}
-  }
-
-  TeamMember _mapToMember(Map<String, dynamic> json) {
-    final roleStr = (json['role'] ?? json['role_label'] ?? 'authorized_bidder')
-        .toString()
-        .toLowerCase();
-    final role = switch (roleStr) {
-      'bidder' ||
-      'authorized_bidder' ||
-      'authorizedbidder' ||
-      'buyer' => TeamRole.authorizedBidder,
-      'inspector' ||
-      'field_inspector' ||
-      'fieldinspector' ||
-      'technical_evaluator' => TeamRole.fieldInspector,
-      'finance' ||
-      'finance_approver' ||
-      'financeapprover' ||
-      'finance_manager' => TeamRole.financeApprover,
-      _ => TeamRole.vendorAdmin,
-    };
-
-    final isAct = json['status'] == null
-        ? (json['is_active'] ?? true)
-        : (json['status'] == 'active');
-
-    return TeamMember(
-      id:
-          json['id']?.toString() ??
-          'TM-${DateTime.now().millisecondsSinceEpoch % 1000}',
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      mobile: json['phone'] ?? json['mobile'] ?? '',
-      role: role,
-      maxBiddingLimitInr:
-          (json['max_bidding_limit_inr'] as num?)?.toDouble() ?? 5000000.0,
-      isActive: isAct,
-      joinedAt: json['created_at'] ?? json['joined_at'] ?? '',
-      allowedCategories:
-          (json['allowed_categories'] as List?)?.cast<String>() ??
-          const ['All Categories'],
-    );
-  }
-
-  Future<void> addMember(Map<String, dynamic> body) async {
-    final res = await AuctionService().addTeamMember(body);
-    final rawData = res['data'] is Map<String, dynamic>
-        ? res['data'] as Map<String, dynamic>
-        : res;
-    final tm = _mapToMember(rawData);
-    state = [tm, ...state];
-  }
-
-  Future<void> toggleStatus(String id) async {
-    final member = state.firstWhere((m) => m.id == id);
-    try {
-      await AuctionService().updateTeamMember(id, {
-        'is_active': !member.isActive,
-      });
-    } catch (_) {}
-    state = state
-        .map(
-          (m) => m.id == id
-              ? TeamMember(
-                  id: m.id,
-                  name: m.name,
-                  email: m.email,
-                  mobile: m.mobile,
-                  role: m.role,
-                  maxBiddingLimitInr: m.maxBiddingLimitInr,
-                  isActive: !m.isActive,
-                  joinedAt: m.joinedAt,
-                  allowedCategories: m.allowedCategories,
-                )
-              : m,
-        )
-        .toList();
   }
 }
 

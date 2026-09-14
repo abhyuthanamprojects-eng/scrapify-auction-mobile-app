@@ -237,23 +237,6 @@ class AuctionService {
     return await _api.post(Endpoints.disputeEvidence(code), data: body);
   }
 
-  // Team Members
-  Future<List<Map<String, dynamic>>> getTeamMembers() async {
-    final data = await _api.get(Endpoints.teamMembers);
-    return List<Map<String, dynamic>>.from(data['data'] as List? ?? []);
-  }
-
-  Future<Map<String, dynamic>> addTeamMember(Map<String, dynamic> body) async {
-    return await _api.post(Endpoints.teamMembers, data: body);
-  }
-
-  Future<Map<String, dynamic>> updateTeamMember(
-    dynamic id,
-    Map<String, dynamic> body,
-  ) async {
-    return await _api.patch(Endpoints.teamMember(id), data: body);
-  }
-
   // Auction Terms
   Future<void> acceptAuctionTerms(String code) async {
     await _api.post(Endpoints.acceptTerms(code));

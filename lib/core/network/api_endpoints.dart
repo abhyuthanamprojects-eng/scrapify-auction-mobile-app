@@ -105,10 +105,6 @@ abstract final class Endpoints {
   static String disputeMessage(String code) => '/disputes/$code/messages';
   static String disputeEvidence(String code) => '/disputes/$code/evidence';
 
-  // Team Members
-  static const teamMembers = '/team/members';
-  static String teamMember(dynamic id) => '/team/members/$id';
-
   // Auction Terms
   static String acceptTerms(String code) => '/auctions/$code/terms/accept';
 

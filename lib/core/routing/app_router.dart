@@ -32,7 +32,6 @@ import '../../screens/orders/orders_screen.dart';
 import '../../screens/orders/order_detail_screen.dart';
 import '../../screens/disputes/disputes_screen.dart';
 import '../../screens/disputes/new_dispute_screen.dart';
-import '../../screens/team/team_management_screen.dart';
 import '../../screens/performance/performance_screen.dart';
 import '../../screens/notifications/notifications_screen.dart';
 import '../../screens/profile/edit_profile_screen.dart';
@@ -204,7 +203,6 @@ abstract final class AppRouter {
         builder: (_, state) =>
             NewDisputeScreen(orderId: state.pathParameters['id']!),
       ),
-      GoRoute(path: '/team', builder: (_, _) => const TeamManagementScreen()),
       GoRoute(
         path: '/performance',
         builder: (_, _) => const PerformanceScreen(),

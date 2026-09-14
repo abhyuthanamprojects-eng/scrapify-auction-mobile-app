@@ -32,7 +32,6 @@ class ProfileScreen extends ConsumerWidget {
             _menuItem(Icons.emoji_events_outlined, 'My Awards & Fallback Offers', () => context.push('/awards')),
             _menuItem(Icons.local_shipping_outlined, 'Fulfilment & Gate Passes', () => context.push('/orders')),
             _menuItem(Icons.folder_shared_outlined, 'Document Vault & Certificates', () => context.push('/documents')),
-            _menuItem(Icons.people_outline_rounded, 'Team & Authorized Bidders', () => context.push('/team')),
             _menuItem(Icons.star_outline_rounded, 'Vendor Scorecard & Tier', () => context.push('/performance')),
           ]),
 
