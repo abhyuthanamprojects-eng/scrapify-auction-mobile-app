@@ -24,6 +24,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isBuyer = true;
   bool _obscurePassword = true;
   bool _biometricAvailable = false;
+  String? _identifierError;
 
   @override
   void initState() {
@@ -47,10 +48,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _login() async {
     final identifier = _identifierController.text.trim();
     if (identifier.isEmpty || _passwordController.text.isEmpty) {
+      setState(() => _identifierError = 'Enter your email or mobile number.');
       return;
     }
     if ((identifier.contains('@') && !isEmail(identifier)) ||
         (!identifier.contains('@') && !isIndianMobile(identifier))) {
+      setState(
+        () => _identifierError =
+            'Enter a valid email or 10-digit Indian mobile number.',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Enter a valid email or Indian mobile number.'),
@@ -58,6 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       return;
     }
+    setState(() => _identifierError = null);
     ref.read(authProvider.notifier).clearError();
     await ref
         .read(authProvider.notifier)
@@ -77,6 +84,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (identifier.isEmpty ||
         (identifier.contains('@') && !isEmail(identifier)) ||
         (!identifier.contains('@') && !isIndianMobile(identifier))) {
+      setState(
+        () => _identifierError =
+            'Enter a valid email or 10-digit Indian mobile number.',
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Enter a valid email or Indian mobile number.'),
@@ -84,6 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       return;
     }
+    setState(() => _identifierError = null);
     context.push('/otp', extra: identifier);
   }
 
@@ -186,11 +198,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   TextField(
                     controller: _identifierController,
                     keyboardType: TextInputType.emailAddress,
+                    maxLength: 254,
+                    onChanged: (_) {
+                      if (_identifierError != null) {
+                        setState(() => _identifierError = null);
+                      }
+                    },
                     decoration: const InputDecoration(
                       hintText: 'you@company.com or +91...',
                       prefixIcon: Icon(Icons.business_outlined, size: 18),
                       border: OutlineInputBorder(),
-                    ),
+                    ).copyWith(errorText: _identifierError),
                   ),
                   const SizedBox(height: 14),
                   Row(
