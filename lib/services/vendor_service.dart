@@ -53,6 +53,8 @@ class VendorService {
       if (phone != null && phone.isNotEmpty) 'phone': phone,
     },
   );
+  Future<Map<String, dynamic>> lookupIfsc(String ifsc) =>
+      _api.get(Endpoints.kybLookupIfsc(Uri.encodeComponent(ifsc)));
   Future<Map<String, dynamic>> requestBusinessReverification() =>
       _api.post(Endpoints.kybReverify);
 

@@ -71,6 +71,7 @@ abstract final class Endpoints {
   static const kybVerifyGstin = '/kyb/gstin/verify';
   static const kybVerifyPan = '/kyb/pan/verify';
   static const kybVerifyBank = '/kyb/bank/verify';
+  static String kybLookupIfsc(String ifsc) => '/kyb/bank/ifsc/$ifsc';
   static const kybReverify = '/kyb/reverify';
 
   // Notifications

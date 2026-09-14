@@ -416,6 +416,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     setState(() => _bankLoading = true);
     _bankDebounce = Timer(const Duration(milliseconds: 500), () async {
       try {
+        final lookupResponse = await _vendorService.lookupIfsc(normalizedIfsc).catchError((_) => <String, dynamic>{});
+        final lookupRaw = lookupResponse['data'];
+        final lookupDetails = lookupRaw is Map ? Map<String, dynamic>.from(lookupRaw) : <String, dynamic>{};
+        final lookupBankName = lookupDetails['bank_name']?.toString().trim() ?? '';
+        if (mounted && requestId == _bankRequestId && lookupBankName.isNotEmpty) {
+          _bankNameCtl.text = lookupBankName;
+        }
         final response = await _vendorService.verifyBank(
           account: normalizedAccount,
           confirmation: normalizedAccount,
@@ -443,7 +450,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _bankProvider = details['bank_provider']?.toString();
           _bankHolderName =
               details['bank_account_holder_name']?.toString().trim() ?? '';
-          _bankNameCtl.text = details['bank_name']?.toString().trim() ?? '';
+          _bankNameCtl.text = details['bank_name']?.toString().trim() ?? lookupBankName;
           _bankHolderCtl.text = _bankHolderName;
           _bankError = null;
           _error = null;
@@ -1560,7 +1567,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             Expanded(
               child: _inputField(
                 controller: _bankNameCtl,
-                hint: 'Bank name (enter manually if needed)',
+                hint: 'Bank name (from IFSC)',
+                readOnly: true,
               ),
             ),
           ],
