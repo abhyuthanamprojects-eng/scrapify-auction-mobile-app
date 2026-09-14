@@ -49,7 +49,6 @@ class ProfileScreen extends ConsumerWidget {
               () => context.push('/business-verification'),
               trailing: _kycBadge(user?.kycStatus ?? 'pending', user?.kycVerified ?? false, user?.isKycRejected ?? false),
             ),
-            _menuItem(Icons.security_outlined, 'Security & Trusted Devices', () => context.push('/trusted-devices')),
             _menuItem(Icons.notifications_none_outlined, 'Notifications', () => context.push('/notifications')),
             _menuItem(Icons.support_agent_outlined, 'Help Centre & Support Desk', () => _showHelpSheet(context)),
           ]),

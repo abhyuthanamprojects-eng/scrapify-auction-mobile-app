@@ -9,6 +9,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
 import '../../core/validation/input_validators.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/biometric_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,6 +23,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isBuyer = true;
   bool _obscurePassword = true;
+  bool _biometricAvailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometric();
+  }
+
+  Future<void> _checkBiometric() async {
+    final available = await BiometricService.isAvailable;
+    final hasSaved = await BiometricService.hasSavedSession;
+    if (mounted) setState(() => _biometricAvailable = available && hasSaved);
+  }
 
   @override
   void dispose() {
@@ -61,6 +75,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void _loginWithOtp() {
     if (_identifierController.text.isEmpty) return;
     context.push('/otp', extra: _identifierController.text.trim());
+  }
+
+  Future<void> _loginWithBiometric() async {
+    final authenticated = await BiometricService.authenticate();
+    if (!authenticated || !mounted) return;
+    await ref.read(authProvider.notifier).refreshUser();
+    final state = ref.read(authProvider);
+    if (state.isAuthenticated && mounted) {
+      context.go(state.isSeller ? '/seller' : '/home');
+    }
   }
 
   @override
@@ -265,36 +289,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SizedBox(
-                          height: 44,
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
-                                context.push('/mfa', extra: '/home'),
-                            icon: const Icon(
-                              Icons.fingerprint,
-                              color: AppColors.auction,
-                              size: 20,
-                            ),
-                            label: const Text(
-                              'Face ID / MFA',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: AppColors.navy,
+                      if (_biometricAvailable) ...[
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: SizedBox(
+                            height: 44,
+                            child: OutlinedButton.icon(
+                              onPressed: _loginWithBiometric,
+                              icon: const Icon(
+                                Icons.fingerprint,
+                                color: AppColors.auction,
+                                size: 20,
                               ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusLg,
+                              label: const Text(
+                                'Face ID',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: AppColors.navy,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    AppSpacing.radiusLg,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 16),

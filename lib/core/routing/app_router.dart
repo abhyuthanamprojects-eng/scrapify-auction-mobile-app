@@ -8,10 +8,8 @@ import '../../screens/auth/otp_screen.dart';
 import '../../screens/auth/role_screen.dart';
 import '../../screens/auth/signup_screen.dart';
 import '../../screens/auth/forgot_password_screen.dart';
-import '../../screens/auth/mfa_screen.dart';
 import '../../screens/auth/session_expired_screen.dart';
 import '../../screens/auth/account_suspended_screen.dart';
-import '../../screens/security/trusted_devices_screen.dart';
 import '../../screens/documents/document_centre_screen.dart';
 import '../../screens/support/support_center_screen.dart';
 import '../../screens/shell/app_shell.dart';
@@ -79,10 +77,6 @@ abstract final class AppRouter {
         builder: (_, _) => const ForgotPasswordScreen(),
       ),
       GoRoute(
-        path: '/mfa',
-        builder: (_, state) => MfaScreen(redirectPath: state.extra as String?),
-      ),
-      GoRoute(
         path: '/session-expired',
         builder: (_, state) =>
             SessionExpiredScreen(returnPath: state.extra as String?),
@@ -96,10 +90,6 @@ abstract final class AppRouter {
             ticketRef: extra['ticketRef'] as String?,
           );
         },
-      ),
-      GoRoute(
-        path: '/trusted-devices',
-        builder: (_, _) => const TrustedDevicesScreen(),
       ),
       GoRoute(
         path: '/documents',
