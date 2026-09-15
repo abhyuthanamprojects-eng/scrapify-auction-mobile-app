@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/file_picker_service.dart';
+import '../../core/utils/legal_pages.dart';
 
 class SupportCenterScreen extends StatefulWidget {
   const SupportCenterScreen({super.key});
@@ -354,6 +355,56 @@ class _SupportCenterScreenState extends State<SupportCenterScreen>
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          _policyLinks(),
+        ],
+      ),
+    );
+  }
+
+  Widget _policyLinks() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Policies',
+            style: AppTextStyles.heading(size: 13, weight: FontWeight.w800),
+          ),
+          const SizedBox(height: 2),
+          for (final page in LegalPage.values)
+            InkWell(
+              onTap: () => LegalPages.open(context, page),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                child: Row(
+                  children: [
+                    Icon(page.icon, size: 16, color: AppColors.navy),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        page.title,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const Icon(
+                      Icons.open_in_new,
+                      size: 14,
+                      color: Color(0xFF64748B),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/legal_pages.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/asset_paths.dart';
@@ -2036,7 +2037,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     num: '3',
                     title: 'Winning bids',
                     text:
-                        'Winning bidders must pay the balance within 48 hours or forfeit their EMD.',
+                        'Winning bidders must pay the balance within the period stated on the auction, ordinarily 7 working days, or forfeit their EMD.',
                   ),
                   _TermItem(
                     num: '4',
@@ -2054,7 +2055,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     num: '6',
                     title: 'Refunds',
                     text:
-                        'EMD of losing bidders is auto-released within 2 hours of auction close.',
+                        'EMD of unsuccessful bidders is queued for refund once the result is finalised and credited within 7 working days.',
                   ),
                   _TermItem(
                     num: '7',
@@ -2062,6 +2063,36 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     text:
                         'Registration is subject to admin approval and may be rejected without cause.',
                   ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Row(
+                children: [
+                  for (final page in const [
+                    LegalPage.terms,
+                    LegalPage.privacy,
+                    LegalPage.refund,
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: GestureDetector(
+                        onTap: () => LegalPages.open(context, page),
+                        child: Text(
+                          page == LegalPage.terms
+                              ? 'Full Terms'
+                              : page == LegalPage.privacy
+                                  ? 'Privacy'
+                                  : 'Refunds',
+                          style: AppTextStyles.body(
+                            size: 11,
+                            weight: FontWeight.w700,
+                            color: AppColors.accentBlue,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

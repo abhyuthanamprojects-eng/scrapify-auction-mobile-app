@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/legal_pages.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
 
@@ -102,6 +103,20 @@ class ProfileScreen extends ConsumerWidget {
               'Help Centre & Support Desk',
               () => _showHelpSheet(context),
             ),
+          ]),
+
+          _section('Legal & Policies', [
+            for (final page in LegalPage.values)
+              _menuItem(
+                page.icon,
+                page.title,
+                () => LegalPages.open(context, page),
+                trailing: const Icon(
+                  Icons.open_in_new,
+                  size: 15,
+                  color: AppColors.textSecondary,
+                ),
+              ),
           ]),
 
           const SizedBox(height: 20),
