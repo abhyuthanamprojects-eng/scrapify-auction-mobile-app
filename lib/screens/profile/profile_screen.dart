@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -8,6 +9,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/utils/legal_pages.dart';
 import '../../models/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/profile_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -121,6 +123,8 @@ class ProfileScreen extends ConsumerWidget {
 
           const SizedBox(height: 20),
           _logoutButton(context, ref),
+          const SizedBox(height: 12),
+          _deleteAccountButton(context, ref),
           const SizedBox(height: 24),
           _aboutBranding(),
         ],
@@ -517,6 +521,179 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Widget _deleteAccountButton(BuildContext context, WidgetRef ref) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: TextButton.icon(
+        onPressed: () => _showDeleteAccountFlow(context, ref),
+        icon: const Icon(Icons.delete_forever_outlined,
+            color: AppColors.destructive, size: 18),
+        label: const Text(
+          'Delete Account',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: AppColors.destructive,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showDeleteAccountFlow(
+      BuildContext context, WidgetRef ref) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await ProfileService().deletionCheck();
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (!result.canDelete) {
+        _showBlockersDialog(context, result.blockers);
+        return;
+      }
+
+      _showFinalConfirmation(context, ref);
+    } on ApiException catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.firstError)),
+      );
+    }
+  }
+
+  void _showBlockersDialog(
+      BuildContext context, List<Map<String, dynamic>> blockers) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.block, color: AppColors.destructive, size: 22),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Cannot Delete Account',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Please resolve the following before you can delete your account:',
+                style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 14),
+              for (final b in blockers)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: AppColors.auction, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          b['message'] as String? ?? '',
+                          style: const TextStyle(fontSize: 12.5, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Understood'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFinalConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: AppColors.destructive, size: 22),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text('Delete Account Permanently?',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This action is irreversible. All your data — profile, business verification, '
+          'addresses, payment methods, bid history, and watchlist — will be permanently '
+          'deleted. You will be logged out immediately.',
+          style: TextStyle(fontSize: 13, height: 1.5, color: Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _performDeletion(context, ref);
+            },
+            child: const Text(
+              'Delete My Account',
+              style: TextStyle(
+                color: AppColors.destructive,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _performDeletion(BuildContext context, WidgetRef ref) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await ref.read(authProvider.notifier).deleteAccount();
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      context.go('/login');
+    } on ApiException catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.firstError)),
+      );
+    }
   }
 
   Widget _aboutBranding() {

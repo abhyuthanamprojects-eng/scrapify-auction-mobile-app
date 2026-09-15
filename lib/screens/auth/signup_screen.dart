@@ -107,6 +107,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Timer? _bankDebounce;
   int _gstRequestId = 0;
   int _bankRequestId = 0;
+  String? _gstLookupValue;
   bool _gstVerified = false;
   bool _gstLoading = false;
   String? _gstProvider;
@@ -292,6 +293,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     _gstDebounce?.cancel();
     final requestId = ++_gstRequestId;
+    if (gstin.length != 15) _gstLookupValue = null;
     final clearAutoAddress = _gstAddressAutofilled;
     setState(() {
       _gstVerified = false;
@@ -310,9 +312,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     // value. The API remains the source of truth for provider validation; a
     // strict local format check here previously skipped requests silently.
     if (gstin.length != 15) return;
+    // Editing completion can fire immediately after the 15th character. Do
+    // not submit the same GSTIN twice through the two callbacks.
+    if (_gstLookupValue == gstin) return;
 
     setState(() => _gstLoading = true);
     _gstDebounce = Timer(const Duration(milliseconds: 500), () async {
+      if (_gstLookupValue == gstin) return;
+      _gstLookupValue = gstin;
       try {
         final response = await _vendorService.verifyGstin(
           gstin,

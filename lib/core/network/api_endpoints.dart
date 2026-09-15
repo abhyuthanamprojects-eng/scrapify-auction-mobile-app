@@ -10,6 +10,8 @@ abstract final class Endpoints {
 
   // Profile
   static const profile = '/profile';
+  static const profileDeletionCheck = '/profile/deletion-check';
+  static const profileDelete = '/profile';
   static const platformConfig = '/platform-config';
   static const addresses = '/profile/addresses';
   static String address(int id) => '/profile/addresses/$id';

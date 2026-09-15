@@ -45,4 +45,20 @@ class ProfileService {
   Future<void> deletePaymentMethod(int id) async {
     await _api.delete(Endpoints.paymentMethod(id));
   }
+
+  Future<({bool canDelete, List<Map<String, dynamic>> blockers})>
+      deletionCheck() async {
+    final data = await _api.get(Endpoints.profileDeletionCheck);
+    final blockers = (data['blockers'] as List?)
+            ?.cast<Map<String, dynamic>>() ??
+        [];
+    return (canDelete: data['can_delete'] == true, blockers: blockers);
+  }
+
+  Future<void> deleteAccount() async {
+    await _api.delete(
+      Endpoints.profileDelete,
+      data: {'confirmation': 'DELETE'},
+    );
+  }
 }

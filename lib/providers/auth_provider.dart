@@ -5,6 +5,7 @@ import '../core/network/token_storage.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/biometric_service.dart';
+import '../services/profile_service.dart';
 
 enum AuthState { initial, loading, authenticated, unauthenticated }
 
@@ -165,6 +166,13 @@ class AuthNotifier extends StateNotifier<AuthStateData> {
     } finally {
       state = const AuthStateData(authState: AuthState.unauthenticated);
     }
+  }
+
+  Future<void> deleteAccount() async {
+    await ProfileService().deleteAccount();
+    await BiometricService.clear();
+    await TokenStorage.clear();
+    state = const AuthStateData(authState: AuthState.unauthenticated);
   }
 
   void completeOnboarding() {

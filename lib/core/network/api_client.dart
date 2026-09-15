@@ -207,8 +207,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> delete(
     String path, {
+    Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
-  }) => _request(() => _dio.delete(path, queryParameters: queryParameters));
+  }) => _request(() => _dio.delete(path, data: data, queryParameters: queryParameters));
 
   Future<Map<String, dynamic>> uploadFile(
     String path, {
