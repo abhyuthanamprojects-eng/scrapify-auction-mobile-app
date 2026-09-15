@@ -154,6 +154,7 @@ class Auction extends Equatable {
   final String? inspectionLocation;
   final String? inspectionContact;
   final String? terms;
+  final List<Map<String, dynamic>> termsConditions;
   final int termsVersion;
   final bool termsAccepted;
   final bool emdPaid;
@@ -219,6 +220,7 @@ class Auction extends Equatable {
     this.inspectionLocation,
     this.inspectionContact,
     this.terms,
+    this.termsConditions = const [],
     this.termsVersion = 1,
     this.termsAccepted = false,
     this.emdPaid = false,
@@ -283,6 +285,10 @@ class Auction extends Equatable {
         inspectionLocation: json['inspection_location'] as String?,
         inspectionContact: json['inspection_contact'] as String?,
         terms: json['terms'] as String?,
+        termsConditions: (json['terms_conditions'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .toList() ??
+            [],
         termsVersion: json['terms_version'] as int? ?? 1,
         termsAccepted: json['terms_accepted'] as bool? ?? false,
         emdPaid: json['emd_paid'] as bool? ?? false,
@@ -364,6 +370,7 @@ class Auction extends Equatable {
         'inspection_time': inspectionTime,
         'inspection_location': inspectionLocation,
         'terms': terms,
+        'terms_conditions': termsConditions,
         'terms_accepted': termsAccepted,
         'emd_paid': emdPaid,
         'is_invited': isInvited,

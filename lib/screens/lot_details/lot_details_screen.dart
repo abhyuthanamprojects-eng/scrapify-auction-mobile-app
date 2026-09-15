@@ -27,6 +27,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     'Overview',
     'Lots / Items',
     'Commercial',
+    'Terms',
     'Eligibility',
     'Timeline',
     'Docs',
@@ -468,10 +469,12 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                         case 2:
                           return _buildCommercialTab(auction);
                         case 3:
-                          return _buildEligibilityTab(auction);
+                          return _buildTermsTab(auction);
                         case 4:
-                          return _buildTimelineTab(auction);
+                          return _buildEligibilityTab(auction);
                         case 5:
+                          return _buildTimelineTab(auction);
+                        case 6:
                           return _buildDocumentsTab(auction);
                         default:
                           return _buildOverviewTab(auction);
@@ -674,6 +677,121 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildTermsTab(Auction a) {
+    final tncs = a.termsConditions;
+    final auctionTerms = a.terms?.split(RegExp(r'\r?\n')).where((s) => s.trim().isNotEmpty).toList() ?? [];
+
+    if (tncs.isEmpty && auctionTerms.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: Center(
+          child: Text(
+            'No terms & conditions published for this auction.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (tncs.isNotEmpty) ...[
+          _tabSectionTitle('Terms & Conditions'),
+          const SizedBox(height: 8),
+          ...tncs.map((tnc) => _tncCard(
+            tnc['title'] as String? ?? '',
+            tnc['content'] as String? ?? '',
+            tnc['type'] as String? ?? 'general',
+          )),
+        ],
+        if (auctionTerms.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _tabSectionTitle('Additional Auction Terms'),
+          const SizedBox(height: 8),
+          ...auctionTerms.map((t) => Padding(
+            padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 6),
+                  width: 6, height: 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.auction,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(t, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+                ),
+              ],
+            ),
+          )),
+        ],
+        if (a.paymentTerms != null && a.paymentTerms!.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _tabSectionTitle('Payment Terms'),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(a.paymentTerms!, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _tncCard(String title, String content, String type) {
+    final typeColors = {
+      'general': AppColors.accentBlue,
+      'payment': AppColors.auction,
+      'inspection': AppColors.warning,
+      'delivery': AppColors.purple,
+      'liability': AppColors.destructive,
+      'dispute': AppColors.warning,
+      'compliance': const Color(0xFF0D9488),
+    };
+    final color = typeColors[type] ?? AppColors.accentBlue;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10, left: 4, right: 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  type.toUpperCase(),
+                  style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(content, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+        ],
+      ),
     );
   }
 
