@@ -1939,8 +1939,8 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         'company': _companyController.text.trim().isNotEmpty
             ? _companyController.text.trim()
             : 'Enterprise Seller',
-        'category':
-            _selectedSubcategory?.name ?? _selectedCategory?.name ?? 'Ferrous',
+        'category': _selectedCategory?.name ?? 'Ferrous',
+        if (_selectedCategory != null) 'category_id': _selectedCategory!.id,
         if (_selectedSubcategory != null)
           'subcategory_id': _selectedSubcategory!.id,
         'direction': _direction,
