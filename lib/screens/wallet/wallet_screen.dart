@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -11,6 +12,7 @@ import '../../widgets/cards/wallet_card.dart';
 import '../../widgets/shared/loading_skeleton.dart';
 import '../../widgets/shared/empty_state.dart';
 import '../../services/wallet_service.dart';
+import '../../services/vendor_service.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -255,42 +257,152 @@ class _AddMoneySheet extends StatefulWidget {
 
 class _AddMoneySheetState extends State<_AddMoneySheet> {
   final _controller = TextEditingController();
-  String _method = 'UPI';
+  final _walletService = WalletService();
+  late final Razorpay _razorpay;
   bool _processing = false;
   bool _success = false;
   String? _error;
+  String? _pendingOrderId;
+  bool _razorpayAvailable = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onExternalWallet);
+    _checkRazorpayAvailability();
+  }
+
+  Future<void> _checkRazorpayAvailability() async {
+    try {
+      final config = await VendorService().getPlatformConfig();
+      if (mounted) {
+        setState(() {
+          _razorpayAvailable = config['razorpay_enabled'] == true;
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
+    _razorpay.clear();
     _controller.dispose();
     super.dispose();
   }
 
   Future<void> _process() async {
     final amount = double.tryParse(_controller.text) ?? 0;
-    if (amount <= 0) return;
+    if (amount <= 0) {
+      setState(() => _error = 'Enter a valid amount');
+      return;
+    }
     setState(() {
       _processing = true;
       _error = null;
     });
+
+    if (!_razorpayAvailable) {
+      await _directTopUp(amount);
+      return;
+    }
+
     try {
-      await WalletService().topUp(amount: amount, method: _method.toLowerCase());
+      final order = await _walletService.createRazorpayOrder(
+        amount: amount,
+        purpose: 'wallet_topup',
+      );
+      _pendingOrderId = order['razorpay_order_id'] as String?;
+
+      final options = <String, dynamic>{
+        'key': order['key_id'],
+        'amount': order['amount'],
+        'currency': order['currency'] ?? 'INR',
+        'name': 'Scrapify Auctions',
+        'description': 'Wallet Top-up',
+        'order_id': order['razorpay_order_id'],
+      };
+
+      final prefill = order['prefill'] as Map<String, dynamic>?;
+      if (prefill != null) {
+        options['prefill'] = {
+          if (prefill['name'] case final n when n != null && n != '') 'name': n,
+          if (prefill['email'] case final e when e != null && e != '') 'email': e,
+          if (prefill['contact'] case final c when c != null && c != '') 'contact': c,
+        };
+      }
+
+      _razorpay.open(options);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _processing = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  Future<void> _directTopUp(double amount) async {
+    try {
+      await _walletService.topUp(amount: amount, method: 'wallet');
       widget.ref.invalidate(walletBalanceProvider);
       widget.ref.invalidate(transactionsProvider);
       if (mounted) {
         setState(() {
-        _processing = false;
-        _success = true;
-      });
+          _processing = false;
+          _success = true;
+        });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-        _processing = false;
-        _error = e.toString();
-      });
+          _processing = false;
+          _error = e.toString();
+        });
       }
     }
+  }
+
+  void _onPaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      final result = await _walletService.verifyRazorpayPayment(
+        razorpayOrderId: response.orderId ?? _pendingOrderId ?? '',
+        razorpayPaymentId: response.paymentId ?? '',
+        razorpaySignature: response.signature ?? '',
+        purpose: 'wallet_topup',
+      );
+      widget.ref.invalidate(walletBalanceProvider);
+      widget.ref.invalidate(transactionsProvider);
+      if (mounted) {
+        setState(() {
+          _processing = false;
+          _success = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _processing = false;
+          _error = 'Payment received but verification failed. Contact support if balance is not updated.';
+        });
+      }
+    }
+  }
+
+  void _onPaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+      setState(() {
+        _processing = false;
+        _error = response.message ?? 'Payment failed. Please try again.';
+      });
+    }
+  }
+
+  void _onExternalWallet(ExternalWalletResponse response) {
+    // External wallet selected — Razorpay handles the redirect
   }
 
   @override
@@ -305,7 +417,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             const SizedBox(height: 12),
             Text('Money Added!', style: AppTextStyles.titleMedium),
             const SizedBox(height: 4),
-            Text('${Formatters.formatINR(double.tryParse(_controller.text) ?? 0)} via $_method', style: AppTextStyles.caption),
+            Text(Formatters.formatINR(double.tryParse(_controller.text) ?? 0), style: AppTextStyles.caption),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -346,19 +458,8 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
               ),
             )).toList(),
           ),
-          const SizedBox(height: 16),
-          Text('Payment Method', style: AppTextStyles.labelMedium),
-          const SizedBox(height: 8),
-          ...['UPI', 'Credit/Debit Card', 'Net Banking'].map((m) => RadioListTile<String>(
-            title: Text(m, style: AppTextStyles.bodyMedium),
-            value: m,
-            groupValue: _method,
-            onChanged: (v) => setState(() => _method = v!),
-            activeColor: AppColors.auction,
-            dense: true,
-          )),
           if (_error != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(_error!, style: TextStyle(fontSize: 12, color: AppColors.destructive)),
           ],
           const SizedBox(height: 16),
@@ -369,7 +470,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
               onPressed: _processing ? null : _process,
               child: _processing
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white))
-                  : const Text('Add Money'),
+                  : Text(_razorpayAvailable ? 'Pay with Razorpay' : 'Add Money'),
             ),
           ),
         ],

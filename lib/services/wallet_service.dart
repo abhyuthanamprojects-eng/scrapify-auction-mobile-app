@@ -74,4 +74,34 @@ class WalletService {
       if (reason case final value?) 'reason': value,
     });
   }
+
+  Future<Map<String, dynamic>> createRazorpayOrder({
+    required double amount,
+    required String purpose,
+    String? orderCode,
+  }) async {
+    final data = await _api.post(Endpoints.razorpayCreateOrder, data: {
+      'amount': amount,
+      'purpose': purpose,
+      if (orderCode case final value?) 'order_code': value,
+    });
+    return (data['data'] as Map<String, dynamic>?) ?? data;
+  }
+
+  Future<Map<String, dynamic>> verifyRazorpayPayment({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+    required String purpose,
+    String? orderCode,
+  }) async {
+    final data = await _api.post(Endpoints.razorpayVerify, data: {
+      'razorpay_order_id': razorpayOrderId,
+      'razorpay_payment_id': razorpayPaymentId,
+      'razorpay_signature': razorpaySignature,
+      'purpose': purpose,
+      if (orderCode case final value?) 'order_code': value,
+    });
+    return (data['data'] as Map<String, dynamic>?) ?? data;
+  }
 }

@@ -51,6 +51,10 @@ abstract final class Endpoints {
   static const emdLock = '/emd/lock';
   static String emdRelease(int id) => '/emd/$id/release';
 
+  // Razorpay payments
+  static const razorpayCreateOrder = '/payments/razorpay/create-order';
+  static const razorpayVerify = '/payments/razorpay/verify';
+
   // Orders
   static const orders = '/orders';
   static String order(String code) => '/orders/$code';
@@ -75,6 +79,12 @@ abstract final class Endpoints {
   static const kybVerifyBank = '/kyb/bank/verify';
   static String kybLookupIfsc(String ifsc) => '/kyb/bank/ifsc/$ifsc';
   static const kybReverify = '/kyb/reverify';
+
+  // Identity verification (DigiLocker — OAuth handled server-side)
+  static const identityStatus = '/identity/digilocker/status';
+  static const identityInitiate = '/identity/digilocker/initiate';
+  static const identityCallback = '/identity/digilocker/callback';
+  static const identityRetry = '/identity/digilocker/retry';
 
   // Notifications
   static const notifications = '/notifications';

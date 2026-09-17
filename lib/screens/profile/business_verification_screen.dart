@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -16,7 +17,8 @@ class BusinessVerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessVerificationScreenState
-    extends ConsumerState<BusinessVerificationScreen> {
+    extends ConsumerState<BusinessVerificationScreen>
+    with WidgetsBindingObserver {
   final _service = VendorService();
 
   final _gstinCtrl = TextEditingController();
@@ -27,19 +29,31 @@ class _BusinessVerificationScreenState
   final _holderNameCtrl = TextEditingController();
 
   Map<String, dynamic> _status = {};
+  Map<String, dynamic>? _identityStatus;
   bool _loading = true;
   bool _busy = false;
+  bool _identityBusy = false;
   String? _message;
   bool _prefilled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+    _loadIdentityStatus();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadIdentityStatus();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _gstinCtrl.dispose();
     _businessNameCtrl.dispose();
     _accountCtrl.dispose();
@@ -60,6 +74,74 @@ class _BusinessVerificationScreenState
       if (mounted) setState(() => _message = 'Could not load verification status.');
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _loadIdentityStatus() async {
+    try {
+      final r = await _service.getIdentityVerificationStatus();
+      if (mounted) {
+        setState(() => _identityStatus = Map<String, dynamic>.from(r['data'] ?? r));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _startDigiLocker() async {
+    setState(() { _identityBusy = true; _message = null; });
+    try {
+      final config = await _service.getPlatformConfig();
+      final siteUrl = (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
+      final redirectUri = siteUrl.isNotEmpty
+          ? '$siteUrl/business-verification'
+          : 'https://scrapifyauctions.com/business-verification';
+
+      final r = await _service.initiateDigiLocker(redirectUri);
+      final data = r['data'] ?? r;
+
+      if (data['already_verified'] == true) {
+        setState(() => _identityStatus = Map<String, dynamic>.from(data));
+        if (mounted) _showSuccess('Identity is already verified');
+        return;
+      }
+
+      final authUrl = data['authorization_url'] as String?;
+      if (authUrl != null && authUrl.isNotEmpty) {
+        final uri = Uri.parse(authUrl);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not start DigiLocker verification.');
+    } finally {
+      if (mounted) setState(() => _identityBusy = false);
+    }
+  }
+
+  Future<void> _retryDigiLocker() async {
+    setState(() { _identityBusy = true; _message = null; });
+    try {
+      final config = await _service.getPlatformConfig();
+      final siteUrl = (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
+      final redirectUri = siteUrl.isNotEmpty
+          ? '$siteUrl/business-verification'
+          : 'https://scrapifyauctions.com/business-verification';
+
+      final r = await _service.retryDigiLocker(redirectUri);
+      final data = r['data'] ?? r;
+
+      if (data['already_verified'] == true) {
+        setState(() => _identityStatus = Map<String, dynamic>.from(data));
+        return;
+      }
+
+      final authUrl = data['authorization_url'] as String?;
+      if (authUrl != null && authUrl.isNotEmpty) {
+        final uri = Uri.parse(authUrl);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = 'Could not restart DigiLocker verification.');
+    } finally {
+      if (mounted) setState(() => _identityBusy = false);
     }
   }
 
@@ -246,6 +328,9 @@ class _BusinessVerificationScreenState
                     ],
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                _identityCard(),
                 const SizedBox(height: 24),
               ],
             ),
@@ -253,6 +338,161 @@ class _BusinessVerificationScreenState
         ],
       ),
     );
+  }
+
+  Widget _identityCard() {
+    final idStatus = (_identityStatus?['status'] as String?) ?? 'NOT_STARTED';
+    final isVerified = idStatus == 'VERIFIED';
+    final canRetry = idStatus == 'NOT_STARTED' || idStatus == 'CANCELLED' || idStatus == 'FAILED' || idStatus == 'EXPIRED';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: AppColors.shadowSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.fingerprint, size: 20, color: AppColors.navy),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Identity Verification', style: AppTextStyles.heading(size: 14, weight: FontWeight.w800)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _statusColor(idStatus).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    _statusLabel(idStatus),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _statusColor(idStatus)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isVerified) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.verified, size: 18, color: AppColors.success),
+                            const SizedBox(width: 8),
+                            Text('DigiLocker Verified', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
+                          ],
+                        ),
+                        if (_identityStatus?['identity_name'] != null) ...[
+                          const SizedBox(height: 8),
+                          Text('Name: ${_identityStatus!['identity_name']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        ],
+                        if (_identityStatus?['aadhaar_masked'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Aadhaar: ${_identityStatus!['aadhaar_masked']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, fontFamily: 'monospace')),
+                        ],
+                        if (_identityStatus?['verified_at'] != null) ...[
+                          const SizedBox(height: 4),
+                          Text('Verified: ${_identityStatus!['verified_at']}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                        ],
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  if (_identityStatus?['failure_code'] != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        _failureMessage(_identityStatus!['failure_code'] as String),
+                        style: const TextStyle(fontSize: 12, color: AppColors.destructive, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  Text(
+                    'Verify your identity securely through DigiLocker. You will be redirected to the DigiLocker website to authorize verification.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Scrapify does not collect your Aadhaar OTP or DigiLocker credentials.',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                  ),
+                  if (canRetry) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSpacing.buttonXl,
+                      child: ElevatedButton.icon(
+                        onPressed: _identityBusy
+                            ? null
+                            : (idStatus == 'NOT_STARTED' ? _startDigiLocker : _retryDigiLocker),
+                        icon: _identityBusy
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.open_in_browser, size: 18),
+                        label: Text(
+                          _identityBusy
+                              ? 'Connecting...'
+                              : idStatus == 'NOT_STARTED'
+                                  ? 'Verify with DigiLocker'
+                                  : 'Try Again',
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Verification is in progress. Complete the DigiLocker authorization in your browser, then return here.',
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSpacing.buttonXl,
+                      child: OutlinedButton.icon(
+                        onPressed: _identityBusy ? null : _loadIdentityStatus,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Refresh Status'),
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _failureMessage(String code) {
+    switch (code) {
+      case 'DIGILOCKER_AUTH_CANCELLED':
+        return 'You cancelled the DigiLocker authorization. You can try again.';
+      case 'DIGILOCKER_ACCESS_DENIED':
+        return 'DigiLocker access was denied. You can try again.';
+      case 'DIGILOCKER_SESSION_EXPIRED':
+        return 'The verification session expired. Please start again.';
+      default:
+        return 'Verification could not be completed. Please try again.';
+    }
   }
 
   Widget _overallBanner(String? status) {

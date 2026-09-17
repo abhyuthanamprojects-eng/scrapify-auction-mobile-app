@@ -58,6 +58,30 @@ class VendorService {
   Future<Map<String, dynamic>> requestBusinessReverification() =>
       _api.post(Endpoints.kybReverify);
 
+  Future<Map<String, dynamic>> getIdentityVerificationStatus() =>
+      _api.get(Endpoints.identityStatus);
+
+  Future<Map<String, dynamic>> initiateDigiLocker(String redirectUri) =>
+      _api.post(Endpoints.identityInitiate, data: {
+        'redirect_uri': redirectUri,
+      });
+
+  Future<Map<String, dynamic>> handleDigiLockerCallback(
+    String state, {
+    String? code,
+    String? error,
+  }) =>
+      _api.post(Endpoints.identityCallback, data: {
+        'state': state,
+        if (code != null) 'code': code,
+        if (error != null) 'error': error,
+      });
+
+  Future<Map<String, dynamic>> retryDigiLocker(String redirectUri) =>
+      _api.post(Endpoints.identityRetry, data: {
+        'redirect_uri': redirectUri,
+      });
+
   Future<Map<String, dynamic>> register({
     required String companyName,
     required String contactName,
