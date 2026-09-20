@@ -1541,7 +1541,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 children: [
                   _fieldLabel('Company Name', required: true),
                   const SizedBox(height: 6),
-                  _inputField(controller: _companyCtl, readOnly: _gstVerified),
+                  _inputField(
+                    controller: _companyCtl,
+                    readOnly: true,
+                    hint: 'Filled from GSTIN',
+                  ),
                 ],
               ),
             ),
@@ -1658,7 +1662,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   _inputField(
                     controller: _panCtl,
                     hint: 'ABCDE1234F',
-                    readOnly: _gstVerified,
+                    readOnly: true,
                   ),
                 ],
               ),
