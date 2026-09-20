@@ -183,6 +183,7 @@ class VendorService {
   Future<Map<String, dynamic>> createRazorpayOrder({
     required double amount,
     required String vendorCode,
+    String? promoCode,
   }) async {
     final data = await _api.post(
       Endpoints.razorpayCreateOrder,
@@ -190,6 +191,8 @@ class VendorService {
         'amount': amount,
         'purpose': 'registration',
         'vendor_code': vendorCode,
+        if (promoCode != null && promoCode.trim().isNotEmpty)
+          'promo_code': promoCode.trim().toUpperCase(),
         'notes': {'vendor_code': vendorCode},
       },
     );
@@ -201,6 +204,7 @@ class VendorService {
     required String razorpayPaymentId,
     required String razorpaySignature,
     required String vendorCode,
+    String? promoCode,
   }) async {
     final data = await _api.post(
       Endpoints.razorpayVerify,
@@ -210,6 +214,8 @@ class VendorService {
         'razorpay_signature': razorpaySignature,
         'purpose': 'registration',
         'vendor_code': vendorCode,
+        if (promoCode != null && promoCode.trim().isNotEmpty)
+          'promo_code': promoCode.trim().toUpperCase(),
       },
     );
     return (data['data'] as Map<String, dynamic>?) ?? data;

@@ -253,6 +253,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       final order = await _vendorService.createRazorpayOrder(
         amount: amount,
         vendorCode: vendorCode,
+        promoCode: _promoCodeCtl.text,
       );
       _pendingRazorpayOrderId = order['razorpay_order_id'] as String?;
       final options = <String, dynamic>{
@@ -299,6 +300,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         razorpayPaymentId: response.paymentId ?? '',
         razorpaySignature: response.signature ?? '',
         vendorCode: vendorCode,
+        promoCode: _promoCodeCtl.text,
       );
       await ref.read(authProvider.notifier).refreshUser();
       if (!mounted) return;
