@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
+
 import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
 import '../models/auction.dart';
@@ -240,5 +243,36 @@ class AuctionService {
   // Auction Terms
   Future<void> acceptAuctionTerms(String code) async {
     await _api.post(Endpoints.acceptTerms(code));
+  }
+
+  // Auction Documents
+  Future<Map<String, dynamic>> uploadAuctionDocument(
+    String code,
+    String docType,
+    File file,
+  ) async {
+    final formData = FormData.fromMap({
+      'doc_type': docType,
+      'file': await MultipartFile.fromFile(
+        file.path,
+        filename: file.path.split('/').last,
+      ),
+    });
+    return await _api.uploadFile(
+      Endpoints.auctionDocumentUpload(code),
+      data: formData,
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getAuctionDocuments(String code) async {
+    final data = await _api.get(Endpoints.auctionDocuments(code));
+    return (data['documents'] as List?)
+            ?.map((e) => e as Map<String, dynamic>)
+            .toList() ??
+        [];
+  }
+
+  Future<List<int>> downloadAuctionDocument(String code, int id) async {
+    return await _api.downloadBytes(Endpoints.auctionDocumentDownload(code, id));
   }
 }

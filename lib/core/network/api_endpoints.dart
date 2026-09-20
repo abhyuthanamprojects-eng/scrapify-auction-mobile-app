@@ -122,6 +122,13 @@ abstract final class Endpoints {
   // Auction Terms
   static String acceptTerms(String code) => '/auctions/$code/terms/accept';
 
+  // Auction Documents
+  static String auctionDocumentUpload(String code) =>
+      '/auctions/$code/documents';
+  static String auctionDocuments(String code) => '/auctions/$code/documents';
+  static String auctionDocumentDownload(String code, int id) =>
+      '/auctions/$code/documents/$id/download';
+
   // Auction Templates
   static String categoryTemplate(int categoryId) =>
       '/categories/$categoryId/auction-template';

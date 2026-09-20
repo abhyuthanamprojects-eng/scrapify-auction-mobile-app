@@ -17,6 +17,7 @@ import '../../services/pincode_service.dart';
 import '../../services/template_service.dart';
 import '../../models/auction_template.dart';
 import '../../providers/seller_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/category_provider.dart';
 import '../../models/category.dart';
 
@@ -77,6 +78,23 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   bool _templateUploading = false;
   bool _templateDownloading = false;
 
+  // Auction Document uploads (PDF)
+  final Map<String, PickedAttachment?> _docFiles = {
+    'catalog': null,
+    'tnc': null,
+    'photographs': null,
+  };
+  final Map<String, bool> _docUploading = {
+    'catalog': false,
+    'tnc': false,
+    'photographs': false,
+  };
+  final Map<String, bool> _docUploaded = {
+    'catalog': false,
+    'tnc': false,
+    'photographs': false,
+  };
+
   // Step 2: Preparation
   String _auctionType = 'single'; // 'single' or 'lot_wise'
   final _materialTypeController = TextEditingController(
@@ -121,6 +139,13 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   @override
   void initState() {
     super.initState();
+    // Auto-fill company name from vendor profile
+    final user = ref.read(authProvider).user;
+    final vendorCompany = user?.companyName;
+    if (vendorCompany != null && vendorCompany.isNotEmpty) {
+      _companyController.text = vendorCompany;
+    }
+
     // Default schedule: a maximum two-hour auction window.
     final now = DateTime.now();
     _scheduleStart = now.add(const Duration(hours: 24));
@@ -417,7 +442,15 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _companyController,
-          decoration: const InputDecoration(hintText: 'Operating company name'),
+          readOnly: ref.read(authProvider).user?.companyName?.isNotEmpty == true,
+          enabled: ref.read(authProvider).user?.companyName?.isNotEmpty != true,
+          decoration: InputDecoration(
+            hintText: 'Operating company name',
+            helperText: ref.read(authProvider).user?.companyName?.isNotEmpty == true
+                ? 'From your registered profile'
+                : null,
+            helperStyle: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          ),
         ),
         const SizedBox(height: 16),
         Text('Auction Direction *', style: AppTextStyles.labelMedium),
@@ -1301,8 +1334,208 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           ),
           maxLines: 3,
         ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 16),
+        Text('Auction Documents (PDF)', style: AppTextStyles.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          'Upload PDF documents for this auction. Required documents depend on auction direction.',
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 12),
+        _buildDocUploadSlot(
+          label: 'Auction Notice / Catalog',
+          docType: 'catalog',
+          required: _direction == 'forward',
+        ),
+        const SizedBox(height: 12),
+        _buildDocUploadSlot(
+          label: 'Terms & Conditions',
+          docType: 'tnc',
+          required: false,
+        ),
+        const SizedBox(height: 12),
+        _buildDocUploadSlot(
+          label: 'Photographs',
+          docType: 'photographs',
+          required: _direction == 'forward',
+        ),
       ],
     );
+  }
+
+  Widget _buildDocUploadSlot({
+    required String label,
+    required String docType,
+    required bool required,
+  }) {
+    final file = _docFiles[docType];
+    final uploading = _docUploading[docType] ?? false;
+    final uploaded = _docUploaded[docType] ?? false;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.navyWithOpacity(0.03),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: uploaded
+              ? AppColors.success.withValues(alpha: 0.4)
+              : AppColors.cardBorder,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                uploaded ? Icons.check_circle : Icons.picture_as_pdf,
+                size: 18,
+                color: uploaded ? AppColors.success : AppColors.navy,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.navy,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: required
+                      ? Colors.red.shade50
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  required ? 'Required' : 'Optional',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: required
+                        ? Colors.red.shade700
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (file != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.appBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.insert_drive_file, size: 16, color: AppColors.navy),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          file.name,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          file.formattedSize,
+                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (uploaded)
+                    const Icon(Icons.check_circle, size: 16, color: AppColors.success)
+                  else if (uploading)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _docFiles[docType] = null;
+                        _docUploaded[docType] = false;
+                      }),
+                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                    ),
+                ],
+              ),
+            ),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: uploading ? null : () => _pickDocumentFile(docType),
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: const Text('Select PDF'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.navy,
+                  side: const BorderSide(color: AppColors.navy),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickDocumentFile(String docType) async {
+    final picked = await AppFilePicker.pickDocument(
+      allowedExtensions: ['pdf'],
+    );
+    if (picked == null || picked.path == null) return;
+    if (!mounted) return;
+    setState(() {
+      _docFiles[docType] = picked;
+      _docUploaded[docType] = false;
+    });
+  }
+
+  Future<void> _uploadAllDocuments(String auctionCode) async {
+    for (final entry in _docFiles.entries) {
+      final docType = entry.key;
+      final file = entry.value;
+      if (file == null || file.path == null || _docUploaded[docType] == true) {
+        continue;
+      }
+      setState(() => _docUploading[docType] = true);
+      try {
+        await _auctionService.uploadAuctionDocument(
+          auctionCode,
+          docType,
+          File(file.path!),
+        );
+        if (mounted) setState(() => _docUploaded[docType] = true);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to upload $docType: $e'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _docUploading[docType] = false);
+      }
+    }
   }
 
   Widget _step4Details() {
@@ -1627,81 +1860,38 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         style: TextStyle(color: Colors.red.shade700),
       ),
       data: (categories) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DropdownButtonFormField<Category>(
-              value: _selectedCategory,
-              decoration: const InputDecoration(hintText: 'Select category'),
-              isExpanded: true,
-              items: categories
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Row(
-                        children: [
-                          Expanded(child: Text(c.name)),
-                          if (c.templateRequired)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4),
-                              child: Icon(
-                                Icons.description_outlined,
-                                size: 16,
-                                color: AppColors.auction,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (val) {
-                setState(() {
-                  _selectedCategory = val;
-                  _selectedSubcategory = null;
-                });
-                _fetchTemplateForCategory();
-              },
-            ),
-            if (_selectedCategory != null &&
-                _selectedCategory!.children.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text('Subcategory', style: AppTextStyles.labelMedium),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<Category>(
-                value: _selectedSubcategory,
-                decoration: const InputDecoration(
-                  hintText: 'Select subcategory',
-                ),
-                isExpanded: true,
-                items: _selectedCategory!.children
-                    .map(
-                      (c) => DropdownMenuItem(
-                        value: c,
-                        child: Row(
-                          children: [
-                            Expanded(child: Text(c.name)),
-                            if (c.templateRequired)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 4),
-                                child: Icon(
-                                  Icons.description_outlined,
-                                  size: 16,
-                                  color: AppColors.auction,
-                                ),
-                              ),
-                          ],
+        return DropdownButtonFormField<Category>(
+          value: _selectedCategory,
+          decoration: const InputDecoration(hintText: 'Select category'),
+          isExpanded: true,
+          items: categories
+              .map(
+                (c) => DropdownMenuItem(
+                  value: c,
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(c.name)),
+                      if (c.templateRequired)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.description_outlined,
+                            size: 16,
+                            color: AppColors.auction,
+                          ),
                         ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (val) {
-                  setState(() => _selectedSubcategory = val);
-                  _fetchTemplateForCategory();
-                },
-              ),
-            ],
-          ],
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: (val) {
+            setState(() {
+              _selectedCategory = val;
+              _selectedSubcategory = null;
+            });
+            _fetchTemplateForCategory();
+          },
         );
       },
     );
@@ -1792,6 +1982,24 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Please enter a valid quantity.'),
+                      ),
+                    );
+                    return;
+                  }
+                }
+                if (_step == 2 && _direction == 'forward') {
+                  if (_docFiles['catalog'] == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Auction Notice / Catalog PDF is required for forward auctions.'),
+                      ),
+                    );
+                    return;
+                  }
+                  if (_docFiles['photographs'] == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Photographs PDF is required for forward auctions.'),
                       ),
                     );
                     return;
@@ -1941,8 +2149,6 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             : 'Enterprise Seller',
         'category': _selectedCategory?.name ?? 'Ferrous',
         if (_selectedCategory != null) 'category_id': _selectedCategory!.id,
-        if (_selectedSubcategory != null)
-          'subcategory_id': _selectedSubcategory!.id,
         'direction': _direction,
         'lot_type': _auctionType,
         'plant': _plantController.text.trim(),
@@ -2041,6 +2247,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           );
         }
       }
+
+      // Upload auction documents (PDF)
+      await _uploadAllDocuments(auctionCode);
 
       // Invalidate is already called above but call again after template
       ref.invalidate(sellerAuctionsProvider);
