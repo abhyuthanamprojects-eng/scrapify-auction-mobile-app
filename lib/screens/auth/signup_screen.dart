@@ -142,6 +142,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String _phase = 'review'; // review | payment | pending | approved
   final _promoCodeCtl = TextEditingController();
   double _registrationFee = 5000;
+  bool _registrationFeeRequired = false;
   Map<String, dynamic>? _promoPricing;
 
   bool _loading = false;
@@ -169,8 +170,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     try {
       final config = await _vendorService.getPlatformConfig();
       final fee = config['vendor_registration_fee'];
-      if (mounted && fee is num) {
-        setState(() => _registrationFee = fee.toDouble());
+      final required = config['mobile_registration_fee_required'];
+      if (mounted) {
+        setState(() {
+          if (fee is num) _registrationFee = fee.toDouble();
+          _registrationFeeRequired = required is bool ? required : false;
+        });
       }
     } catch (_) {
       // The server default remains visible if configuration is unavailable.
@@ -2280,8 +2285,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ]),
         const SizedBox(height: 20),
         _primaryButton(
-          label: 'Proceed to Payment',
-          onTap: () => setState(() => _phase = 'payment'),
+          label: _registrationFeeRequired ? 'Proceed to Payment' : 'Submit for Review',
+          onTap: () => setState(() => _phase = _registrationFeeRequired ? 'payment' : 'pending'),
         ),
       ],
     );
