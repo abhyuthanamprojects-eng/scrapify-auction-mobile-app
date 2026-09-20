@@ -61,26 +61,24 @@ class VendorService {
   Future<Map<String, dynamic>> getIdentityVerificationStatus() =>
       _api.get(Endpoints.identityStatus);
 
-  Future<Map<String, dynamic>> initiateDigiLocker(String redirectUri) =>
-      _api.post(Endpoints.identityInitiate, data: {
-        'redirect_uri': redirectUri,
-      });
+  Future<Map<String, dynamic>> initiateDigiLocker(String redirectUri) => _api
+      .post(Endpoints.identityInitiate, data: {'redirect_uri': redirectUri});
 
   Future<Map<String, dynamic>> handleDigiLockerCallback(
     String state, {
     String? code,
     String? error,
-  }) =>
-      _api.post(Endpoints.identityCallback, data: {
-        'state': state,
-        if (code != null) 'code': code,
-        if (error != null) 'error': error,
-      });
+  }) => _api.post(
+    Endpoints.identityCallback,
+    data: {
+      'state': state,
+      if (code != null) 'code': code,
+      if (error != null) 'error': error,
+    },
+  );
 
   Future<Map<String, dynamic>> retryDigiLocker(String redirectUri) =>
-      _api.post(Endpoints.identityRetry, data: {
-        'redirect_uri': redirectUri,
-      });
+      _api.post(Endpoints.identityRetry, data: {'redirect_uri': redirectUri});
 
   Future<Map<String, dynamic>> register({
     required String companyName,
@@ -174,25 +172,6 @@ class VendorService {
     },
   );
 
-  Future<Map<String, dynamic>> recordPayment({
-    required String vendorCode,
-    required String method,
-    required String reference,
-    required double amount,
-    String? promoCode,
-  }) async {
-    return await _api.post(
-      Endpoints.vendorPayment(vendorCode),
-      data: {
-        'method': method,
-        'reference': reference,
-        'amount': amount,
-        if (promoCode != null && promoCode.trim().isNotEmpty)
-          'promo_code': promoCode.trim().toUpperCase(),
-      },
-    );
-  }
-
   Future<Map<String, dynamic>> quotePayment({
     required String vendorCode,
     String? promoCode,
@@ -200,6 +179,41 @@ class VendorService {
     '${Endpoints.vendorPayment(vendorCode)}/quote',
     data: {'promo_code': promoCode},
   );
+
+  Future<Map<String, dynamic>> createRazorpayOrder({
+    required double amount,
+    required String vendorCode,
+  }) async {
+    final data = await _api.post(
+      Endpoints.razorpayCreateOrder,
+      data: {
+        'amount': amount,
+        'purpose': 'registration',
+        'vendor_code': vendorCode,
+        'notes': {'vendor_code': vendorCode},
+      },
+    );
+    return (data['data'] as Map<String, dynamic>?) ?? data;
+  }
+
+  Future<Map<String, dynamic>> verifyRazorpayPayment({
+    required String razorpayOrderId,
+    required String razorpayPaymentId,
+    required String razorpaySignature,
+    required String vendorCode,
+  }) async {
+    final data = await _api.post(
+      Endpoints.razorpayVerify,
+      data: {
+        'razorpay_order_id': razorpayOrderId,
+        'razorpay_payment_id': razorpayPaymentId,
+        'razorpay_signature': razorpaySignature,
+        'purpose': 'registration',
+        'vendor_code': vendorCode,
+      },
+    );
+    return (data['data'] as Map<String, dynamic>?) ?? data;
+  }
 
   Future<Map<String, dynamic>> getPlatformConfig() =>
       _api.get(Endpoints.platformConfig);

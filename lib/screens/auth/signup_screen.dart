@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -103,6 +104,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _warehouseContactCtl = TextEditingController();
   final _pincodeService = PincodeService();
   final _vendorService = VendorService();
+  late final Razorpay _razorpay;
+  String? _pendingRazorpayOrderId;
   Timer? _gstDebounce;
   Timer? _bankDebounce;
   int _gstRequestId = 0;
@@ -136,7 +139,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _termsAccepted = false;
 
   // Step 4
-  String? _paymentMethod;
   String _phase = 'review'; // review | payment | pending | approved
   final _promoCodeCtl = TextEditingController();
   double _registrationFee = 5000;
@@ -150,6 +152,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   void initState() {
     super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onRegistrationPaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onRegistrationPaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onRegistrationExternalWallet);
     final id = widget.prefillIdentifier ?? '';
     if (id.contains('@')) {
       _emailCtl.text = id;
@@ -200,6 +206,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   void dispose() {
+    _razorpay.clear();
     _mobileCtl.dispose();
     _emailCtl.dispose();
     _mobileOtpCtl.dispose();
@@ -229,6 +236,95 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _gstDebounce?.cancel();
     _bankDebounce?.cancel();
     super.dispose();
+  }
+
+  Future<void> _startRazorpayRegistrationPayment() async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) {
+      _setError('Your vendor registration is not ready for payment yet.');
+      return;
+    }
+
+    _setError(null);
+    _setLoading(true);
+    try {
+      final pricing = _promoPricing?['payable_amount'];
+      final amount = (pricing is num ? pricing.toDouble() : _registrationFee);
+      final order = await _vendorService.createRazorpayOrder(
+        amount: amount,
+        vendorCode: vendorCode,
+      );
+      _pendingRazorpayOrderId = order['razorpay_order_id'] as String?;
+      final options = <String, dynamic>{
+        'key': order['key_id'],
+        'amount': order['amount'],
+        'currency': order['currency'] ?? 'INR',
+        'name': 'Scrapify Auctions',
+        'description': 'Vendor registration fee',
+        'order_id': order['razorpay_order_id'],
+      };
+      final prefill = order['prefill'];
+      if (prefill is Map) {
+        options['prefill'] = {
+          if (prefill['name'] case final value? when value != '') 'name': value,
+          if (prefill['email'] case final value? when value != '')
+            'email': value,
+          if (prefill['contact'] case final value? when value != '')
+            'contact': value,
+        };
+      }
+      _razorpay.open(options);
+    } catch (e) {
+      if (mounted) {
+        _setLoading(false);
+        _setError(e.toString());
+      }
+    }
+  }
+
+  Future<void> _onRegistrationPaymentSuccess(
+    PaymentSuccessResponse response,
+  ) async {
+    final vendorCode = ref.read(authProvider).user?.vendorCode;
+    if (vendorCode == null || vendorCode.isEmpty) {
+      if (mounted) {
+        _setLoading(false);
+        _setError('Registration session expired. Please sign in again.');
+      }
+      return;
+    }
+    try {
+      await _vendorService.verifyRazorpayPayment(
+        razorpayOrderId: response.orderId ?? _pendingRazorpayOrderId ?? '',
+        razorpayPaymentId: response.paymentId ?? '',
+        razorpaySignature: response.signature ?? '',
+        vendorCode: vendorCode,
+      );
+      await ref.read(authProvider.notifier).refreshUser();
+      if (!mounted) return;
+      setState(() {
+        _phase = 'pending';
+        _error = null;
+      });
+    } catch (e) {
+      if (mounted) _setError('Payment received but verification failed: $e');
+    } finally {
+      if (mounted) _setLoading(false);
+    }
+  }
+
+  void _onRegistrationPaymentError(PaymentFailureResponse response) {
+    if (mounted) {
+      _setLoading(false);
+      _setError('Razorpay payment failed. Please try again.');
+    }
+  }
+
+  void _onRegistrationExternalWallet(ExternalWalletResponse response) {
+    if (mounted) {
+      _setLoading(false);
+      _setError('Please complete the payment in Razorpay checkout.');
+    }
   }
 
   void _startTimer({required bool mobile}) {
@@ -2090,8 +2186,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           page == LegalPage.terms
                               ? 'Full Terms'
                               : page == LegalPage.privacy
-                                  ? 'Privacy'
-                                  : 'Refunds',
+                              ? 'Privacy'
+                              : 'Refunds',
                           style: AppTextStyles.body(
                             size: 11,
                             weight: FontWeight.w700,
@@ -2323,64 +2419,26 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
           ),
         const SizedBox(height: 20),
-        _fieldLabel('Choose payment method'),
-        const SizedBox(height: 8),
-        Row(
-          children: ['RTGS', 'NEFT', 'UPI'].map((m) {
-            final selected = _paymentMethod == m;
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: m != 'UPI' ? 8 : 0),
-                child: GestureDetector(
-                  onTap: () => setState(() => _paymentMethod = m),
-                  child: Container(
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: selected ? AppColors.auction : AppColors.white,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                      border: Border.all(
-                        color: selected
-                            ? AppColors.auction
-                            : AppColors.blackWithOpacity(0.05),
-                      ),
-                      boxShadow: selected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.auctionWithOpacity(0.3),
-                                blurRadius: 8,
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: AppColors.blackWithOpacity(0.03),
-                                blurRadius: 4,
-                              ),
-                            ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.account_balance,
-                          size: 18,
-                          color: selected ? AppColors.white : AppColors.navy,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          m,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: selected ? AppColors.white : AppColors.navy,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.auctionWithOpacity(0.08),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(color: AppColors.auctionWithOpacity(0.35)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.lock_outline, color: AppColors.auction),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Payments are securely processed through Razorpay only.',
+                  style: AppTextStyles.body(size: 13, weight: FontWeight.w600),
                 ),
               ),
-            );
-          }).toList(),
+            ],
+          ),
         ),
         if (_error != null) ...[
           const SizedBox(height: 16),
@@ -2388,44 +2446,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ],
         const SizedBox(height: 24),
         _primaryButton(
-          label: 'Submit Payment · ${_paymentMethod ?? "select method"}',
+          label: 'Pay securely with Razorpay',
           color: AppColors.auction,
-          enabled: _paymentMethod != null && !_loading,
+          enabled: !_loading,
           loading: _loading,
-          onTap: () async {
-            _setError(null);
-            _setLoading(true);
-            try {
-              final user = ref.read(authProvider).user;
-              if (user?.vendorCode != null) {
-                final vendorService = VendorService();
-                await vendorService.recordPayment(
-                  vendorCode: user!.vendorCode!,
-                  method: _paymentMethod!,
-                  reference: 'REG-${DateTime.now().millisecondsSinceEpoch}',
-                  amount:
-                      (_promoPricing?['payable_amount'] as num?)?.toDouble() ??
-                      _registrationFee,
-                  promoCode: _promoCodeCtl.text,
-                );
-              }
-              // Registration keeps the session inactive while onboarding is
-              // incomplete. Once payment is recorded, refresh the complete
-              // vendor/user payload and activate the session before opening
-              // the dashboard; otherwise seller role guards see a stale
-              // unauthenticated state and redirect protected actions to login.
-              await ref.read(authProvider.notifier).refreshUser();
-              if (!mounted) return;
-              setState(() {
-                _phase = 'pending';
-                _error = null;
-              });
-            } catch (e) {
-              if (mounted) _setError(e.toString());
-            } finally {
-              if (mounted) _setLoading(false);
-            }
-          },
+          onTap: _startRazorpayRegistrationPayment,
         ),
       ],
     );
