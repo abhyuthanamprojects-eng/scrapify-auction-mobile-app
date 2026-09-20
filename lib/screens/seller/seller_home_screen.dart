@@ -16,16 +16,26 @@ class SellerHomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final isPending = user?.isKycPending ?? false;
     final auctionsAsync = ref.watch(sellerAuctionsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.appBg,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/seller/create-auction'),
+        onPressed: isPending
+            ? () => ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Auction creation unlocks after your profile is approved.',
+                  ),
+                  backgroundColor: AppColors.auction,
+                ),
+              )
+            : () => context.push('/seller/create-auction'),
         backgroundColor: AppColors.auction,
         icon: const Icon(Icons.add, color: AppColors.white),
-        label: const Text(
-          'New Auction',
+        label: Text(
+          isPending ? 'Pending approval' : 'New Auction',
           style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w700),
         ),
       ),

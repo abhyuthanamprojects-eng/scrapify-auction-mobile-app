@@ -13,7 +13,6 @@ import '../profile/profile_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../seller/seller_home_screen.dart';
 import '../seller/my_auctions_screen.dart';
-import '../../widgets/shared/kyc_required_screen.dart';
 
 final tabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -28,13 +27,6 @@ class AppShell extends ConsumerWidget {
     final isSeller = authData.isSeller;
     final kycVerified = authData.user?.kycVerified ?? false;
     final isPendingKyc = isAuthenticated && !kycVerified;
-
-    if (isPendingKyc) {
-      return const KycRequiredScreen(
-        featureName: 'Auction participation',
-        showBack: false,
-      );
-    }
 
     final screenWidgets = isSeller
         ? const <Widget>[
@@ -102,7 +94,7 @@ class AppShell extends ConsumerWidget {
                               ),
                               const SizedBox(height: 1),
                               Text(
-                                'Bidding & orders are disabled until admin verifies your KYC.',
+                                'Under review for 24–48 hours. Browse freely; protected actions unlock after approval.',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: AppColors.navyWithOpacity(0.6),
@@ -133,7 +125,7 @@ class AppShell extends ConsumerWidget {
               isSeller: isSeller,
               onTap: (i) {
                 final messenger = ScaffoldMessenger.of(context);
-                if (isPendingKyc && (i == 2 || i == 3)) {
+                if (isPendingKyc && !isSeller && (i == 2 || i == 3)) {
                   messenger.showSnackBar(
                     const SnackBar(
                       content: Text(
