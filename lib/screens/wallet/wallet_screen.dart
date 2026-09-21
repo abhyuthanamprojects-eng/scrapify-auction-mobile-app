@@ -41,8 +41,14 @@ class WalletScreen extends ConsumerWidget {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.navy),
-                        onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 20,
+                          color: AppColors.navy,
+                        ),
+                        onPressed: () => context.canPop()
+                            ? context.pop()
+                            : context.go('/home'),
                         padding: const EdgeInsets.only(right: 8),
                         constraints: const BoxConstraints(),
                       ),
@@ -51,16 +57,29 @@ class WalletScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   balanceAsync.when(
-                    data: (wallet) => WalletCard(balance: wallet.balanceInr, compact: false),
+                    data: (wallet) =>
+                        WalletCard(balance: wallet.balanceInr, compact: false),
                     loading: () => const CardSkeleton(),
                     error: (e, _) => WalletCard(balance: 0, compact: false),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(child: _actionButton('Add Money', Icons.add, () => _showAddMoney(context, ref))),
+                      Expanded(
+                        child: _actionButton(
+                          'Add Money',
+                          Icons.add,
+                          () => _showAddMoney(context, ref),
+                        ),
+                      ),
                       const SizedBox(width: 12),
-                      Expanded(child: _actionButton('Withdraw', Icons.arrow_downward, () {})),
+                      Expanded(
+                        child: _actionButton(
+                          'Withdraw',
+                          Icons.arrow_downward,
+                          () {},
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -69,7 +88,12 @@ class WalletScreen extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 8, AppSpacing.screenPaddingH, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenPaddingH,
+                8,
+                AppSpacing.screenPaddingH,
+                8,
+              ),
               child: Row(
                 children: [
                   Text('Transactions', style: AppTextStyles.titleSmall),
@@ -99,7 +123,8 @@ class WalletScreen extends ConsumerWidget {
                 ),
               );
             },
-            loading: () => const SliverToBoxAdapter(child: ListSkeleton(count: 3)),
+            loading: () =>
+                const SliverToBoxAdapter(child: ListSkeleton(count: 3)),
             error: (e, _) => SliverToBoxAdapter(
               child: Center(
                 child: Column(
@@ -116,7 +141,9 @@ class WalletScreen extends ConsumerWidget {
               ),
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.bottomNavPadding)),
+          const SliverToBoxAdapter(
+            child: SizedBox(height: AppSpacing.bottomNavPadding),
+          ),
         ],
       ),
     );
@@ -147,7 +174,9 @@ class WalletScreen extends ConsumerWidget {
   Widget _filterPill(WidgetRef ref, String type, String label, String? active) {
     final isActive = active == type;
     return GestureDetector(
-      onTap: () => ref.read(transactionFilterProvider.notifier).state = isActive ? null : type,
+      onTap: () => ref.read(transactionFilterProvider.notifier).state = isActive
+          ? null
+          : type,
       child: Container(
         margin: const EdgeInsets.only(left: 6),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -157,7 +186,11 @@ class WalletScreen extends ConsumerWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: isActive ? AppColors.white : AppColors.navy),
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isActive ? AppColors.white : AppColors.navy,
+          ),
         ),
       ),
     );
@@ -176,7 +209,12 @@ class WalletScreen extends ConsumerWidget {
     final color = typeColors[txn.type] ?? AppColors.navy;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.screenPaddingH, 0, AppSpacing.screenPaddingH, 8),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.screenPaddingH,
+        0,
+        AppSpacing.screenPaddingH,
+        8,
+      ),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -204,7 +242,10 @@ class WalletScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(txn.title, style: AppTextStyles.labelMedium),
-                Text(txn.note ?? txn.reference ?? '', style: AppTextStyles.captionMuted),
+                Text(
+                  txn.note ?? txn.reference ?? '',
+                  style: AppTextStyles.captionMuted,
+                ),
               ],
             ),
           ),
@@ -228,7 +269,11 @@ class WalletScreen extends ConsumerWidget {
                 ),
                 child: Text(
                   txn.type.label,
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: color),
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
               ),
             ],
@@ -329,8 +374,10 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
       if (prefill != null) {
         options['prefill'] = {
           if (prefill['name'] case final n when n != null && n != '') 'name': n,
-          if (prefill['email'] case final e when e != null && e != '') 'email': e,
-          if (prefill['contact'] case final c when c != null && c != '') 'contact': c,
+          if (prefill['email'] case final e when e != null && e != '')
+            'email': e,
+          if (prefill['contact'] case final c when c != null && c != '')
+            'contact': c,
         };
       }
 
@@ -368,7 +415,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
 
   void _onPaymentSuccess(PaymentSuccessResponse response) async {
     try {
-      final result = await _walletService.verifyRazorpayPayment(
+      await _walletService.verifyRazorpayPayment(
         razorpayOrderId: response.orderId ?? _pendingOrderId ?? '',
         razorpayPaymentId: response.paymentId ?? '',
         razorpaySignature: response.signature ?? '',
@@ -386,7 +433,8 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
       if (mounted) {
         setState(() {
           _processing = false;
-          _error = 'Payment received but verification failed. Contact support if balance is not updated.';
+          _error =
+              'Payment received but verification failed. Contact support if balance is not updated.';
         });
       }
     }
@@ -409,7 +457,12 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
   Widget build(BuildContext context) {
     if (_success) {
       return Container(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          20,
+          20,
+          MediaQuery.of(context).padding.bottom + 20,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -417,12 +470,18 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             const SizedBox(height: 12),
             Text('Money Added!', style: AppTextStyles.titleMedium),
             const SizedBox(height: 4),
-            Text(Formatters.formatINR(double.tryParse(_controller.text) ?? 0), style: AppTextStyles.caption),
+            Text(
+              Formatters.formatINR(double.tryParse(_controller.text) ?? 0),
+              style: AppTextStyles.caption,
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonLg,
-              child: ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Done')),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
+              ),
             ),
           ],
         ),
@@ -430,7 +489,12 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
     }
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        20,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,27 +504,43 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
           TextField(
             controller: _controller,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: 'Enter amount', prefixText: '₹ '),
+            decoration: const InputDecoration(
+              hintText: 'Enter amount',
+              prefixText: '₹ ',
+            ),
             style: AppTextStyles.priceLarge,
           ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
-            children: [1000, 5000, 10000, 25000].map((a) => GestureDetector(
-              onTap: () => _controller.text = '$a',
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.navyWithOpacity(0.05),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text('₹${Formatters.formatINR(a)}', style: AppTextStyles.labelSmall),
-              ),
-            )).toList(),
+            children: [1000, 5000, 10000, 25000]
+                .map(
+                  (a) => GestureDetector(
+                    onTap: () => _controller.text = '$a',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.navyWithOpacity(0.05),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '₹${Formatters.formatINR(a)}',
+                        style: AppTextStyles.labelSmall,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
-            Text(_error!, style: TextStyle(fontSize: 12, color: AppColors.destructive)),
+            Text(
+              _error!,
+              style: TextStyle(fontSize: 12, color: AppColors.destructive),
+            ),
           ],
           const SizedBox(height: 16),
           SizedBox(
@@ -469,8 +549,17 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             child: ElevatedButton(
               onPressed: _processing ? null : _process,
               child: _processing
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white))
-                  : Text(_razorpayAvailable ? 'Pay with Razorpay' : 'Add Money'),
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : Text(
+                      _razorpayAvailable ? 'Pay with Razorpay' : 'Add Money',
+                    ),
             ),
           ),
         ],
