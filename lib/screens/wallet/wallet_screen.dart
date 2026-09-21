@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -12,7 +11,7 @@ import '../../widgets/cards/wallet_card.dart';
 import '../../widgets/shared/loading_skeleton.dart';
 import '../../widgets/shared/empty_state.dart';
 import '../../services/wallet_service.dart';
-import '../../services/vendor_service.dart';
+import '../../core/utils/file_picker_service.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -303,38 +302,21 @@ class _AddMoneySheet extends StatefulWidget {
 class _AddMoneySheetState extends State<_AddMoneySheet> {
   final _controller = TextEditingController();
   final _walletService = WalletService();
-  late final Razorpay _razorpay;
   bool _processing = false;
   bool _success = false;
   String? _error;
-  String? _pendingOrderId;
-  bool _razorpayAvailable = true;
+  PickedAttachment? _proof;
+  final _transactionController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onPaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onPaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onExternalWallet);
-    _checkRazorpayAvailability();
-  }
-
-  Future<void> _checkRazorpayAvailability() async {
-    try {
-      final config = await VendorService().getPlatformConfig();
-      if (mounted) {
-        setState(() {
-          _razorpayAvailable = config['razorpay_enabled'] == true;
-        });
-      }
-    } catch (_) {}
   }
 
   @override
   void dispose() {
-    _razorpay.clear();
     _controller.dispose();
+    _transactionController.dispose();
     super.dispose();
   }
 
@@ -349,52 +331,13 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
       _error = null;
     });
 
-    if (!_razorpayAvailable) {
-      await _directTopUp(amount);
-      return;
-    }
-
     try {
-      final order = await _walletService.createRazorpayOrder(
+      if (_proof == null) throw Exception('Upload bank-transfer proof first');
+      await _walletService.submitManualPayment(
         amount: amount,
-        purpose: 'wallet_topup',
+        proofPath: _proof!.path!,
+        transactionId: _transactionController.text,
       );
-      _pendingOrderId = order['razorpay_order_id'] as String?;
-
-      final options = <String, dynamic>{
-        'key': order['key_id'],
-        'amount': order['amount'],
-        'currency': order['currency'] ?? 'INR',
-        'name': 'Scrapify Auctions',
-        'description': 'Wallet Top-up',
-        'order_id': order['razorpay_order_id'],
-      };
-
-      final prefill = order['prefill'] as Map<String, dynamic>?;
-      if (prefill != null) {
-        options['prefill'] = {
-          if (prefill['name'] case final n when n != null && n != '') 'name': n,
-          if (prefill['email'] case final e when e != null && e != '')
-            'email': e,
-          if (prefill['contact'] case final c when c != null && c != '')
-            'contact': c,
-        };
-      }
-
-      _razorpay.open(options);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _processing = false;
-          _error = e.toString();
-        });
-      }
-    }
-  }
-
-  Future<void> _directTopUp(double amount) async {
-    try {
-      await _walletService.topUp(amount: amount, method: 'wallet');
       widget.ref.invalidate(walletBalanceProvider);
       widget.ref.invalidate(transactionsProvider);
       if (mounted) {
@@ -411,46 +354,6 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
         });
       }
     }
-  }
-
-  void _onPaymentSuccess(PaymentSuccessResponse response) async {
-    try {
-      await _walletService.verifyRazorpayPayment(
-        razorpayOrderId: response.orderId ?? _pendingOrderId ?? '',
-        razorpayPaymentId: response.paymentId ?? '',
-        razorpaySignature: response.signature ?? '',
-        purpose: 'wallet_topup',
-      );
-      widget.ref.invalidate(walletBalanceProvider);
-      widget.ref.invalidate(transactionsProvider);
-      if (mounted) {
-        setState(() {
-          _processing = false;
-          _success = true;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _processing = false;
-          _error =
-              'Payment received but verification failed. Contact support if balance is not updated.';
-        });
-      }
-    }
-  }
-
-  void _onPaymentError(PaymentFailureResponse response) {
-    if (mounted) {
-      setState(() {
-        _processing = false;
-        _error = response.message ?? 'Payment failed. Please try again.';
-      });
-    }
-  }
-
-  void _onExternalWallet(ExternalWalletResponse response) {
-    // External wallet selected — Razorpay handles the redirect
   }
 
   @override
@@ -500,6 +403,8 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Add Money', style: AppTextStyles.titleMedium),
+          const SizedBox(height: 6),
+          const Text('Transfer funds to the bank account shown in registration settings, then upload the proof. Admin approval is required.'),
           const SizedBox(height: 16),
           TextField(
             controller: _controller,
@@ -510,6 +415,17 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
             ),
             style: AppTextStyles.priceLarge,
           ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _processing ? null : () async {
+              final picked = await AppFilePicker.showPickerBottomSheet(context, title: 'Upload bank-transfer proof', allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'pdf']);
+              if (picked != null && mounted) setState(() => _proof = picked);
+            },
+            icon: const Icon(Icons.upload_file),
+            label: Text(_proof?.name ?? 'Upload payment proof'),
+          ),
+          const SizedBox(height: 8),
+          TextField(controller: _transactionController, decoration: const InputDecoration(labelText: 'Transaction ID (optional)')),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -558,7 +474,7 @@ class _AddMoneySheetState extends State<_AddMoneySheet> {
                       ),
                     )
                   : Text(
-                      _razorpayAvailable ? 'Pay with Razorpay' : 'Add Money',
+                      'Submit bank proof',
                     ),
             ),
           ),

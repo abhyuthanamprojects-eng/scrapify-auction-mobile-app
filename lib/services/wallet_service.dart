@@ -2,6 +2,7 @@ import '../core/network/api_client.dart';
 import '../core/network/api_endpoints.dart';
 import '../models/wallet.dart';
 import '../models/transaction.dart';
+import 'package:dio/dio.dart';
 
 class WalletService {
   final _api = ApiClient();
@@ -31,23 +32,6 @@ class WalletService {
     return (transactions: list, total: total);
   }
 
-  Future<({Transaction transaction, double balance})> topUp({
-    required double amount,
-    required String method,
-    String? note,
-  }) async {
-    final data = await _api.post(Endpoints.walletTopUp, data: {
-      'amount': amount,
-      'method': method,
-      'note': ?note,
-    });
-
-    final txn = Transaction.fromJson(
-        data['transaction'] as Map<String, dynamic>? ?? {});
-    final balance = (data['balance_inr'] as num?)?.toDouble() ?? 0;
-    return (transaction: txn, balance: balance);
-  }
-
   Future<List<Map<String, dynamic>>> emdList({
     String? status,
     String? auction,
@@ -75,33 +59,20 @@ class WalletService {
     });
   }
 
-  Future<Map<String, dynamic>> createRazorpayOrder({
+  Future<Map<String, dynamic>> submitManualPayment({
     required double amount,
-    required String purpose,
-    String? orderCode,
+    required String proofPath,
+    String? transactionId,
+    String purpose = 'wallet_topup',
+    String? targetCode,
   }) async {
-    final data = await _api.post(Endpoints.razorpayCreateOrder, data: {
+    final form = FormData.fromMap({
+      'purpose': purpose,
       'amount': amount,
-      'purpose': purpose,
-      'order_code': ?orderCode,
+      'proof': await MultipartFile.fromFile(proofPath),
+      if (transactionId != null && transactionId.trim().isNotEmpty) 'transaction_id': transactionId.trim(),
+      if (targetCode != null && targetCode.trim().isNotEmpty) 'target_code': targetCode.trim(),
     });
-    return (data['data'] as Map<String, dynamic>?) ?? data;
-  }
-
-  Future<Map<String, dynamic>> verifyRazorpayPayment({
-    required String razorpayOrderId,
-    required String razorpayPaymentId,
-    required String razorpaySignature,
-    required String purpose,
-    String? orderCode,
-  }) async {
-    final data = await _api.post(Endpoints.razorpayVerify, data: {
-      'razorpay_order_id': razorpayOrderId,
-      'razorpay_payment_id': razorpayPaymentId,
-      'razorpay_signature': razorpaySignature,
-      'purpose': purpose,
-      'order_code': ?orderCode,
-    });
-    return (data['data'] as Map<String, dynamic>?) ?? data;
+    return _api.uploadFile(Endpoints.manualPayment, data: form);
   }
 }

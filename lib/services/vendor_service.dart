@@ -182,45 +182,24 @@ class VendorService {
     data: {'promo_code': promoCode},
   );
 
-  Future<Map<String, dynamic>> createRazorpayOrder({
-    required double amount,
+  Future<Map<String, dynamic>> submitManualRegistrationPayment({
     required String vendorCode,
+    required String proofPath,
+    required String proofName,
+    String? transactionId,
     String? promoCode,
   }) async {
-    final data = await _api.post(
-      Endpoints.razorpayCreateOrder,
-      data: {
-        'amount': amount,
-        'purpose': 'registration',
-        'vendor_code': vendorCode,
-        if (promoCode != null && promoCode.trim().isNotEmpty)
-          'promo_code': promoCode.trim().toUpperCase(),
-        'notes': {'vendor_code': vendorCode},
-      },
+    final formData = FormData.fromMap({
+      'proof': await MultipartFile.fromFile(proofPath, filename: proofName),
+      if (transactionId != null && transactionId.trim().isNotEmpty)
+        'transaction_id': transactionId.trim(),
+      if (promoCode != null && promoCode.trim().isNotEmpty)
+        'promo_code': promoCode.trim().toUpperCase(),
+    });
+    return _api.uploadFile(
+      '${Endpoints.vendorPayment(vendorCode)}/manual',
+      data: formData,
     );
-    return (data['data'] as Map<String, dynamic>?) ?? data;
-  }
-
-  Future<Map<String, dynamic>> verifyRazorpayPayment({
-    required String razorpayOrderId,
-    required String razorpayPaymentId,
-    required String razorpaySignature,
-    required String vendorCode,
-    String? promoCode,
-  }) async {
-    final data = await _api.post(
-      Endpoints.razorpayVerify,
-      data: {
-        'razorpay_order_id': razorpayOrderId,
-        'razorpay_payment_id': razorpayPaymentId,
-        'razorpay_signature': razorpaySignature,
-        'purpose': 'registration',
-        'vendor_code': vendorCode,
-        if (promoCode != null && promoCode.trim().isNotEmpty)
-          'promo_code': promoCode.trim().toUpperCase(),
-      },
-    );
-    return (data['data'] as Map<String, dynamic>?) ?? data;
   }
 
   Future<Map<String, dynamic>> getPlatformConfig() =>

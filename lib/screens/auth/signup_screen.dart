@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:razorpay_flutter/razorpay_flutter.dart';
-
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/legal_pages.dart';
@@ -117,8 +114,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   final _warehouseContactCtl = TextEditingController();
   final _pincodeService = PincodeService();
   final _vendorService = VendorService();
-  late final Razorpay _razorpay;
-  String? _pendingRazorpayOrderId;
   Timer? _gstDebounce;
   Timer? _bankDebounce;
   int _gstRequestId = 0;
@@ -159,6 +154,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   double _registrationFee = 5000;
   bool _registrationFeeRequired = false;
   Map<String, dynamic>? _promoPricing;
+  Map<String, dynamic>? _registrationBankDetails;
+  PickedAttachment? _paymentProof;
+  final _transactionIdCtl = TextEditingController();
 
   bool _loading = false;
   bool _mobileOtpLoading = false;
@@ -168,10 +166,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   @override
   void initState() {
     super.initState();
-    _razorpay = Razorpay();
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onRegistrationPaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onRegistrationPaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onRegistrationExternalWallet);
     final id = widget.prefillIdentifier ?? '';
     if (id.contains('@')) {
       _emailCtl.text = id;
@@ -202,6 +196,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         setState(() {
           if (fee is num) _registrationFee = fee.toDouble();
           _registrationFeeRequired = required is bool ? required : false;
+          _registrationBankDetails = config['registration_bank_details'] is Map
+              ? Map<String, dynamic>.from(config['registration_bank_details'] as Map)
+              : null;
         });
       }
     } catch (_) {
@@ -238,7 +235,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   void dispose() {
-    _razorpay.clear();
     _mobileCtl.dispose();
     _emailCtl.dispose();
     _mobileOtpCtl.dispose();
@@ -268,73 +264,31 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _warehousePincodeCtl.dispose();
     _warehouseContactCtl.dispose();
     _promoCodeCtl.dispose();
+    _transactionIdCtl.dispose();
     _gstDebounce?.cancel();
     _bankDebounce?.cancel();
     super.dispose();
   }
 
-  Future<void> _startRazorpayRegistrationPayment() async {
+  Future<void> _submitManualRegistrationPayment() async {
     final vendorCode = ref.read(authProvider).user?.vendorCode;
     if (vendorCode == null || vendorCode.isEmpty) {
       _setError('Your vendor registration is not ready for payment yet.');
       return;
     }
 
+    if (_paymentProof?.path?.isNotEmpty != true) {
+      _setError('Please upload a screenshot of the successful bank transfer.');
+      return;
+    }
     _setError(null);
     _setLoading(true);
     try {
-      final pricing = _promoPricing?['payable_amount'];
-      final amount = (pricing is num ? pricing.toDouble() : _registrationFee);
-      final order = await _vendorService.createRazorpayOrder(
-        amount: amount,
+      await _vendorService.submitManualRegistrationPayment(
         vendorCode: vendorCode,
-        promoCode: _promoCodeCtl.text,
-      );
-      _pendingRazorpayOrderId = order['razorpay_order_id'] as String?;
-      final options = <String, dynamic>{
-        'key': order['key_id'],
-        'amount': order['amount'],
-        'currency': order['currency'] ?? 'INR',
-        'name': 'Scrapify Auctions',
-        'description': 'Vendor registration fee',
-        'order_id': order['razorpay_order_id'],
-      };
-      final prefill = order['prefill'];
-      if (prefill is Map) {
-        options['prefill'] = {
-          if (prefill['name'] case final value? when value != '') 'name': value,
-          if (prefill['email'] case final value? when value != '')
-            'email': value,
-          if (prefill['contact'] case final value? when value != '')
-            'contact': value,
-        };
-      }
-      _razorpay.open(options);
-    } catch (e) {
-      if (mounted) {
-        _setLoading(false);
-        _setError(e.toString());
-      }
-    }
-  }
-
-  Future<void> _onRegistrationPaymentSuccess(
-    PaymentSuccessResponse response,
-  ) async {
-    final vendorCode = ref.read(authProvider).user?.vendorCode;
-    if (vendorCode == null || vendorCode.isEmpty) {
-      if (mounted) {
-        _setLoading(false);
-        _setError('Registration session expired. Please sign in again.');
-      }
-      return;
-    }
-    try {
-      await _vendorService.verifyRazorpayPayment(
-        razorpayOrderId: response.orderId ?? _pendingRazorpayOrderId ?? '',
-        razorpayPaymentId: response.paymentId ?? '',
-        razorpaySignature: response.signature ?? '',
-        vendorCode: vendorCode,
+        proofPath: _paymentProof!.path!,
+        proofName: _paymentProof!.name,
+        transactionId: _transactionIdCtl.text,
         promoCode: _promoCodeCtl.text,
       );
       await ref.read(authProvider.notifier).refreshUser();
@@ -344,23 +298,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _error = null;
       });
     } catch (e) {
-      if (mounted) _setError('Payment received but verification failed: $e');
+      if (mounted) _setError(e.toString());
     } finally {
       if (mounted) _setLoading(false);
-    }
-  }
-
-  void _onRegistrationPaymentError(PaymentFailureResponse response) {
-    if (mounted) {
-      _setLoading(false);
-      _setError('Razorpay payment failed. Please try again.');
-    }
-  }
-
-  void _onRegistrationExternalWallet(ExternalWalletResponse response) {
-    if (mounted) {
-      _setLoading(false);
-      _setError('Please complete the payment in Razorpay checkout.');
     }
   }
 
@@ -2560,6 +2500,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           ),
         ),
         const SizedBox(height: 20),
+        if (_registrationBankDetails != null)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppSpacing.radiusLg), border: Border.all(color: AppColors.blackWithOpacity(0.08))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('BANK TRANSFER DETAILS', style: AppTextStyles.body(size: 11, weight: FontWeight.w800, color: AppColors.navy)),
+              const SizedBox(height: 8),
+              ..._registrationBankDetails!.entries.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('${entry.key.replaceAll('_', ' ').toUpperCase()}: ${entry.value}', style: AppTextStyles.body(size: 12, weight: FontWeight.w600)))),
+            ]),
+          ),
+        const SizedBox(height: 20),
         _fieldLabel('Promo code (optional)'),
         const SizedBox(height: 8),
         Row(
@@ -2604,24 +2556,43 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Payments are securely processed through Razorpay only.',
+                  'Transfer the amount to the bank account shown below. Upload the payment screenshot; transaction ID is optional. Admin verification normally takes 24–48 hours.',
                   style: AppTextStyles.body(size: 13, weight: FontWeight.w600),
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        _fieldLabel('Payment screenshot / proof *'),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () async {
+            final file = await AppFilePicker.showPickerBottomSheet(context, title: 'Upload payment screenshot', allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'pdf']);
+            if (mounted && file != null) setState(() => _paymentProof = file);
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppSpacing.radiusLg), border: Border.all(color: AppColors.blackWithOpacity(0.1))),
+            child: Row(children: [const Icon(Icons.upload_file, color: AppColors.navy), const SizedBox(width: 10), Expanded(child: Text(_paymentProof?.name ?? 'Tap to upload payment screenshot', style: AppTextStyles.body(size: 13, weight: FontWeight.w600)))]),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _fieldLabel('Transaction ID (optional)'),
+        const SizedBox(height: 8),
+        _inputField(controller: _transactionIdCtl, hint: 'Enter UTR/reference if available'),
         if (_error != null) ...[
           const SizedBox(height: 16),
           _errorBanner(_error!),
         ],
         const SizedBox(height: 24),
         _primaryButton(
-          label: 'Pay securely with Razorpay',
+          label: 'Submit payment proof',
           color: AppColors.auction,
-          enabled: !_loading,
+          enabled: !_loading && _paymentProof?.path?.isNotEmpty == true,
           loading: _loading,
-          onTap: _startRazorpayRegistrationPayment,
+          onTap: _submitManualRegistrationPayment,
         ),
       ],
     );

@@ -4,8 +4,11 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/file_picker_service.dart';
 import '../../core/utils/formatters.dart';
+import '../../services/vendor_service.dart';
+import '../../services/wallet_service.dart';
 
 class EmdPaySheet extends StatefulWidget {
+  final String auctionId;
   final String auctionTitle;
   final double emdAmount;
   final double emdPercent;
@@ -13,6 +16,7 @@ class EmdPaySheet extends StatefulWidget {
 
   const EmdPaySheet({
     super.key,
+    required this.auctionId,
     required this.auctionTitle,
     required this.emdAmount,
     required this.emdPercent,
@@ -24,12 +28,59 @@ class EmdPaySheet extends StatefulWidget {
 }
 
 class _EmdPaySheetState extends State<EmdPaySheet> {
-  String _mode = 'gateway'; // 'gateway' | 'neft'
+  final String _mode = 'neft';
   final _refController = TextEditingController();
+  final _walletService = WalletService();
+  final _vendorService = VendorService();
   PickedAttachment? _slipAttachment;
+  Map<String, dynamic> _bankDetails = const {};
+  bool _submitting = false;
+  String? _error;
 
-  bool get _canPay =>
-      _mode == 'gateway' || (_refController.text.trim().length >= 6 && _slipAttachment != null);
+  bool get _canPay => _slipAttachment != null && !_submitting;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBankDetails();
+  }
+
+  Future<void> _loadBankDetails() async {
+    try {
+      final config = await _vendorService.getPlatformConfig();
+      final details = config['registration_bank_details'];
+      if (mounted && details is Map) {
+        setState(() => _bankDetails = Map<String, dynamic>.from(details));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _submit() async {
+    if (!_canPay || _slipAttachment?.path == null) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await _walletService.submitManualPayment(
+        amount: widget.emdAmount,
+        proofPath: _slipAttachment!.path!,
+        transactionId: _refController.text,
+        purpose: 'emd',
+        targetCode: widget.auctionId,
+      );
+      if (!mounted) return;
+      widget.onPay(_mode, _refController.text.trim());
+      Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -100,23 +151,7 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
             ),
           ),
 
-          // Mode selector
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: AppColors.appBg,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            ),
-            child: Row(
-              children: [
-                _modeTab('gateway', 'Payment gateway'),
-                _modeTab('neft', 'NEFT / RTGS'),
-              ],
-            ),
-          ),
-
-          // Mode content
+          // Bank-transfer proof content
           const SizedBox(height: 16),
           if (_mode == 'neft') ...[
             // Bank info
@@ -129,11 +164,13 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
               child: Text.rich(
                 TextSpan(
                   style: AppTextStyles.body(size: 11, color: AppColors.accentBlue),
-                  children: const [
-                    TextSpan(text: 'Transfer to '),
-                    TextSpan(text: 'Scrapify Escrow A/C 5011 2233 4455', style: TextStyle(fontWeight: FontWeight.w700)),
-                    TextSpan(text: ', IFSC '),
-                    TextSpan(text: 'HDFC0000123', style: TextStyle(fontWeight: FontWeight.w700)),
+                  children: [
+                    const TextSpan(text: 'Transfer to '),
+                    TextSpan(text: '${_bankDetails['account_name'] ?? 'Bank account'} / ${_bankDetails['account_number'] ?? 'Loading…'}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const TextSpan(text: ', IFSC '),
+                    TextSpan(text: '${_bankDetails['ifsc'] ?? 'Loading…'}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                    const TextSpan(text: ', Bank '),
+                    TextSpan(text: '${_bankDetails['bank_name'] ?? 'Loading…'}', style: const TextStyle(fontWeight: FontWeight.w700)),
                     TextSpan(text: ', then upload the transaction slip.'),
                   ],
                 ),
@@ -225,13 +262,10 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
               ),
             ),
             const SizedBox(height: 8),
+            if (_error != null)
+              Text(_error!, style: const TextStyle(fontSize: 11, color: AppColors.destructive)),
             Text(
-              'NEFT payments show as EMD Pending until the admin confirms the reference.',
-              style: AppTextStyles.body(size: 11, color: AppColors.navyWithOpacity(0.5)),
-            ),
-          ] else ...[
-            Text(
-              'You\'ll be taken to the secure gateway. Gateway payments confirm instantly.',
+              'Transaction ID is optional. EMD remains pending until the admin confirms the proof.',
               style: AppTextStyles.body(size: 11, color: AppColors.navyWithOpacity(0.5)),
             ),
           ],
@@ -240,13 +274,7 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
           const SizedBox(height: 20),
           GestureDetector(
             onTap: _canPay
-                ? () {
-                    final ref = _mode == 'gateway'
-                        ? 'EMDPAY${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}'
-                        : _refController.text.trim();
-                    widget.onPay(_mode, ref);
-                    Navigator.of(context).pop();
-                  }
+                ? _submit
                 : null,
             child: Opacity(
               opacity: _canPay ? 1.0 : 0.4,
@@ -259,9 +287,7 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  _mode == 'gateway'
-                      ? 'Pay ${Formatters.formatINR(widget.emdAmount)}'
-                      : 'Submit for verification',
+                  _submitting ? 'Submitting proof…' : 'Submit bank proof for verification',
                   style: AppTextStyles.body(size: 14, weight: FontWeight.w700, color: AppColors.white),
                 ),
               ),
@@ -272,28 +298,4 @@ class _EmdPaySheetState extends State<EmdPaySheet> {
     );
   }
 
-  Widget _modeTab(String mode, String label) {
-    final selected = _mode == mode;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _mode = mode),
-        child: Container(
-          height: AppSpacing.buttonMd,
-          decoration: BoxDecoration(
-            color: selected ? AppColors.navy : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: AppTextStyles.body(
-              size: 12,
-              weight: FontWeight.w700,
-              color: selected ? AppColors.white : AppColors.navyWithOpacity(0.6),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

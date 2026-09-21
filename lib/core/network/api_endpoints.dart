@@ -47,14 +47,12 @@ abstract final class Endpoints {
   // Wallet & EMD
   static const wallet = '/wallet';
   static const walletTransactions = '/wallet/transactions';
-  static const walletTopUp = '/wallet/top-up';
   static const emd = '/emd';
   static const emdLock = '/emd/lock';
   static String emdRelease(int id) => '/emd/$id/release';
 
-  // Razorpay payments
-  static const razorpayCreateOrder = '/payments/razorpay/create-order';
-  static const razorpayVerify = '/payments/razorpay/verify';
+  // Manual bank-transfer payments
+  static const manualPayment = '/payments/manual';
 
   // Orders
   static const orders = '/orders';

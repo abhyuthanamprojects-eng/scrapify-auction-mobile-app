@@ -82,6 +82,7 @@ class _AuctionRegisterScreenState extends State<AuctionRegisterScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => EmdPaySheet(
+        auctionId: auction.auctionId,
         auctionTitle: auction.auctionTitle,
         emdAmount: auction.emdAmount,
         emdPercent: auction.emdPercent,
