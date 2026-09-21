@@ -1,6 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -49,6 +52,83 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _shareAuction(Auction auction) async {
+    final imageName = '${_safeFileName(auction.title)}-${auction.code}.jpg';
+    final shareText = [
+      'Scrapify Auctions',
+      '',
+      auction.title,
+      'Auction code: ${auction.code}',
+      'Status: ${auction.status.name}',
+      if (auction.category?.isNotEmpty == true) 'Category: ${auction.category}',
+      if (auction.company.isNotEmpty) 'Company: ${auction.company}',
+      if (auction.location?.isNotEmpty == true) 'Location: ${auction.location}',
+      'Current highest bid: ₹${_formatAmount(auction.currentHighestInr > 0 ? auction.currentHighestInr : auction.startingPriceInr)}',
+      if (auction.reservePriceInr > 0)
+        'Reserve price: ₹${_formatAmount(auction.reservePriceInr)}',
+      if (auction.emdAmountInr > 0)
+        'EMD: ₹${_formatAmount(auction.emdAmountInr)}',
+      if (auction.scheduleEnd?.isNotEmpty == true)
+        'Closes: ${auction.scheduleEnd}',
+      if (auction.description.isNotEmpty) '',
+      if (auction.description.isNotEmpty) auction.description,
+      '',
+      'Image: $imageName',
+      'Open Scrapify Auctions and search for auction code ${auction.code}.',
+    ].join('\n');
+
+    try {
+      final imageFiles = <XFile>[];
+      if (auction.photos.isNotEmpty) {
+        final response = await Dio().get<List<int>>(
+          auction.photos.first,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        final bytes = response.data;
+        if (bytes != null && bytes.isNotEmpty) {
+          imageFiles.add(
+            XFile.fromData(
+              Uint8List.fromList(bytes),
+              name: imageName,
+              mimeType: _imageMimeType(auction.photos.first),
+            ),
+          );
+        }
+      }
+
+      if (imageFiles.isEmpty) {
+        await Share.share(shareText, subject: auction.title);
+      } else {
+        await Share.shareXFiles(
+          imageFiles,
+          text: shareText,
+          subject: auction.title,
+        );
+      }
+    } catch (_) {
+      // Sharing the details must still work if an image host is unavailable.
+      await Share.share(shareText, subject: auction.title);
+    }
+  }
+
+  static String _safeFileName(String value) {
+    final name = value.trim().replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '-');
+    return name.replaceAll(RegExp(r'^-+|-+$'), '').isEmpty
+        ? 'auction-image'
+        : name.replaceAll(RegExp(r'^-+|-+$'), '').toLowerCase();
+  }
+
+  static String _imageMimeType(String url) {
+    final lower = url.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+
+  static String _formatAmount(double amount) {
+    return amount.toStringAsFixed(0);
   }
 
   @override
@@ -198,13 +278,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Auction link copied: ${auction.code}'),
-                        ),
-                      );
-                    },
+                    onTap: () => _shareAuction(auction),
                     child: Container(
                       margin: const EdgeInsets.only(
                         top: 8,
