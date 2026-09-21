@@ -36,3 +36,7 @@ WebSecurityResult checkWebSecurityImpl() {
     device: device,
   );
 }
+// This file is the intentional web implementation selected by the platform
+// conditional import. The package:web migration requires a separate web build
+// pass and is tracked independently from mobile release verification.
+// ignore_for_file: deprecated_member_use, avoid_web_libraries_in_flutter

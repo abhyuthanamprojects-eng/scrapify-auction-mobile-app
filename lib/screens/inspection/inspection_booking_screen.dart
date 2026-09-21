@@ -324,13 +324,13 @@ class _InspectionBookingScreenState
                             'slot': _selectedSlot,
                             'date': _selectedDate,
                           });
-                      if (mounted) {
+                      if (context.mounted) {
                         context.pushReplacement(
                           '/gate-pass/${widget.auctionCode}',
                         );
                       }
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Error: ${e.toString()}')),
                         );

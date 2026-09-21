@@ -26,7 +26,10 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Decline Award Offer', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Decline Award Offer',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,31 +43,44 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
               controller: reasonCtl,
               maxLines: 3,
               decoration: const InputDecoration(
-                hintText: 'e.g., Specification discrepancy, inability to meet lifting window...',
+                hintText:
+                    'e.g., Specification discrepancy, inability to meet lifting window...',
                 border: OutlineInputBorder(),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () async {
               try {
-                await ref.read(awardsProvider.notifier).decline(widget.awardId, reasonCtl.text.trim());
+                await ref
+                    .read(awardsProvider.notifier)
+                    .decline(widget.awardId, reasonCtl.text.trim());
+                if (!ctx.mounted || !context.mounted) return;
                 Navigator.of(ctx).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Award Offer Declined')),
                 );
                 context.pop();
               } catch (e) {
+                if (!ctx.mounted || !context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Error: ${e.toString()}')),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive),
-            child: const Text('Confirm Decline', style: TextStyle(color: AppColors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
+            child: const Text(
+              'Confirm Decline',
+              style: TextStyle(color: AppColors.white),
+            ),
           ),
         ],
       ),
@@ -96,7 +112,9 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
             icon: const Icon(Icons.download_rounded),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Downloading Official Award Notice PDF...')),
+                const SnackBar(
+                  content: Text('Downloading Official Award Notice PDF...'),
+                ),
               );
             },
           ),
@@ -122,18 +140,28 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.goldSoft.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
                           award.id,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.goldSoft),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.goldSoft,
+                          ),
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: award.status == AwardStatus.accepted
                               ? AppColors.success.withValues(alpha: 0.2)
@@ -141,27 +169,54 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          award.status == AwardStatus.accepted ? 'ACCEPTED & ACTIVE' : 'PENDING SIGN-OFF',
+                          award.status == AwardStatus.accepted
+                              ? 'ACCEPTED & ACTIVE'
+                              : 'PENDING SIGN-OFF',
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
-                            color: award.status == AwardStatus.accepted ? AppColors.success : AppColors.goldSoft,
+                            color: award.status == AwardStatus.accepted
+                                ? AppColors.success
+                                : AppColors.goldSoft,
                           ),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(award.auctionTitle, style: AppTextStyles.heading(size: 17, weight: FontWeight.w800, color: AppColors.white)),
+                  Text(
+                    award.auctionTitle,
+                    style: AppTextStyles.heading(
+                      size: 17,
+                      weight: FontWeight.w800,
+                      color: AppColors.white,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Issued by: ${award.sellerCompany}', style: TextStyle(fontSize: 12, color: AppColors.white.withValues(alpha: 0.7))),
+                  Text(
+                    'Issued by: ${award.sellerCompany}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.timer_outlined, size: 14, color: AppColors.goldSoft),
+                      const Icon(
+                        Icons.timer_outlined,
+                        size: 14,
+                        color: AppColors.goldSoft,
+                      ),
                       const SizedBox(width: 5),
-                      Text('Acceptance Deadline: ${award.acceptanceDeadline}',
-                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.goldSoft)),
+                      Text(
+                        'Acceptance Deadline: ${award.acceptanceDeadline}',
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.goldSoft,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -181,20 +236,48 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('COMMERCIAL BILLING BREAKDOWN',
-                      style: TextStyle(fontFamily: 'monospace', fontSize: 10.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                  const Text(
+                    'COMMERCIAL BILLING BREAKDOWN',
+                    style: TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                   const SizedBox(height: 14),
-                  _row('Winning H1 Bid / Contract Total', Formatters.formatINR(award.amountInr)),
-                  _row('Applicable GST (18%)', Formatters.formatINR(award.gstAmountInr)),
-                  _row('Adjusted EMD Security Deposit', '- ${Formatters.formatINR(award.adjustedEmdInr)}', isDeduction: true),
+                  _row(
+                    'Winning H1 Bid / Contract Total',
+                    Formatters.formatINR(award.amountInr),
+                  ),
+                  _row(
+                    'Applicable GST (18%)',
+                    Formatters.formatINR(award.gstAmountInr),
+                  ),
+                  _row(
+                    'Adjusted EMD Security Deposit',
+                    '- ${Formatters.formatINR(award.adjustedEmdInr)}',
+                    isDeduction: true,
+                  ),
                   const Divider(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Net Balance Payable:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.navy)),
+                      const Text(
+                        'Net Balance Payable:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.navy,
+                        ),
+                      ),
                       Text(
                         Formatters.formatINR(award.balanceDueInr),
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.destructive),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.destructive,
+                        ),
                       ),
                     ],
                   ),
@@ -220,14 +303,21 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                         Checkbox.adaptive(
                           value: _termsAgreed,
                           activeColor: AppColors.auction,
-                          onChanged: (v) => setState(() => _termsAgreed = v ?? false),
+                          onChanged: (v) =>
+                              setState(() => _termsAgreed = v ?? false),
                         ),
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => setState(() => _termsAgreed = !_termsAgreed),
+                            onTap: () =>
+                                setState(() => _termsAgreed = !_termsAgreed),
                             child: Text(
                               'I legally accept the contract terms, agree to settle the balance of ${Formatters.formatINR(award.balanceDueInr)} within 48 hours, and authorize the EMD adjustment.',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.navy, height: 1.4),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.navy,
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ),
@@ -241,10 +331,17 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
       ),
       bottomNavigationBar: isPending
           ? Container(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                12,
+                20,
+                MediaQuery.of(context).padding.bottom + 12,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.white,
-                border: const Border(top: BorderSide(color: AppColors.cardBorder)),
+                border: const Border(
+                  top: BorderSide(color: AppColors.cardBorder),
+                ),
                 boxShadow: AppColors.shadowLg,
               ),
               child: Row(
@@ -254,10 +351,20 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.destructive,
                       side: const BorderSide(color: AppColors.destructive),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXl,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
-                    child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.w700)),
+                    child: const Text(
+                      'Decline',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -269,17 +376,25 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                             : () async {
                                 setState(() => _submitting = true);
                                 try {
-                                  await ref.read(awardsProvider.notifier).accept(widget.awardId);
-                                  if (mounted) {
+                                  await ref
+                                      .read(awardsProvider.notifier)
+                                      .accept(widget.awardId);
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('✓ Award Accepted Successfully! Proceeding to Payment...')),
+                                      const SnackBar(
+                                        content: Text(
+                                          '✓ Award Accepted Successfully! Proceeding to Payment...',
+                                        ),
+                                      ),
                                     );
                                     context.push('/payments');
                                   }
                                 } catch (e) {
-                                  if (mounted) {
+                                  if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Error: ${e.toString()}')),
+                                      SnackBar(
+                                        content: Text('Error: ${e.toString()}'),
+                                      ),
                                     );
                                     setState(() => _submitting = false);
                                   }
@@ -288,12 +403,24 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.auction,
                           foregroundColor: AppColors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppSpacing.radiusXl,
+                            ),
+                          ),
                           elevation: 0,
                         ),
                         child: _submitting
-                            ? const CircularProgressIndicator(color: AppColors.white)
-                            : const Text('Accept & Proceed to Pay', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                            ? const CircularProgressIndicator(
+                                color: AppColors.white,
+                              )
+                            : const Text(
+                                'Accept & Proceed to Pay',
+                                style: TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -310,7 +437,10 @@ class _AwardDetailScreenState extends ConsumerState<AwardDetailScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(k, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+          Text(
+            k,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+          ),
           Text(
             v,
             style: TextStyle(

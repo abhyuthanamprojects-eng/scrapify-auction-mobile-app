@@ -61,16 +61,26 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
               decoration: BoxDecoration(
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: AppColors.warning.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppColors.warning,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       'Disputes are reviewed by the Scrapify Commercial Arbitration Board within 24 hours. Relevant weighbridge slips and site photos will expedite resolution.',
-                      style: TextStyle(fontSize: 11.5, color: AppColors.navy.withValues(alpha: 0.85), height: 1.3),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: AppColors.navy.withValues(alpha: 0.85),
+                        height: 1.3,
+                      ),
                     ),
                   ),
                 ],
@@ -93,7 +103,18 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                   isExpanded: true,
                   value: _category,
                   items: _categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))))
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: c,
+                          child: Text(
+                            c,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setState(() => _category = v);
@@ -129,20 +150,27 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
             const SizedBox(height: 16),
 
             // Description
-            Text('Detailed Evidence Description', style: AppTextStyles.labelMedium),
+            Text(
+              'Detailed Evidence Description',
+              style: AppTextStyles.labelMedium,
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: _descCtl,
               maxLines: 4,
               decoration: const InputDecoration(
-                hintText: 'Describe exact discrepancies, yard timings, driver statements, and invoice references...',
+                hintText:
+                    'Describe exact discrepancies, yard timings, driver statements, and invoice references...',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
 
             // Evidence Upload Box
-            Text('Supporting Evidence (Weighbridge Slip / Photos / Invoices)', style: AppTextStyles.labelMedium),
+            Text(
+              'Supporting Evidence (Weighbridge Slip / Photos / Invoices)',
+              style: AppTextStyles.labelMedium,
+            ),
             const SizedBox(height: 6),
             InkWell(
               onTap: () async {
@@ -161,7 +189,9 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                   border: Border.all(
-                    color: _attachedEvidence != null ? AppColors.success.withValues(alpha: 0.5) : AppColors.cardBorder,
+                    color: _attachedEvidence != null
+                        ? AppColors.success.withValues(alpha: 0.5)
+                        : AppColors.cardBorder,
                   ),
                 ),
                 child: Row(
@@ -176,9 +206,13 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                       ),
                       child: Icon(
                         _attachedEvidence != null
-                            ? (_attachedEvidence!.isImage ? Icons.image : Icons.picture_as_pdf)
+                            ? (_attachedEvidence!.isImage
+                                  ? Icons.image
+                                  : Icons.picture_as_pdf)
                             : Icons.attach_file,
-                        color: _attachedEvidence != null ? AppColors.success : AppColors.auction,
+                        color: _attachedEvidence != null
+                            ? AppColors.success
+                            : AppColors.auction,
                         size: 22,
                       ),
                     ),
@@ -196,7 +230,9 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                             style: TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: _attachedEvidence != null ? AppColors.navy : const Color(0xFF64748B),
+                              color: _attachedEvidence != null
+                                  ? AppColors.navy
+                                  : const Color(0xFF64748B),
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -211,23 +247,32 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                     ),
                     if (_attachedEvidence != null)
                       IconButton(
-                        icon: const Icon(Icons.close, size: 18, color: AppColors.destructive),
-                        onPressed: () => setState(() => _attachedEvidence = null),
+                        icon: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: AppColors.destructive,
+                        ),
+                        onPressed: () =>
+                            setState(() => _attachedEvidence = null),
                         tooltip: 'Remove',
                       )
                     else
                       TextButton.icon(
                         onPressed: () async {
-                          final picked = await AppFilePicker.showPickerBottomSheet(
-                            context,
-                            title: 'Attach Commercial Dispute Evidence',
-                          );
+                          final picked =
+                              await AppFilePicker.showPickerBottomSheet(
+                                context,
+                                title: 'Attach Commercial Dispute Evidence',
+                              );
                           if (picked != null) {
                             setState(() => _attachedEvidence = picked);
                           }
                         },
                         icon: const Icon(Icons.upload, size: 16),
-                        label: const Text('Browse', style: TextStyle(fontWeight: FontWeight.w700)),
+                        label: const Text(
+                          'Browse',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                   ],
                 ),
@@ -237,7 +282,12 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          MediaQuery.of(context).padding.bottom + 12,
+        ),
         decoration: BoxDecoration(
           color: AppColors.white,
           border: const Border(top: BorderSide(color: AppColors.cardBorder)),
@@ -254,20 +304,27 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
                       await ref.read(disputesProvider.notifier).addDispute({
                         'order_id': widget.orderId,
                         'category': _category,
-                        'subject': _titleCtl.text.trim().isNotEmpty ? _titleCtl.text.trim() : _category,
+                        'subject': _titleCtl.text.trim().isNotEmpty
+                            ? _titleCtl.text.trim()
+                            : _category,
                         'description': _descCtl.text.trim().isNotEmpty
                             ? _descCtl.text.trim()
                             : 'Material weighment variance reported against manifest.',
-                        'claimed_amount': double.tryParse(_amountCtl.text.trim()) ?? 45000,
+                        'claimed_amount':
+                            double.tryParse(_amountCtl.text.trim()) ?? 45000,
                       });
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('✓ Dispute filed successfully. Arbitration ticket generated.')),
+                          const SnackBar(
+                            content: Text(
+                              '✓ Dispute filed successfully. Arbitration ticket generated.',
+                            ),
+                          ),
                         );
                         context.pop();
                       }
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Error: ${e.toString()}')),
                         );
@@ -278,12 +335,17 @@ class _NewDisputeScreenState extends ConsumerState<NewDisputeScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.destructive,
               foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusXl)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+              ),
               elevation: 0,
             ),
             child: _submitting
                 ? const CircularProgressIndicator(color: AppColors.white)
-                : const Text('Submit Commercial Claim', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                : const Text(
+                    'Submit Commercial Claim',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
           ),
         ),
       ),

@@ -249,8 +249,11 @@ class _PaymentsDashboardScreenState
             ),
             Radio.adaptive(
               value: val,
+              // ignore: deprecated_member_use
               groupValue: selected,
+              // ignore: deprecated_member_use
               activeColor: AppColors.auction,
+              // ignore: deprecated_member_use
               onChanged: (_) => onTap(),
             ),
           ],

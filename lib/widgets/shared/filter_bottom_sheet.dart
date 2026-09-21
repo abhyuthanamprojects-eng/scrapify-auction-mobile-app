@@ -14,7 +14,8 @@ class FilterBottomSheet extends StatefulWidget {
     String? direction,
     String? status,
     bool emdOnly,
-  }) onApply;
+  })
+  onApply;
 
   const FilterBottomSheet({
     super.key,
@@ -36,7 +37,8 @@ class FilterBottomSheet extends StatefulWidget {
       String? direction,
       String? status,
       bool emdOnly,
-    }) onApply,
+    })
+    onApply,
   }) {
     showModalBottomSheet(
       context: context,
@@ -113,7 +115,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                 children: [
                   Text(
                     'Filter Auctions',
-                    style: AppTextStyles.heading(size: 18, weight: FontWeight.w800),
+                    style: AppTextStyles.heading(
+                      size: 18,
+                      weight: FontWeight.w800,
+                    ),
                   ),
                   TextButton(
                     onPressed: _reset,
@@ -133,7 +138,10 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             // Body
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 children: [
                   _sectionTitle('Auction Format'),
                   const SizedBox(height: 10),
@@ -141,21 +149,45 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _choiceChip('All Formats', _selectedDirection == null, () {
-                        setState(() => _selectedDirection = null);
-                      }),
-                      _choiceChip('Forward Auction', _selectedDirection == 'forward', () {
-                        setState(() => _selectedDirection = 'forward');
-                      }, icon: Icons.trending_up),
-                      _choiceChip('Reverse Auction', _selectedDirection == 'reverse', () {
-                        setState(() => _selectedDirection = 'reverse');
-                      }, icon: Icons.trending_down),
-                      _choiceChip('RFQ / Tender', _selectedDirection == 'rfq', () {
-                        setState(() => _selectedDirection = 'rfq');
-                      }, icon: Icons.request_quote_outlined),
-                      _choiceChip('Multi-Lot', _selectedDirection == 'lot_wise', () {
-                        setState(() => _selectedDirection = 'lot_wise');
-                      }, icon: Icons.layers_outlined),
+                      _choiceChip(
+                        'All Formats',
+                        _selectedDirection == null,
+                        () {
+                          setState(() => _selectedDirection = null);
+                        },
+                      ),
+                      _choiceChip(
+                        'Forward Auction',
+                        _selectedDirection == 'forward',
+                        () {
+                          setState(() => _selectedDirection = 'forward');
+                        },
+                        icon: Icons.trending_up,
+                      ),
+                      _choiceChip(
+                        'Reverse Auction',
+                        _selectedDirection == 'reverse',
+                        () {
+                          setState(() => _selectedDirection = 'reverse');
+                        },
+                        icon: Icons.trending_down,
+                      ),
+                      _choiceChip(
+                        'RFQ / Tender',
+                        _selectedDirection == 'rfq',
+                        () {
+                          setState(() => _selectedDirection = 'rfq');
+                        },
+                        icon: Icons.request_quote_outlined,
+                      ),
+                      _choiceChip(
+                        'Multi-Lot',
+                        _selectedDirection == 'lot_wise',
+                        () {
+                          setState(() => _selectedDirection = 'lot_wise');
+                        },
+                        icon: Icons.layers_outlined,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -187,9 +219,13 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                       _choiceChip('Live Now', _selectedStatus == 'live', () {
                         setState(() => _selectedStatus = 'live');
                       }),
-                      _choiceChip('Upcoming', _selectedStatus == 'upcoming', () {
-                        setState(() => _selectedStatus = 'upcoming');
-                      }),
+                      _choiceChip(
+                        'Upcoming',
+                        _selectedStatus == 'upcoming',
+                        () {
+                          setState(() => _selectedStatus = 'upcoming');
+                        },
+                      ),
                       _choiceChip('Closed', _selectedStatus == 'closed', () {
                         setState(() => _selectedStatus = 'closed');
                       }),
@@ -202,14 +238,17 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Requires EMD Security Deposit',
-                      style: AppTextStyles.body(size: 13, weight: FontWeight.w600),
+                      style: AppTextStyles.body(
+                        size: 13,
+                        weight: FontWeight.w600,
+                      ),
                     ),
                     subtitle: Text(
                       'Show only lots requiring upfront earnest money',
                       style: AppTextStyles.captionMuted,
                     ),
                     value: _emdOnly,
-                    activeColor: AppColors.auction,
+                    activeThumbColor: AppColors.auction,
                     onChanged: (v) => setState(() => _emdOnly = v),
                   ),
                 ],
@@ -241,7 +280,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   ),
                   child: Text(
                     'Apply Filters',
-                    style: AppTextStyles.heading(size: 15, weight: FontWeight.w700, color: AppColors.white),
+                    style: AppTextStyles.heading(
+                      size: 15,
+                      weight: FontWeight.w700,
+                      color: AppColors.white,
+                    ),
                   ),
                 ),
               ),
@@ -264,7 +307,12 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     );
   }
 
-  Widget _choiceChip(String label, bool isSelected, VoidCallback onTap, {IconData? icon}) {
+  Widget _choiceChip(
+    String label,
+    bool isSelected,
+    VoidCallback onTap, {
+    IconData? icon,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -285,7 +333,9 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
               Icon(
                 icon,
                 size: 13,
-                color: isSelected ? AppColors.white : AppColors.navyWithOpacity(0.7),
+                color: isSelected
+                    ? AppColors.white
+                    : AppColors.navyWithOpacity(0.7),
               ),
               const SizedBox(width: 5),
             ],
