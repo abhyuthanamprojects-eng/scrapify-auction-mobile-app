@@ -554,7 +554,7 @@ class _DocumentCentreScreenState extends ConsumerState<DocumentCentreScreen>
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Confidentiality Notice: Screenshot and distribution are logged under platform audit trail.',
+                              'Keep document previews private and share them only with authorised participants.',
                               style: TextStyle(
                                 fontSize: 10.5,
                                 fontWeight: FontWeight.w600,

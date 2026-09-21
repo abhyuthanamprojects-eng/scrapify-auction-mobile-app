@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Scrapify Auction uses the camera when you choose to capture KYC documents, inspection evidence, weighment slips, or auction-item photos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Scrapify Auction uses photo access to save receipts and certificates when you choose Save to Photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Scrapify Auction uses your photo library when you choose photos or documents to upload for KYC, inspections, disputes, or auction items. Only selected items are uploaded.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -59,11 +65,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>Scrapify requires camera access to take photos of scrap materials, weighment slips, and compliance documents.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Scrapify requires access to your photo library to upload statutory certificates, inspection photos, and KYC documents.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Scrapify needs permission to save official bid receipts and digital certificates to your photos.</string>
 </dict>
 </plist>

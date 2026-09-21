@@ -1,2 +1,6 @@
 #include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
 #include "Generated.xcconfig"
+
+// Production iOS builds must use the production Flutter entrypoint. Keep this
+// after Generated.xcconfig because Flutter regenerates that file on each build.
+FLUTTER_TARGET=lib/main_prod.dart

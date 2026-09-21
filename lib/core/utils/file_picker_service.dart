@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -61,7 +62,7 @@ class AppFilePicker {
         );
       }
     } catch (e) {
-      debugPrint('Error picking document: $e');
+      if (kDebugMode) debugPrint('Error picking document: $e');
     }
     return null;
   }
@@ -111,7 +112,7 @@ class AppFilePicker {
         );
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
+      if (kDebugMode) debugPrint('Error picking image: $e');
     }
     return null;
   }
@@ -154,7 +155,7 @@ class AppFilePicker {
       }
       return picked;
     } catch (e) {
-      debugPrint('Error picking multi images: $e');
+      if (kDebugMode) debugPrint('Error picking multi images: $e');
       return [];
     }
   }
