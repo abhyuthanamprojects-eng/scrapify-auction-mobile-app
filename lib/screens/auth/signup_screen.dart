@@ -151,6 +151,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     'cheque': null,
   };
   bool _termsAccepted = false;
+  List<Map<String, dynamic>> _registrationTerms = const [];
 
   // Step 4
   String _phase = 'review'; // review | payment | pending | approved
@@ -178,6 +179,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       _mobileCtl.text = id;
     }
     _loadRegistrationFee();
+    _loadRegistrationTerms();
+  }
+
+  Future<void> _loadRegistrationTerms() async {
+    try {
+      final terms = await _vendorService.getRegistrationTerms(
+        _registrationRole,
+      );
+      if (mounted) setState(() => _registrationTerms = terms);
+    } catch (_) {
+      // Keep the built-in fallback terms available if the public terms endpoint is unavailable.
+    }
   }
 
   Future<void> _loadRegistrationFee() async {
@@ -1024,7 +1037,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }) {
     final selected = _registrationRole == role;
     return GestureDetector(
-      onTap: () => setState(() => _registrationRole = role),
+      onTap: () {
+        setState(() {
+          _registrationRole = role;
+          _registrationTerms = const [];
+        });
+        _loadRegistrationTerms();
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
@@ -2260,50 +2279,61 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: ListView(
                 controller: scrollCtl,
                 padding: const EdgeInsets.all(16),
-                children: const [
-                  _TermItem(
-                    num: '1',
-                    title: 'Registration',
-                    text:
-                        'By registering as a bidder you agree to provide accurate KYC details and documents.',
-                  ),
-                  _TermItem(
-                    num: '2',
-                    title: 'EMD',
-                    text:
-                        'A refundable Earnest Money Deposit is required to bid on each lot.',
-                  ),
-                  _TermItem(
-                    num: '3',
-                    title: 'Winning bids',
-                    text:
-                        'Winning bidders must pay the balance within the period stated on the auction, ordinarily 7 working days, or forfeit their EMD.',
-                  ),
-                  _TermItem(
-                    num: '4',
-                    title: 'Pickup & weighbridge',
-                    text:
-                        'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
-                  ),
-                  _TermItem(
-                    num: '5',
-                    title: 'Compliance',
-                    text:
-                        'Bidders must hold valid PCB / Recycler authorisation where applicable.',
-                  ),
-                  _TermItem(
-                    num: '6',
-                    title: 'Refunds',
-                    text:
-                        'EMD of unsuccessful bidders is queued for refund once the result is finalised and credited within 7 working days.',
-                  ),
-                  _TermItem(
-                    num: '7',
-                    title: 'Approval',
-                    text:
-                        'Registration is subject to admin approval and may be rejected without cause.',
-                  ),
-                ],
+                children: _registrationTerms.isNotEmpty
+                    ? [
+                        for (final term in _registrationTerms)
+                          _TermItem(
+                            num: '${_registrationTerms.indexOf(term) + 1}',
+                            title:
+                                term['title']?.toString() ??
+                                'Registration term',
+                            text: term['content']?.toString() ?? '',
+                          ),
+                      ]
+                    : const [
+                        _TermItem(
+                          num: '1',
+                          title: 'Registration',
+                          text:
+                              'By registering as a bidder you agree to provide accurate KYC details and documents.',
+                        ),
+                        _TermItem(
+                          num: '2',
+                          title: 'EMD',
+                          text:
+                              'A refundable Earnest Money Deposit is required to bid on each lot.',
+                        ),
+                        _TermItem(
+                          num: '3',
+                          title: 'Winning bids',
+                          text:
+                              'Winning bidders must pay the balance within the period stated on the auction, ordinarily 7 working days, or forfeit their EMD.',
+                        ),
+                        _TermItem(
+                          num: '4',
+                          title: 'Pickup & weighbridge',
+                          text:
+                              'Lot weights are verified at an authorised weighbridge. Variances are adjusted from the balance.',
+                        ),
+                        _TermItem(
+                          num: '5',
+                          title: 'Compliance',
+                          text:
+                              'Bidders must hold valid PCB / Recycler authorisation where applicable.',
+                        ),
+                        _TermItem(
+                          num: '6',
+                          title: 'Refunds',
+                          text:
+                              'EMD of unsuccessful bidders is queued for refund once the result is finalised and credited within 7 working days.',
+                        ),
+                        _TermItem(
+                          num: '7',
+                          title: 'Approval',
+                          text:
+                              'Registration is subject to admin approval and may be rejected without cause.',
+                        ),
+                      ],
               ),
             ),
             Padding(

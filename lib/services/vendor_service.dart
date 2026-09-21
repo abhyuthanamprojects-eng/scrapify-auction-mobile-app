@@ -70,11 +70,7 @@ class VendorService {
     String? error,
   }) => _api.post(
     Endpoints.identityCallback,
-    data: {
-      'state': state,
-      'code': ?code,
-      'error': ?error,
-    },
+    data: {'state': state, 'code': ?code, 'error': ?error},
   );
 
   Future<Map<String, dynamic>> retryDigiLocker(String redirectUri) =>
@@ -229,4 +225,16 @@ class VendorService {
 
   Future<Map<String, dynamic>> getPlatformConfig() =>
       _api.get(Endpoints.platformConfig);
+
+  Future<List<Map<String, dynamic>>> getRegistrationTerms(String role) async {
+    final response = await _api.get(
+      '${Endpoints.registrationTerms}?role=${Uri.encodeQueryComponent(role)}&type=registration',
+    );
+    final rows = response['data'];
+    if (rows is! List) return const [];
+    return rows
+        .whereType<Map>()
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+  }
 }

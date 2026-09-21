@@ -247,12 +247,14 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     _templateService
         .getTemplate(catId, direction: _direction)
         .then((t) {
-      if (mounted) setState(() => _templateInfo = t);
-    }).catchError((_) {
-      // No template for this category — that's OK
-    }).whenComplete(() {
-      if (mounted) setState(() => _templateLoading = false);
-    });
+          if (mounted) setState(() => _templateInfo = t);
+        })
+        .catchError((_) {
+          // No template for this category — that's OK
+        })
+        .whenComplete(() {
+          if (mounted) setState(() => _templateLoading = false);
+        });
   }
 
   Future<void> _downloadTemplate() async {
@@ -272,7 +274,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Download failed: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(
+            content: Text('Download failed: $e'),
+            backgroundColor: AppColors.destructive,
+          ),
         );
       }
     } finally {
@@ -281,7 +286,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   }
 
   Future<void> _pickAndUploadTemplate() async {
-    if (_templateUploading || _templateInfo == null || _createdAuctionCode == null) return;
+    if (_templateUploading ||
+        _templateInfo == null ||
+        _createdAuctionCode == null) {
+      return;
+    }
     setState(() => _templateUploading = true);
 
     final picked = await AppFilePicker.pickDocument(
@@ -307,7 +316,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: AppColors.destructive,
+          ),
         );
       }
     } finally {
@@ -442,14 +454,19 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         const SizedBox(height: 8),
         TextField(
           controller: _companyController,
-          readOnly: ref.read(authProvider).user?.companyName?.isNotEmpty == true,
+          readOnly:
+              ref.read(authProvider).user?.companyName?.isNotEmpty == true,
           enabled: ref.read(authProvider).user?.companyName?.isNotEmpty != true,
           decoration: InputDecoration(
             hintText: 'Operating company name',
-            helperText: ref.read(authProvider).user?.companyName?.isNotEmpty == true
+            helperText:
+                ref.read(authProvider).user?.companyName?.isNotEmpty == true
                 ? 'From your registered profile'
                 : null,
-            helperStyle: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            helperStyle: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -545,9 +562,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             Expanded(
               child: TextField(
                 controller: _warehouseContactController,
-                decoration: const InputDecoration(
-                  hintText: 'Contact',
-                ),
+                decoration: const InputDecoration(hintText: 'Contact'),
                 keyboardType: TextInputType.phone,
               ),
             ),
@@ -801,14 +816,26 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             ),
             child: const Row(
               children: [
-                SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
                 SizedBox(width: 12),
-                Text('Checking for category template...', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text(
+                  'Checking for category template...',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
           ),
 
-        if (!_templateLoading && _selectedCategory != null && _templateInfo == null)
+        if (!_templateLoading &&
+            _selectedCategory != null &&
+            _templateInfo == null)
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -818,12 +845,19 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, size: 16, color: Colors.amber.shade700),
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Colors.amber.shade700,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'No official template available for ${_selectedCategory?.name ?? 'this category'}. Add lots manually above.',
-                    style: TextStyle(fontSize: 12, color: Colors.amber.shade800),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.amber.shade800,
+                    ),
                   ),
                 ),
               ],
@@ -843,7 +877,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.description_outlined, size: 18, color: AppColors.navy),
+                    const Icon(
+                      Icons.description_outlined,
+                      size: 18,
+                      color: AppColors.navy,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -851,10 +889,20 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         children: [
                           Text(
                             _templateInfo!.name,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.navy),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.navy,
+                            ),
                           ),
                           if (_templateInfo!.version.isNotEmpty)
-                            Text('v${_templateInfo!.version}', style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                            Text(
+                              'v${_templateInfo!.version}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -868,13 +916,21 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _templateDownloading ? null : _downloadTemplate,
                     icon: _templateDownloading
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.download, size: 16),
-                    label: Text(_templateDownloading ? 'Opening...' : 'Download Template'),
+                    label: Text(
+                      _templateDownloading ? 'Opening...' : 'Download Template',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.navy,
                       side: const BorderSide(color: AppColors.navy),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -886,15 +942,30 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _templateUploading ? null : _pickAndUploadTemplate,
+                      onPressed: _templateUploading
+                          ? null
+                          : _pickAndUploadTemplate,
                       icon: _templateUploading
-                          ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
                           : const Icon(Icons.upload_file, size: 16),
-                      label: Text(_templateUploading ? 'Uploading...' : 'Upload Completed Template'),
+                      label: Text(
+                        _templateUploading
+                            ? 'Uploading...'
+                            : 'Upload Completed Template',
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.navy,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -909,12 +980,19 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, size: 14, color: Colors.blue.shade700),
+                        Icon(
+                          Icons.info_outline,
+                          size: 14,
+                          color: Colors.blue.shade700,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Download the template, fill it with your product details. You can upload it after completing all steps and submitting the auction.',
-                            style: TextStyle(fontSize: 11, color: Colors.blue.shade800),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.blue.shade800,
+                            ),
                           ),
                         ),
                       ],
@@ -926,7 +1004,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                 if (_templateFileName != null) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.appBg,
                       borderRadius: BorderRadius.circular(8),
@@ -934,10 +1015,20 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.insert_drive_file, size: 16, color: AppColors.navy),
+                        const Icon(
+                          Icons.insert_drive_file,
+                          size: 16,
+                          color: AppColors.navy,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(_templateFileName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          child: Text(
+                            _templateFileName!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                         GestureDetector(
                           onTap: () => setState(() {
@@ -945,7 +1036,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                             _templateFileName = null;
                             _templateUploadResult = null;
                           }),
-                          child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
@@ -953,7 +1048,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                 ],
 
                 // Upload result — errors
-                if (_templateUploadResult != null && !_templateUploadResult!.valid && _templateUploadResult!.errors.isNotEmpty) ...[
+                if (_templateUploadResult != null &&
+                    !_templateUploadResult!.valid &&
+                    _templateUploadResult!.errors.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -967,26 +1064,45 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.error_outline, size: 16, color: Colors.red.shade700),
+                            Icon(
+                              Icons.error_outline,
+                              size: 16,
+                              color: Colors.red.shade700,
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Validation Errors (${_templateUploadResult!.errors.length})',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red.shade700,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ..._templateUploadResult!.errors.take(10).map((e) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                '${e['row'] != null && e['row'] != 0 ? "Row ${e['row']}: " : ""}${e['error'] ?? e['message'] ?? 'Unknown error'}',
-                                style: TextStyle(fontSize: 11, color: Colors.red.shade800),
+                        ..._templateUploadResult!.errors
+                            .take(10)
+                            .map(
+                              (e) => Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: Text(
+                                  '${e['row'] != null && e['row'] != 0 ? "Row ${e['row']}: " : ""}${e['error'] ?? e['message'] ?? 'Unknown error'}',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.red.shade800,
+                                  ),
+                                ),
                               ),
-                            )),
+                            ),
                         if (_templateUploadResult!.errors.length > 10)
                           Text(
                             '+${_templateUploadResult!.errors.length - 10} more errors',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red.shade700,
+                            ),
                           ),
                       ],
                     ),
@@ -994,15 +1110,25 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                 ],
 
                 // Upload result — success preview
-                if (_templateUploadResult != null && _templateUploadResult!.valid && _templateUploadResult!.rows.isNotEmpty) ...[
+                if (_templateUploadResult != null &&
+                    _templateUploadResult!.valid &&
+                    _templateUploadResult!.rows.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle, size: 16, color: AppColors.success),
+                      const Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: AppColors.success,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         '${_templateUploadResult!.rowCount} item(s) parsed successfully',
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.success),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success,
+                        ),
                       ),
                     ],
                   ),
@@ -1012,11 +1138,21 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     children: [
                       _statChip('Items', '${_templateUploadResult!.rowCount}'),
                       const SizedBox(width: 8),
-                      _statChip('Total Qty', _templateUploadResult!.totalQuantity.toStringAsFixed(
-                        _templateUploadResult!.totalQuantity == _templateUploadResult!.totalQuantity.roundToDouble() ? 0 : 2,
-                      )),
+                      _statChip(
+                        'Total Qty',
+                        _templateUploadResult!.totalQuantity.toStringAsFixed(
+                          _templateUploadResult!.totalQuantity ==
+                                  _templateUploadResult!.totalQuantity
+                                      .roundToDouble()
+                              ? 0
+                              : 2,
+                        ),
+                      ),
                       const SizedBox(width: 8),
-                      _statChip('Ref. Value', '₹${NumberFormat('#,##,###', 'en_IN').format(_templateUploadResult!.totalReferenceValue)}'),
+                      _statChip(
+                        'Ref. Value',
+                        '₹${NumberFormat('#,##,###', 'en_IN').format(_templateUploadResult!.totalReferenceValue)}',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -1034,21 +1170,42 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                       itemBuilder: (context, i) {
                         final row = _templateUploadResult!.rows[i];
                         final d = row['data'] as Map<String, dynamic>? ?? row;
-                        final name = d['item_name'] ?? d['product_name'] ?? d['name'] ?? 'Item ${i + 1}';
+                        final name =
+                            d['item_name'] ??
+                            d['product_name'] ??
+                            d['name'] ??
+                            'Item ${i + 1}';
                         final qty = _parseNum(d['quantity']);
-                        final refVal = _parseNum(d['reference_value'] ?? d['reserve_value']);
-                        return ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          title: Text(name.toString(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                            'Qty: ${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} ${d['unit'] ?? 'PCS'}',
-                            style: const TextStyle(fontSize: 11),
+                        final refVal = _parseNum(
+                          d['reference_value'] ?? d['reserve_value'],
+                        );
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
+                            dense: true,
+                            visualDensity: VisualDensity.compact,
+                            title: Text(
+                              name.toString(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            subtitle: Text(
+                              'Qty: ${qty.toStringAsFixed(qty == qty.roundToDouble() ? 0 : 2)} ${d['unit'] ?? 'PCS'}',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                            trailing: refVal > 0
+                                ? Text(
+                                    '₹${NumberFormat('#,##,###', 'en_IN').format(refVal)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.navy,
+                                    ),
+                                  )
+                                : null,
                           ),
-                          trailing: refVal > 0
-                              ? Text('₹${NumberFormat('#,##,###', 'en_IN').format(refVal)}',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.navy))
-                              : null,
                         );
                       },
                     ),
@@ -1065,7 +1222,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
@@ -1090,9 +1249,23 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         ),
         child: Column(
           children: [
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.navy)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.navy,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ],
         ),
       ),
@@ -1100,7 +1273,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   }
 
   Future<void> _confirmTemplateImport() async {
-    if (_createdAuctionCode == null || _templateUploadResult?.uploadId == null) return;
+    if (_createdAuctionCode == null ||
+        _templateUploadResult?.uploadId == null) {
+      return;
+    }
     try {
       await _templateService.confirmUpload(
         auctionCode: _createdAuctionCode!,
@@ -1109,7 +1285,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${_templateUploadResult!.rowCount} items imported successfully!'),
+            content: Text(
+              '${_templateUploadResult!.rowCount} items imported successfully!',
+            ),
             backgroundColor: AppColors.success,
           ),
         );
@@ -1117,7 +1295,10 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Confirm failed: $e'), backgroundColor: AppColors.destructive),
+          SnackBar(
+            content: Text('Confirm failed: $e'),
+            backgroundColor: AppColors.destructive,
+          ),
         );
       }
     }
@@ -1409,9 +1590,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: required
-                      ? Colors.red.shade50
-                      : Colors.grey.shade100,
+                  color: required ? Colors.red.shade50 : Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -1438,7 +1617,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.insert_drive_file, size: 16, color: AppColors.navy),
+                  const Icon(
+                    Icons.insert_drive_file,
+                    size: 16,
+                    color: AppColors.navy,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -1446,18 +1629,28 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                       children: [
                         Text(
                           file.name,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           file.formattedSize,
-                          style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   if (uploaded)
-                    const Icon(Icons.check_circle, size: 16, color: AppColors.success)
+                    const Icon(
+                      Icons.check_circle,
+                      size: 16,
+                      color: AppColors.success,
+                    )
                   else if (uploading)
                     const SizedBox(
                       width: 16,
@@ -1470,7 +1663,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         _docFiles[docType] = null;
                         _docUploaded[docType] = false;
                       }),
-                      child: const Icon(Icons.close, size: 16, color: AppColors.textSecondary),
+                      child: const Icon(
+                        Icons.close,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                 ],
               ),
@@ -1485,7 +1682,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.navy,
                   side: const BorderSide(color: AppColors.navy),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                 ),
               ),
@@ -1497,9 +1696,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
   }
 
   Future<void> _pickDocumentFile(String docType) async {
-    final picked = await AppFilePicker.pickDocument(
-      allowedExtensions: ['pdf'],
-    );
+    final picked = await AppFilePicker.pickDocument(allowedExtensions: ['pdf']);
     if (picked == null || picked.path == null) return;
     if (!mounted) return;
     setState(() {
@@ -1991,7 +2188,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   if (_docFiles['catalog'] == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Auction Notice / Catalog PDF is required for forward auctions.'),
+                        content: Text(
+                          'Auction Notice / Catalog PDF is required for forward auctions.',
+                        ),
                       ),
                     );
                     return;
@@ -1999,7 +2198,9 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   if (_docFiles['photographs'] == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Photographs PDF is required for forward auctions.'),
+                        content: Text(
+                          'Photographs PDF is required for forward auctions.',
+                        ),
                       ),
                     );
                     return;
@@ -2257,9 +2458,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'Auction #$auctionCode submitted successfully!',
-            ),
+            content: Text('Auction #$auctionCode submitted successfully!'),
             backgroundColor: AppColors.success,
           ),
         );
