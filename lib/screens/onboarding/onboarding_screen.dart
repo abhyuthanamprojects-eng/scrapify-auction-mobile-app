@@ -21,7 +21,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Discover',
       title: 'Discover Opportunities',
-      body: 'Participate in verified auctions from leading enterprises across metals, machinery, IT assets, vehicles, logistics & services.',
+      body:
+          'Participate in verified auctions from leading enterprises across metals, machinery, IT assets, vehicles, logistics & services.',
       imagePath: AssetPaths.onboardFind,
       icon: Icons.search_rounded,
       iconColor: Color(0xFF1565C0),
@@ -29,7 +30,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Live Bidding',
       title: 'Bid in Real Time',
-      body: 'Securely participate in forward & reverse auctions with real-time ranking, anti-snipe timer extensions, and auto-bid proxy.',
+      body:
+          'Securely participate in forward & reverse auctions with real-time ranking, anti-snipe timer extensions, and auto-bid proxy.',
       imagePath: AssetPaths.onboardBid,
       icon: Icons.gavel_rounded,
       iconColor: Color(0xFFF97316),
@@ -37,7 +39,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _SlideData(
       tag: 'Full Lifecycle',
       title: 'Manage Everything',
-      body: 'Track EMD security, digital gate passes, awards, payments, evidence capture, and fulfilment from one seamless app.',
+      body:
+          'Track EMD security, digital gate passes, awards, payments, evidence capture, and fulfilment from one seamless app.',
       imagePath: AssetPaths.onboardSecure,
       icon: Icons.verified_user_rounded,
       iconColor: Color(0xFF22C55E),
@@ -189,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                   // Browse without signing in
                   GestureDetector(
-                    onTap: () => context.go('/home'),
+                    onTap: () => context.push('/browse'),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         vertical: AppSpacing.md,

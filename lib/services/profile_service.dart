@@ -11,9 +11,9 @@ class ProfileService {
     String? phone,
   }) async {
     final data = await _api.patch(Endpoints.profile, data: {
-      if (name != null) 'name': name,
-      if (email != null) 'email': email,
-      if (phone != null) 'phone': phone,
+      'name': ?name,
+      'email': ?email,
+      'phone': ?phone,
     });
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }

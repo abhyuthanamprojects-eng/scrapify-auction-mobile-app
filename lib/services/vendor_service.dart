@@ -72,8 +72,8 @@ class VendorService {
     Endpoints.identityCallback,
     data: {
       'state': state,
-      if (code != null) 'code': code,
-      if (error != null) 'error': error,
+      'code': ?code,
+      'error': ?error,
     },
   );
 
@@ -87,6 +87,9 @@ class VendorService {
     required String phone,
     String? location,
     String? address,
+    String? city,
+    String? state,
+    String? pincode,
     String? gstNumber,
     String? panNumber,
     String? licenseNumber,
@@ -108,6 +111,9 @@ class VendorService {
         'phone': phone,
         ...?location == null ? null : {'location': location},
         ...?address == null ? null : {'address': address},
+        ...?city == null ? null : {'city': city},
+        ...?state == null ? null : {'state': state},
+        ...?pincode == null ? null : {'pincode': pincode},
         ...?gstNumber == null ? null : {'gst_number': gstNumber},
         ...?panNumber == null ? null : {'pan_number': panNumber},
         ...?licenseNumber == null ? null : {'license_number': licenseNumber},

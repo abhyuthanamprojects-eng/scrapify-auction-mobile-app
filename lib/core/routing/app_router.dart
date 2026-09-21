@@ -79,10 +79,9 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: '/otp',
-        builder: (_, state) =>
-            PublicAuthGuard(
-              child: OtpScreen(identifier: state.extra as String? ?? ''),
-            ),
+        builder: (_, state) => PublicAuthGuard(
+          child: OtpScreen(identifier: state.extra as String? ?? ''),
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
@@ -107,23 +106,23 @@ abstract final class AppRouter {
         path: '/documents',
         builder: (_, _) => const DocumentCentreScreen(),
       ),
-      GoRoute(
-        path: '/support',
-        builder: (_, _) => const SupportCenterScreen(),
-      ),
+      GoRoute(path: '/support', builder: (_, _) => const SupportCenterScreen()),
       GoRoute(
         path: '/role',
         builder: (_, _) => const PublicAuthGuard(child: RoleScreen()),
       ),
       GoRoute(
         path: '/signup',
-        builder: (_, state) =>
-            PublicAuthGuard(
-              child: SignupScreen(prefillIdentifier: state.extra as String?),
-            ),
+        builder: (_, state) => PublicAuthGuard(
+          child: SignupScreen(prefillIdentifier: state.extra as String?),
+        ),
       ),
       GoRoute(path: '/home', builder: (_, _) => const AppShell()),
       GoRoute(path: '/auctions', builder: (_, _) => const AuctionsScreen()),
+      GoRoute(
+        path: '/browse',
+        builder: (_, _) => const AuctionsScreen(guestMode: true),
+      ),
       GoRoute(path: '/wallet', builder: (_, _) => const WalletScreen()),
       GoRoute(
         path: '/my-bids',
@@ -134,6 +133,13 @@ abstract final class AppRouter {
         path: '/lot/:id',
         builder: (_, state) =>
             LotDetailsScreen(lotId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/browse/:id',
+        builder: (_, state) => LotDetailsScreen(
+          lotId: state.pathParameters['id']!,
+          guestMode: true,
+        ),
       ),
       GoRoute(
         path: '/waiting-room/:id',

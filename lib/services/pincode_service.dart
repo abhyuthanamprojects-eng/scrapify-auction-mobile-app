@@ -21,7 +21,8 @@ class PincodeResult {
       city: json['city'] as String,
       state: json['state'] as String,
       country: json['country'] as String? ?? 'India',
-      postOffices: (json['post_offices'] as List<dynamic>?)
+      postOffices:
+          (json['post_offices'] as List<dynamic>?)
               ?.map((e) => PostOffice.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
@@ -47,11 +48,36 @@ class PostOffice {
 
 class PincodeService {
   final ApiClient _api = ApiClient();
+  static final Map<String, Future<PincodeResult?>> _inFlight = {};
+  static final Map<String, ({PincodeResult result, DateTime expiresAt})>
+  _cache = {};
 
   Future<PincodeResult?> lookup(String pincode) async {
+    final normalized = pincode.trim();
+    final cached = _cache[normalized];
+    if (cached != null && cached.expiresAt.isAfter(DateTime.now())) {
+      return cached.result;
+    }
+    final pending = _inFlight[normalized];
+    if (pending != null) return pending;
+    final request = _lookup(normalized);
+    _inFlight[normalized] = request;
+    request.then(
+      (_) => _inFlight.remove(normalized),
+      onError: (_, _) => _inFlight.remove(normalized),
+    );
+    return request;
+  }
+
+  Future<PincodeResult?> _lookup(String pincode) async {
     try {
       final response = await _api.get('/pincode/$pincode');
-      return PincodeResult.fromJson(response);
+      final result = PincodeResult.fromJson(response);
+      _cache[pincode] = (
+        result: result,
+        expiresAt: DateTime.now().add(const Duration(days: 7)),
+      );
+      return result;
     } catch (_) {
       return null;
     }

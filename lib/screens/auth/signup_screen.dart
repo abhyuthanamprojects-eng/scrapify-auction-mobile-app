@@ -51,6 +51,16 @@ String _formatGstAddress(dynamic value) {
   return parts.join(', ');
 }
 
+String _gstPincode(dynamic value) {
+  final digits = _gstValue(value, [
+    'pincode',
+    'pin_code',
+    'postal_code',
+    'postalCode',
+  ]).replaceAll(RegExp(r'\D'), '');
+  return digits.length > 6 ? digits.substring(0, 6) : digits;
+}
+
 class SignupScreen extends ConsumerStatefulWidget {
   final String? prefillIdentifier;
   const SignupScreen({super.key, this.prefillIdentifier});
@@ -85,6 +95,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   // Step 3
   final _companyCtl = TextEditingController();
   final _addressCtl = TextEditingController();
+  final _pincodeCtl = TextEditingController();
+  final _cityCtl = TextEditingController();
+  final _stateCtl = TextEditingController();
   final _gstCtl = TextEditingController();
   final _entityTypeCtl = TextEditingController();
   final _panCtl = TextEditingController();
@@ -109,6 +122,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Timer? _gstDebounce;
   Timer? _bankDebounce;
   int _gstRequestId = 0;
+  int _pincodeRequestId = 0;
   int _bankRequestId = 0;
   String? _gstLookupValue;
   bool _gstVerified = false;
@@ -220,6 +234,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _password2Ctl.dispose();
     _companyCtl.dispose();
     _addressCtl.dispose();
+    _pincodeCtl.dispose();
+    _cityCtl.dispose();
+    _stateCtl.dispose();
     _gstCtl.dispose();
     _entityTypeCtl.dispose();
     _panCtl.dispose();
@@ -446,6 +463,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         final verifiedGstin = (details['gstin']?.toString() ?? gstin)
             .toUpperCase();
         final address = _formatGstAddress(details['gst_registered_address']);
+        final gstPincode = (() {
+          final addressPincode = _gstPincode(details['gst_registered_address']);
+          if (addressPincode.length == 6) return addressPincode;
+          return _gstPincode(details);
+        })();
         if (!mounted || requestId != _gstRequestId) return;
         setState(() {
           _gstVerified = true;
@@ -468,6 +490,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           _gstError = null;
           _error = null;
         });
+        if (gstPincode.length == 6) {
+          await _resolvePincode(gstPincode, requestId);
+        }
       } catch (e) {
         if (!mounted || requestId != _gstRequestId) return;
         final message = e is ApiException
@@ -485,6 +510,60 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           setState(() => _gstLoading = false);
         }
       }
+    });
+  }
+
+  Future<void> _resolvePincode(String pincode, int gstRequestId) async {
+    final requestId = ++_pincodeRequestId;
+    _pincodeCtl.value = TextEditingValue(
+      text: pincode,
+      selection: TextSelection.collapsed(offset: pincode.length),
+    );
+    if (mounted) setState(() {});
+    final result = await _pincodeService.lookup(pincode);
+    if (!mounted ||
+        requestId != _pincodeRequestId ||
+        gstRequestId != _gstRequestId) {
+      return;
+    }
+    if (result == null) {
+      setState(() => _error = 'We could not resolve the GST PIN code.');
+      return;
+    }
+    setState(() {
+      _cityCtl.text = result.city;
+      _stateCtl.text = result.state;
+      _error = null;
+    });
+  }
+
+  Future<void> _onPincodeChanged(String value) async {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final pincode = digits.length > 6 ? digits.substring(0, 6) : digits;
+    if (_pincodeCtl.text != pincode) {
+      _pincodeCtl.value = TextEditingValue(
+        text: pincode,
+        selection: TextSelection.collapsed(offset: pincode.length),
+      );
+    }
+    ++_pincodeRequestId;
+    _cityCtl.clear();
+    _stateCtl.clear();
+    if (!_isPincode(pincode)) {
+      if (mounted) setState(() {});
+      return;
+    }
+    final requestId = _pincodeRequestId;
+    final result = await _pincodeService.lookup(pincode);
+    if (!mounted || requestId != _pincodeRequestId) return;
+    if (result == null) {
+      setState(() => _error = 'We could not resolve this PIN code.');
+      return;
+    }
+    setState(() {
+      _cityCtl.text = result.city;
+      _stateCtl.text = result.state;
+      _error = null;
     });
   }
 
@@ -1441,6 +1520,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final complete =
         _companyCtl.text.isNotEmpty &&
         _addressCtl.text.isNotEmpty &&
+        _pincodeCtl.text.isNotEmpty &&
+        _cityCtl.text.isNotEmpty &&
+        _stateCtl.text.isNotEmpty &&
         _gstCtl.text.isNotEmpty &&
         _entityTypeCtl.text.isNotEmpty &&
         _panCtl.text.isNotEmpty &&
@@ -1469,10 +1551,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _isGstin(_gstCtl.text) &&
         _gstVerified &&
         _isPan(_panCtl.text);
+    final validLocation =
+        _isPincode(_pincodeCtl.text) &&
+        _cityCtl.text.isNotEmpty &&
+        _stateCtl.text.isNotEmpty;
     final validWarehouse =
         _registrationRole != 'seller' ||
         (_isPincode(_warehousePincodeCtl.text) && _warehousePincodeResolved);
-    final formReady = complete && validBusinessIdentity && validWarehouse;
+    final formReady =
+        complete && validBusinessIdentity && validLocation && validWarehouse;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1580,6 +1667,42 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           maxLines: 2,
           readOnly: _gstAddressAutofilled,
         ),
+        const SizedBox(height: 16),
+
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('PIN Code', required: true),
+                  const SizedBox(height: 6),
+                  _inputField(
+                    controller: _pincodeCtl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    onChanged: _onPincodeChanged,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _fieldLabel('City (from PIN API)', required: true),
+                  const SizedBox(height: 6),
+                  _inputField(controller: _cityCtl, readOnly: true),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _fieldLabel('State (from PIN API)', required: true),
+        const SizedBox(height: 6),
+        _inputField(controller: _stateCtl, readOnly: true),
         const SizedBox(height: 16),
 
         if (_registrationRole == 'seller') ...[
@@ -1913,6 +2036,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 email: _bizEmailCtl.text.trim(),
                 phone: _bizMobileCtl.text.trim(),
                 address: _addressCtl.text.trim(),
+                pincode: _pincodeCtl.text.trim(),
+                city: _cityCtl.text.trim(),
+                state: _stateCtl.text.trim(),
                 gstNumber: _gstCtl.text.trim().toUpperCase(),
                 panNumber: _panCtl.text.trim().toUpperCase(),
                 businessType: _entityTypeCtl.text.trim(),
@@ -2285,8 +2411,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ]),
         const SizedBox(height: 20),
         _primaryButton(
-          label: _registrationFeeRequired ? 'Proceed to Payment' : 'Submit for Review',
-          onTap: () => setState(() => _phase = _registrationFeeRequired ? 'payment' : 'pending'),
+          label: _registrationFeeRequired
+              ? 'Proceed to Payment'
+              : 'Submit for Review',
+          onTap: () => setState(
+            () => _phase = _registrationFeeRequired ? 'payment' : 'pending',
+          ),
         ),
       ],
     );

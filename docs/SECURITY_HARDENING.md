@@ -7,6 +7,11 @@ authorization must be implemented in those separate systems.
 
 ## Implemented here
 
+Screenshot and screen-recording protection is temporarily disabled in the
+native app while QA captures test evidence. Set
+`screenCaptureProtectionEnabled` to `true` in the Android and iOS entry points
+before the production release.
+
 - Android applies `FLAG_SECURE` before Flutter creates its window. This blocks
   screenshots and prevents sensitive recent-app thumbnails on supported Android
   versions.

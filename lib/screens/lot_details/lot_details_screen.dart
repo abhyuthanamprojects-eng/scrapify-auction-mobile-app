@@ -14,7 +14,13 @@ import '../../widgets/lot_details/clarifications_sheet.dart';
 
 class LotDetailsScreen extends ConsumerStatefulWidget {
   final String lotId;
-  const LotDetailsScreen({super.key, required this.lotId});
+  final bool guestMode;
+
+  const LotDetailsScreen({
+    super.key,
+    required this.lotId,
+    this.guestMode = false,
+  });
 
   @override
   ConsumerState<LotDetailsScreen> createState() => _LotDetailsScreenState();
@@ -141,7 +147,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                     final isAuthenticated = ref
                         .watch(authProvider)
                         .isAuthenticated;
-                    return isAuthenticated
+                    return isAuthenticated || widget.guestMode
                         ? GestureDetector(
                             onTap: () => context.pop(),
                             child: Container(
@@ -682,7 +688,12 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
 
   Widget _buildTermsTab(Auction a) {
     final tncs = a.termsConditions;
-    final auctionTerms = a.terms?.split(RegExp(r'\r?\n')).where((s) => s.trim().isNotEmpty).toList() ?? [];
+    final auctionTerms =
+        a.terms
+            ?.split(RegExp(r'\r?\n'))
+            .where((s) => s.trim().isNotEmpty)
+            .toList() ??
+        [];
 
     if (tncs.isEmpty && auctionTerms.isEmpty) {
       return Padding(
@@ -702,36 +713,48 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
         if (tncs.isNotEmpty) ...[
           _tabSectionTitle('Terms & Conditions'),
           const SizedBox(height: 8),
-          ...tncs.map((tnc) => _tncCard(
-            tnc['title'] as String? ?? '',
-            tnc['content'] as String? ?? '',
-            tnc['type'] as String? ?? 'general',
-          )),
+          ...tncs.map(
+            (tnc) => _tncCard(
+              tnc['title'] as String? ?? '',
+              tnc['content'] as String? ?? '',
+              tnc['type'] as String? ?? 'general',
+            ),
+          ),
         ],
         if (auctionTerms.isNotEmpty) ...[
           const SizedBox(height: 14),
           _tabSectionTitle('Additional Auction Terms'),
           const SizedBox(height: 8),
-          ...auctionTerms.map((t) => Padding(
-            padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 6),
-                  width: 6, height: 6,
-                  decoration: BoxDecoration(
-                    color: AppColors.auction,
-                    shape: BoxShape.circle,
+          ...auctionTerms.map(
+            (t) => Padding(
+              padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    margin: const EdgeInsets.only(top: 6),
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.auction,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(t, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      t,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          )),
+          ),
         ],
         if (a.paymentTerms != null && a.paymentTerms!.isNotEmpty) ...[
           const SizedBox(height: 14),
@@ -739,7 +762,14 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(a.paymentTerms!, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+            child: Text(
+              a.paymentTerms!,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ],
@@ -779,17 +809,35 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
                 ),
                 child: Text(
                   type.toUpperCase(),
-                  style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(content, style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.5)),
+          Text(
+            content,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
@@ -1223,7 +1271,9 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
     Color buttonColor = AppColors.auction;
 
     if (!a.isRegistered) {
-      ctaLabel = a.registrationOpen ? 'Register to participate' : 'Registration closed — view only';
+      ctaLabel = a.registrationOpen
+          ? 'Register to participate'
+          : 'Registration closed — view only';
       onCta = () {};
       buttonColor = AppColors.navy;
     } else if (!a.termsAccepted) {

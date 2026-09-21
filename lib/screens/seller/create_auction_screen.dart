@@ -456,7 +456,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
         Text('Auction Direction *', style: AppTextStyles.labelMedium),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _direction,
+          initialValue: _direction,
           items: const [
             DropdownMenuItem(value: 'forward', child: Text('Forward auction')),
             DropdownMenuItem(value: 'reverse', child: Text('Reverse auction')),
@@ -626,7 +626,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
               SizedBox(
                 width: 110,
                 child: DropdownButtonFormField<String>(
-                  value: _uom,
+                  initialValue: _uom,
                   items: const [
                     DropdownMenuItem(value: 'MT', child: Text('MT')),
                     DropdownMenuItem(value: 'KG', child: Text('KG')),
@@ -746,7 +746,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                         SizedBox(
                           width: 86,
                           child: DropdownButtonFormField<String>(
-                            value: item.uom,
+                            initialValue: item.uom,
                             isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: 'MT', child: Text('MT')),
@@ -1030,7 +1030,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: _templateUploadResult!.rows.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, _) => const Divider(height: 1),
                       itemBuilder: (context, i) {
                         final row = _templateUploadResult!.rows[i];
                         final d = row['data'] as Map<String, dynamic>? ?? row;
@@ -1751,7 +1751,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
                   Text('Unit', style: AppTextStyles.labelMedium),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _liftingUnit,
+                    initialValue: _liftingUnit,
                     items: const [
                       DropdownMenuItem(value: 'Days', child: Text('Days')),
                       DropdownMenuItem(value: 'Weeks', child: Text('Weeks')),
@@ -1861,7 +1861,7 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       ),
       data: (categories) {
         return DropdownButtonFormField<Category>(
-          value: _selectedCategory,
+          initialValue: _selectedCategory,
           decoration: const InputDecoration(hintText: 'Select category'),
           isExpanded: true,
           items: categories

@@ -13,7 +13,7 @@ class BidService {
   }) async {
     final data = await _api.post(Endpoints.placeBid(auctionCode), data: {
       'amount': amount,
-      if (lot != null) 'lot': lot,
+      'lot': ?lot,
     });
 
     final bid = Bid.fromJson(data['bid'] as Map<String, dynamic>);
@@ -32,7 +32,7 @@ class BidService {
   }) async {
     await _api.post(Endpoints.proxyBid(auctionCode), data: {
       'max_amount': maxAmount,
-      if (lot != null) 'lot': lot,
+      'lot': ?lot,
     });
   }
 

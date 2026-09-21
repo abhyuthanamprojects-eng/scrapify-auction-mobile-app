@@ -8,7 +8,7 @@ class NotificationService {
   Future<({List<NotificationItem> items, int unreadCount, int total})>
       list({bool? unread, int perPage = 30}) async {
     final data = await _api.get(Endpoints.notifications, queryParameters: {
-      if (unread != null) 'unread': unread,
+      'unread': ?unread,
       'per_page': perPage,
     });
 

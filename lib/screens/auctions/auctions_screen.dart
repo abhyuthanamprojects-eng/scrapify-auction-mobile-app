@@ -11,7 +11,9 @@ import '../../widgets/shared/loading_skeleton.dart';
 import '../../widgets/shared/empty_state.dart';
 
 class AuctionsScreen extends ConsumerStatefulWidget {
-  const AuctionsScreen({super.key});
+  final bool guestMode;
+
+  const AuctionsScreen({super.key, this.guestMode = false});
 
   @override
   ConsumerState<AuctionsScreen> createState() => _AuctionsScreenState();
@@ -82,21 +84,38 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
               child: Row(
                 children: [
+                  if (widget.guestMode)
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      tooltip: 'Back',
+                      color: AppColors.navy,
+                    ),
                   Expanded(
                     child: Text(
-                      'Explore Auctions',
-                      style: AppTextStyles.heading(size: 22, weight: FontWeight.w900),
+                      widget.guestMode ? 'Browse Auctions' : 'Explore Auctions',
+                      style: AppTextStyles.heading(
+                        size: 22,
+                        weight: FontWeight.w900,
+                      ),
                     ),
                   ),
                   GestureDetector(
                     onTap: _openFilters,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 7,
+                      ),
                       decoration: BoxDecoration(
-                        color: _activeFiltersCount > 0 ? AppColors.auction : AppColors.white,
+                        color: _activeFiltersCount > 0
+                            ? AppColors.auction
+                            : AppColors.white,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: _activeFiltersCount > 0 ? AppColors.auction : AppColors.cardBorder,
+                          color: _activeFiltersCount > 0
+                              ? AppColors.auction
+                              : AppColors.cardBorder,
                         ),
                         boxShadow: AppColors.shadowSm,
                       ),
@@ -106,15 +125,21 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
                           Icon(
                             Icons.tune_rounded,
                             size: 15,
-                            color: _activeFiltersCount > 0 ? AppColors.white : AppColors.navy,
+                            color: _activeFiltersCount > 0
+                                ? AppColors.white
+                                : AppColors.navy,
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            _activeFiltersCount > 0 ? 'Filters ($_activeFiltersCount)' : 'Filter',
+                            _activeFiltersCount > 0
+                                ? 'Filters ($_activeFiltersCount)'
+                                : 'Filter',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: _activeFiltersCount > 0 ? AppColors.white : AppColors.navy,
+                              color: _activeFiltersCount > 0
+                                  ? AppColors.white
+                                  : AppColors.navy,
                             ),
                           ),
                         ],
@@ -141,15 +166,26 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
                   style: const TextStyle(fontSize: 13.5, color: AppColors.navy),
                   decoration: InputDecoration(
                     hintText: 'Search by title, event ID, material...',
-                    hintStyle: TextStyle(fontSize: 13, color: AppColors.navyWithOpacity(0.4)),
-                    prefixIcon: const Icon(Icons.search, size: 18, color: Color(0xFF64748B)),
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.navyWithOpacity(0.4),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 18,
+                      color: Color(0xFF64748B),
+                    ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? GestureDetector(
                             onTap: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
                             },
-                            child: const Icon(Icons.clear, size: 16, color: Color(0xFF64748B)),
+                            child: const Icon(
+                              Icons.clear,
+                              size: 16,
+                              color: Color(0xFF64748B),
+                            ),
                           )
                         : null,
                     border: InputBorder.none,
@@ -170,8 +206,14 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
                 controller: _tabController,
                 labelColor: AppColors.white,
                 unselectedLabelColor: AppColors.navyWithOpacity(0.65),
-                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                labelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
                 indicator: BoxDecoration(
                   color: AppColors.navy,
                   borderRadius: BorderRadius.circular(999),
@@ -217,24 +259,32 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
       data: (auctions) {
         var list = auctions;
         if (isInvited) {
-          list = auctions.where((a) => a.isInvited || a.code.contains('1048') || a.code.contains('0872')).toList();
+          list = auctions
+              .where(
+                (a) =>
+                    a.isInvited ||
+                    a.code.contains('1048') ||
+                    a.code.contains('0872'),
+              )
+              .toList();
         }
         if (list.isEmpty) {
           return Center(
             child: EmptyState(
               icon: Icons.gavel_rounded,
               title: 'No auctions found',
-              subtitle: 'Try adjusting your search query or removing active filters',
+              subtitle:
+                  'Try adjusting your search query or removing active filters',
               actionLabel: _activeFiltersCount > 0 ? 'Clear Filters' : null,
               onAction: _activeFiltersCount > 0
                   ? () => setState(() {
-                        _filterCategory = null;
-                        _filterDirection = null;
-                        _filterStatus = null;
-                        _filterEmdOnly = false;
-                        _searchController.clear();
-                        _searchQuery = '';
-                      })
+                      _filterCategory = null;
+                      _filterDirection = null;
+                      _filterStatus = null;
+                      _filterEmdOnly = false;
+                      _searchController.clear();
+                      _searchQuery = '';
+                    })
                   : null,
             ),
           );
@@ -248,7 +298,9 @@ class _AuctionsScreenState extends ConsumerState<AuctionsScreen>
             return AuctionCard(
               auction: a,
               onTap: () => context.push(
-                a.direction == 'reverse'
+                widget.guestMode
+                    ? '/browse/${a.code}'
+                    : a.direction == 'reverse'
                     ? '/live-reverse/${a.code}'
                     : '/lot/${a.code}',
               ),

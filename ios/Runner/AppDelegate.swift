@@ -3,6 +3,9 @@ import UIKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // Temporarily disabled for QA screenshots and screen-recording capture.
+  // Set to true before the production release to restore the privacy overlay.
+  private let screenCaptureProtectionEnabled = false
   private var privacyOverlay: UIView?
 
   override func application(
@@ -10,7 +13,9 @@ import UIKit
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     let result = super.application(application, didFinishLaunchingWithOptions: launchOptions)
-    preventScreenCapture()
+    if screenCaptureProtectionEnabled {
+      preventScreenCapture()
+    }
     return result
   }
 
@@ -71,11 +76,15 @@ import UIKit
 
   override func applicationDidEnterBackground(_ application: UIApplication) {
     super.applicationDidEnterBackground(application)
-    showPrivacyOverlay(message: "Scrapify Auction")
+    if screenCaptureProtectionEnabled {
+      showPrivacyOverlay(message: "Scrapify Auction")
+    }
   }
 
   override func applicationWillEnterForeground(_ application: UIApplication) {
     super.applicationWillEnterForeground(application)
-    if !UIScreen.main.isCaptured { hidePrivacyOverlay() }
+    if screenCaptureProtectionEnabled && !UIScreen.main.isCaptured {
+      hidePrivacyOverlay()
+    }
   }
 }

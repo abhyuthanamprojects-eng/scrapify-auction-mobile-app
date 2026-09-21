@@ -4,6 +4,7 @@ class ApiException implements Exception {
   final Map<String, List<String>> fieldErrors;
   final String? errorType;
   final Map<String, dynamic>? raw;
+  final int? retryAfter;
 
   const ApiException({
     required this.statusCode,
@@ -11,6 +12,7 @@ class ApiException implements Exception {
     this.fieldErrors = const {},
     this.errorType,
     this.raw,
+    this.retryAfter,
   });
 
   String? firstFieldError(String field) {
@@ -40,23 +42,40 @@ class ApiException implements Exception {
 
   String get userMessage {
     if (isNetwork) return 'No internet connection. Please check your network.';
-    if (isTimeout || statusCode == 522 || statusCode == 524 || statusCode == 504) {
+    if (isTimeout ||
+        statusCode == 522 ||
+        statusCode == 524 ||
+        statusCode == 504) {
       return 'Server is taking too long to respond (Connection timed out). Please try again in a few moments.';
     }
     if (statusCode == 502 || statusCode == 503) {
       return 'Server is temporarily unavailable. Please try again shortly.';
     }
     if (isUnauthorized) return 'Your session has expired. Please log in again.';
-    if (isForbidden) return 'You do not have permission to perform this action.';
+    if (isForbidden) {
+      return 'You do not have permission to perform this action.';
+    }
     if (isNotFound) return 'The requested resource was not found.';
-    if (isRateLimited) return 'Too many requests. Please wait before trying again.';
-    if (isServer) return 'Something went wrong on our end. Please try again later.';
+    if (isRateLimited) {
+      final seconds = retryAfter;
+      return seconds != null && seconds > 0
+          ? 'Too many requests. Please wait $seconds seconds and try again.'
+          : 'Too many requests. Please wait before trying again.';
+    }
+    if (isServer) {
+      return 'Something went wrong on our end. Please try again later.';
+    }
     if (isValidation) return message;
     return message;
   }
 
-  factory ApiException.fromDioResponse(Map<String, dynamic>? data, int status) {
-    final message = data?['message'] as String? ??
+  factory ApiException.fromDioResponse(
+    Map<String, dynamic>? data,
+    int status, {
+    int? retryAfter,
+  }) {
+    final message =
+        data?['message'] as String? ??
         data?['detail'] as String? ??
         data?['title'] as String? ??
         'Something went wrong';
@@ -68,26 +87,30 @@ class ApiException implements Exception {
       statusCode: status,
       message: message,
       fieldErrors: fieldErrors,
-      errorType: (status == 522 || status == 524 || status == 504) ? 'timeout' : null,
+      errorType: (status == 522 || status == 524 || status == 504)
+          ? 'timeout'
+          : null,
       raw: data,
+      retryAfter: retryAfter,
     );
   }
 
   factory ApiException.network() => const ApiException(
-        statusCode: 0,
-        message: 'No internet connection. Please check your network.',
-        errorType: 'network',
-      );
+    statusCode: 0,
+    message: 'No internet connection. Please check your network.',
+    errorType: 'network',
+  );
 
   factory ApiException.timeout() => const ApiException(
-        statusCode: 0,
-        message: 'Request timed out. Please try again.',
-        errorType: 'timeout',
-      );
+    statusCode: 0,
+    message: 'Request timed out. Please try again.',
+    errorType: 'timeout',
+  );
 
   factory ApiException.connectionRefused() => const ApiException(
-        statusCode: 0,
-        message: 'Could not connect to the server. Please check your internet connection.',
-        errorType: 'connection_refused',
-      );
+    statusCode: 0,
+    message:
+        'Could not connect to the server. Please check your internet connection.',
+    errorType: 'connection_refused',
+  );
 }

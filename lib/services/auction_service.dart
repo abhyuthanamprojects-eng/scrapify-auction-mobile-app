@@ -23,11 +23,11 @@ class AuctionService {
     final data = await _api.get(
       Endpoints.auctions,
       queryParameters: {
-        if (status != null) 'status': status,
-        if (category != null) 'category': category,
-        if (segment != null) 'segment': segment,
-        if (search != null) 'search': search,
-        if (direction != null) 'direction': direction,
+        'status': ?status,
+        'category': ?category,
+        'segment': ?segment,
+        'search': ?search,
+        'direction': ?direction,
         if (mine) 'mine': true,
         'per_page': perPage,
         'page': page,
@@ -130,7 +130,7 @@ class AuctionService {
   Future<List<Bid>> bids(String code, {String? lot, int perPage = 50}) async {
     final data = await _api.get(
       Endpoints.auctionBids(code),
-      queryParameters: {if (lot != null) 'lot': lot, 'per_page': perPage},
+      queryParameters: {'lot': ?lot, 'per_page': perPage},
     );
     return (data['data'] as List?)
             ?.map((e) => Bid.fromJson(e as Map<String, dynamic>))

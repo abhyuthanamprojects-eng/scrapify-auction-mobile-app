@@ -18,7 +18,7 @@ class WalletService {
   }) async {
     final data =
         await _api.get(Endpoints.walletTransactions, queryParameters: {
-      if (type case final value?) 'type': value,
+      'type': ?type,
       'per_page': perPage,
       'page': page,
     });
@@ -39,7 +39,7 @@ class WalletService {
     final data = await _api.post(Endpoints.walletTopUp, data: {
       'amount': amount,
       'method': method,
-      if (note case final value?) 'note': value,
+      'note': ?note,
     });
 
     final txn = Transaction.fromJson(
@@ -53,8 +53,8 @@ class WalletService {
     String? auction,
   }) async {
     final data = await _api.get(Endpoints.emd, queryParameters: {
-      if (status case final value?) 'status': value,
-      if (auction case final value?) 'auction': value,
+      'status': ?status,
+      'auction': ?auction,
     });
     return (data['data'] as List?)?.cast<Map<String, dynamic>>() ?? [];
   }
@@ -65,13 +65,13 @@ class WalletService {
   }) async {
     return await _api.post(Endpoints.emdLock, data: {
       'auction_id': auctionId,
-      if (lot case final value?) 'lot': value,
+      'lot': ?lot,
     });
   }
 
   Future<void> releaseEmd(int id, {String? reason}) async {
     await _api.post(Endpoints.emdRelease(id), data: {
-      if (reason case final value?) 'reason': value,
+      'reason': ?reason,
     });
   }
 
@@ -83,7 +83,7 @@ class WalletService {
     final data = await _api.post(Endpoints.razorpayCreateOrder, data: {
       'amount': amount,
       'purpose': purpose,
-      if (orderCode case final value?) 'order_code': value,
+      'order_code': ?orderCode,
     });
     return (data['data'] as Map<String, dynamic>?) ?? data;
   }
@@ -100,7 +100,7 @@ class WalletService {
       'razorpay_payment_id': razorpayPaymentId,
       'razorpay_signature': razorpaySignature,
       'purpose': purpose,
-      if (orderCode case final value?) 'order_code': value,
+      'order_code': ?orderCode,
     });
     return (data['data'] as Map<String, dynamic>?) ?? data;
   }

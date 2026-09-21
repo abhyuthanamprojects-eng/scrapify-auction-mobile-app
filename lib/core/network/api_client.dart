@@ -143,7 +143,7 @@ class ApiClient {
     DioException error,
     ErrorInterceptorHandler handler,
   ) async {
-    if (kDebugMode) {
+    if (kDebugMode && _enableNetworkLogging) {
       _logError(error);
     }
 
@@ -185,6 +185,7 @@ class ApiClient {
       queryParameters: queryParameters,
       options: anonymous ? Options(headers: {'Authorization': null}) : null,
     ),
+    retrySafe: true,
   );
 
   Future<Map<String, dynamic>> post(
@@ -209,7 +210,9 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? data,
     Map<String, dynamic>? queryParameters,
-  }) => _request(() => _dio.delete(path, data: data, queryParameters: queryParameters));
+  }) => _request(
+    () => _dio.delete(path, data: data, queryParameters: queryParameters),
+  );
 
   Future<Map<String, dynamic>> uploadFile(
     String path, {
@@ -223,73 +226,119 @@ class ApiClient {
   );
 
   Future<Map<String, dynamic>> _request(
-    Future<Response> Function() call,
-  ) async {
-    try {
-      final response = await call();
-      if (response.statusCode == 204) return {};
-      return response.data as Map<String, dynamic>? ?? {};
-    } on DioException catch (e) {
-      // Handle different timeout types
-      if (e.type == DioExceptionType.connectionTimeout) {
-        throw ApiException.timeout();
-      }
-      if (e.type == DioExceptionType.sendTimeout) {
-        throw ApiException.timeout();
-      }
-      if (e.type == DioExceptionType.receiveTimeout) {
-        throw ApiException.timeout();
-      }
-
-      // Handle connection errors
-      if (e.type == DioExceptionType.connectionError) {
-        // Check if it's a connection refused vs general network error
-        if (e.error is SocketException) {
-          throw ApiException.connectionRefused();
+    Future<Response> Function() call, {
+    bool retrySafe = false,
+  }) async {
+    for (var attempt = 0; ; attempt++) {
+      try {
+        final response = await call();
+        if (response.statusCode == 204) return {};
+        return response.data as Map<String, dynamic>? ?? {};
+      } on DioException catch (e) {
+        if (retrySafe && _shouldRetry(e, attempt)) {
+          await Future<void>.delayed(_retryDelay(e, attempt));
+          continue;
         }
-        throw ApiException.network();
+        _throwDioException(e);
+      } on ApiException {
+        rethrow;
+      } catch (e) {
+        throw ApiException(
+          statusCode: 0,
+          message: 'An unexpected error occurred: ${e.toString()}',
+        );
       }
-
-      // Handle response errors
-      final status = e.response?.statusCode ?? 0;
-      final body = e.response?.data;
-
-      if (body is Map<String, dynamic>) {
-        throw ApiException.fromDioResponse(body, status);
-      }
-
-      // If we get an unexpected response format, create exception with status
-      throw ApiException(
-        statusCode: status,
-        message: e.message ?? 'Request failed',
-      );
-    } on ApiException {
-      rethrow;
-    } catch (e) {
-      throw ApiException(
-        statusCode: 0,
-        message: 'An unexpected error occurred: ${e.toString()}',
-      );
     }
   }
 
-  Future<List<int>> downloadBytes(String path) async {
-    try {
-      final response = await _dio.get<List<int>>(
-        path,
-        options: Options(responseType: ResponseType.bytes),
-      );
-      return response.data ?? <int>[];
-    } on DioException catch (e) {
-      final status = e.response?.statusCode ?? 0;
-      final body = e.response?.data;
-      if (body is Map<String, dynamic>) {
-        throw ApiException.fromDioResponse(body, status);
+  bool _shouldRetry(DioException error, int attempt) {
+    if (attempt >= 2) return false;
+    final status = error.response?.statusCode ?? 0;
+    return status == 408 || status == 425 || status == 429 || status >= 500;
+  }
+
+  Duration _retryDelay(DioException error, int attempt) {
+    final retryAfter = int.tryParse(
+      error.response?.headers.value('retry-after') ?? '',
+    );
+    final serverDelay = retryAfter == null
+        ? Duration.zero
+        : Duration(seconds: retryAfter.clamp(0, 10));
+    final exponential = Duration(milliseconds: 250 * (1 << attempt));
+    return serverDelay > exponential ? serverDelay : exponential;
+  }
+
+  Never _throwDioException(DioException e) {
+    // Handle different timeout types
+    if (e.type == DioExceptionType.connectionTimeout) {
+      throw ApiException.timeout();
+    }
+    if (e.type == DioExceptionType.sendTimeout) {
+      throw ApiException.timeout();
+    }
+    if (e.type == DioExceptionType.receiveTimeout) {
+      throw ApiException.timeout();
+    }
+
+    // Handle connection errors
+    if (e.type == DioExceptionType.connectionError) {
+      // Check if it's a connection refused vs general network error
+      if (e.error is SocketException) {
+        throw ApiException.connectionRefused();
       }
-      throw ApiException(
-        statusCode: status,
-        message: e.message ?? 'Download failed',
-      );
+      throw ApiException.network();
+    }
+
+    // Handle response errors
+    final status = e.response?.statusCode ?? 0;
+    final body = e.response?.data;
+    final retryAfter = int.tryParse(
+      e.response?.headers.value('retry-after') ?? '',
+    );
+
+    if (body is Map<String, dynamic>) {
+      throw ApiException.fromDioResponse(body, status, retryAfter: retryAfter);
+    }
+
+    // If we get an unexpected response format, create exception with status
+    throw ApiException(
+      statusCode: status,
+      message: e.message ?? 'Request failed',
+      retryAfter: retryAfter,
+    );
+  }
+
+  Future<List<int>> downloadBytes(String path) async {
+    for (var attempt = 0; ; attempt++) {
+      try {
+        final response = await _dio.get<List<int>>(
+          path,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        return response.data ?? <int>[];
+      } on DioException catch (e) {
+        if (_shouldRetry(e, attempt)) {
+          await Future<void>.delayed(_retryDelay(e, attempt));
+          continue;
+        }
+        final status = e.response?.statusCode ?? 0;
+        final body = e.response?.data;
+        final retryAfter = int.tryParse(
+          e.response?.headers.value('retry-after') ?? '',
+        );
+        if (body is Map<String, dynamic>) {
+          throw ApiException.fromDioResponse(
+            body,
+            status,
+            retryAfter: retryAfter,
+          );
+        }
+        throw ApiException(
+          statusCode: status,
+          message: e.message ?? 'Download failed',
+          retryAfter: retryAfter,
+        );
+      }
     }
   }
 }
