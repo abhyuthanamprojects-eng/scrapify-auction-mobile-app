@@ -711,7 +711,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (tncs.isNotEmpty) ...[
-          _tabSectionTitle('Terms & Conditions'),
+          _tabSectionTitle('Admin-published terms'),
           const SizedBox(height: 8),
           ...tncs.map(
             (tnc) => _tncCard(
@@ -723,7 +723,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
         ],
         if (auctionTerms.isNotEmpty) ...[
           const SizedBox(height: 14),
-          _tabSectionTitle('Additional Auction Terms'),
+          _tabSectionTitle('Seller-added auction terms'),
           const SizedBox(height: 8),
           ...auctionTerms.map(
             (t) => Padding(

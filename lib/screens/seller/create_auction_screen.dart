@@ -1998,11 +1998,13 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        Text('Terms & Conditions', style: AppTextStyles.labelMedium),
+        Text('Seller-added auction terms', style: AppTextStyles.labelMedium),
         const SizedBox(height: 8),
         TextField(
           controller: _termsController,
-          decoration: const InputDecoration(hintText: 'Additional terms...'),
+          decoration: const InputDecoration(
+            hintText: 'Add terms specific to this auction (optional)...',
+          ),
           maxLines: 3,
         ),
         const SizedBox(height: 24),
