@@ -75,7 +75,7 @@ android {
         create("prod") {
             dimension = "environment"
             applicationIdSuffix = ""
-            resValue("string", "app_name", "Scrapify Auctions")
+            resValue("string", "app_name", "Scrapify Auction")
             resValue("string", "api_base_url", "https://api.scrapifyauctions.com/api/v1")
         }
     }
