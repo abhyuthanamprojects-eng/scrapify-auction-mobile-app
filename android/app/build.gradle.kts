@@ -1,3 +1,13 @@
+import java.io.File
+import java.io.FileInputStream
+import java.util.Properties
+
+val signingPropertiesFile = rootProject.file("scrapify-auction-key.properties")
+val signingProperties = Properties()
+if (signingPropertiesFile.exists()) {
+    FileInputStream(signingPropertiesFile).use { signingProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -33,6 +43,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = signingProperties.getProperty("keyAlias")
+            keyPassword = signingProperties.getProperty("keyPassword")
+            storePassword = signingProperties.getProperty("storePassword")
+
+            val storePath = signingProperties.getProperty("storeFile")
+            storeFile = storePath?.let {
+                val file = File(it)
+                if (file.isAbsolute) file else rootProject.file(it)
+            }
+        }
+    }
+
     flavorDimensions += "environment"
 
     productFlavors {
@@ -61,9 +85,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
