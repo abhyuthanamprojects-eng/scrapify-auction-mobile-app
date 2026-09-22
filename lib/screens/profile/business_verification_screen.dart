@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
@@ -32,6 +33,7 @@ class _BusinessVerificationScreenState
   Map<String, dynamic>? _identityStatus;
   bool _loading = true;
   bool _busy = false;
+  String? _busyLabel;
   bool _identityBusy = false;
   String? _message;
   bool _prefilled = false;
@@ -71,7 +73,8 @@ class _BusinessVerificationScreenState
         _prefillFromVendor();
       }
     } catch (_) {
-      if (mounted) setState(() => _message = 'Could not load verification status.');
+      if (mounted)
+        setState(() => _message = 'Could not load verification status.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -81,16 +84,22 @@ class _BusinessVerificationScreenState
     try {
       final r = await _service.getIdentityVerificationStatus();
       if (mounted) {
-        setState(() => _identityStatus = Map<String, dynamic>.from(r['data'] ?? r));
+        setState(
+          () => _identityStatus = Map<String, dynamic>.from(r['data'] ?? r),
+        );
       }
     } catch (_) {}
   }
 
   Future<void> _startDigiLocker() async {
-    setState(() { _identityBusy = true; _message = null; });
+    setState(() {
+      _identityBusy = true;
+      _message = null;
+    });
     try {
       final config = await _service.getPlatformConfig();
-      final siteUrl = (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
+      final siteUrl =
+          (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
       final redirectUri = siteUrl.isNotEmpty
           ? '$siteUrl/business-verification'
           : 'https://scrapifyauctions.com/business-verification';
@@ -110,17 +119,22 @@ class _BusinessVerificationScreenState
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      if (mounted) setState(() => _message = 'Could not start DigiLocker verification.');
+      if (mounted)
+        setState(() => _message = 'Could not start DigiLocker verification.');
     } finally {
       if (mounted) setState(() => _identityBusy = false);
     }
   }
 
   Future<void> _retryDigiLocker() async {
-    setState(() { _identityBusy = true; _message = null; });
+    setState(() {
+      _identityBusy = true;
+      _message = null;
+    });
     try {
       final config = await _service.getPlatformConfig();
-      final siteUrl = (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
+      final siteUrl =
+          (config['data']?['site_url'] ?? config['site_url'] ?? '') as String;
       final redirectUri = siteUrl.isNotEmpty
           ? '$siteUrl/business-verification'
           : 'https://scrapifyauctions.com/business-verification';
@@ -139,7 +153,8 @@ class _BusinessVerificationScreenState
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      if (mounted) setState(() => _message = 'Could not restart DigiLocker verification.');
+      if (mounted)
+        setState(() => _message = 'Could not restart DigiLocker verification.');
     } finally {
       if (mounted) setState(() => _identityBusy = false);
     }
@@ -169,14 +184,20 @@ class _BusinessVerificationScreenState
       _gstinCtrl.text = gstinFromStatus;
     }
     final bankMasked = _status['bank_account_masked'] as String?;
-    if (bankMasked != null && bankMasked.isNotEmpty && _accountCtrl.text.isEmpty) {
+    if (bankMasked != null &&
+        bankMasked.isNotEmpty &&
+        _accountCtrl.text.isEmpty) {
       _accountCtrl.text = bankMasked;
     }
   }
 
   Future<void> _verifyGstin() async {
     if (_gstinCtrl.text.trim().isEmpty) return;
-    setState(() { _busy = true; _message = null; });
+    setState(() {
+      _busy = true;
+      _busyLabel = 'Verifying GSTIN…';
+      _message = null;
+    });
     try {
       final r = await _service.verifyGstin(
         _gstinCtrl.text.trim(),
@@ -186,19 +207,33 @@ class _BusinessVerificationScreenState
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) _showSuccess('GSTIN verification submitted');
     } catch (e) {
-      if (mounted) setState(() => _message = 'GSTIN verification failed. Please check and retry.');
+      if (mounted)
+        setState(
+          () => _message = e is ApiException
+              ? e.userMessage
+              : 'GSTIN verification failed. Please check the GSTIN and retry.',
+        );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _busyLabel = null;
+        });
     }
   }
 
   Future<void> _verifyBank() async {
-    if (_accountCtrl.text.trim().isEmpty || _ifscCtrl.text.trim().isEmpty) return;
+    if (_accountCtrl.text.trim().isEmpty || _ifscCtrl.text.trim().isEmpty)
+      return;
     if (_accountCtrl.text.trim() != _confirmCtrl.text.trim()) {
       setState(() => _message = 'Account numbers do not match.');
       return;
     }
-    setState(() { _busy = true; _message = null; });
+    setState(() {
+      _busy = true;
+      _busyLabel = 'Checking bank account…';
+      _message = null;
+    });
     try {
       final r = await _service.verifyBank(
         account: _accountCtrl.text.trim(),
@@ -209,10 +244,19 @@ class _BusinessVerificationScreenState
       setState(() => _status = Map<String, dynamic>.from(r['data'] ?? r));
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) _showSuccess('Bank verification submitted');
-    } catch (_) {
-      if (mounted) setState(() => _message = 'Bank verification failed. Please check details.');
+    } catch (e) {
+      if (mounted)
+        setState(
+          () => _message = e is ApiException
+              ? e.userMessage
+              : 'Bank verification failed. Please check the account number, confirmation, and IFSC.',
+        );
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted)
+        setState(() {
+          _busy = false;
+          _busyLabel = null;
+        });
     }
   }
 
@@ -225,28 +269,43 @@ class _BusinessVerificationScreenState
   String _statusLabel(String? raw) {
     if (raw == null || raw.isEmpty) return 'Not Started';
     switch (raw.toUpperCase()) {
-      case 'VERIFIED': return 'Verified';
-      case 'PENDING': return 'Pending';
-      case 'IN_PROGRESS': return 'In Progress';
-      case 'REJECTED': return 'Rejected';
-      case 'REVERIFICATION_REQUIRED': return 'Reverification Required';
-      case 'NOT_STARTED': return 'Not Started';
-      default: return raw;
+      case 'VERIFIED':
+        return 'Verified';
+      case 'PENDING':
+        return 'Pending';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'REVERIFICATION_REQUIRED':
+        return 'Reverification Required';
+      case 'NOT_STARTED':
+        return 'Not Started';
+      default:
+        return raw;
     }
   }
 
   Color _statusColor(String? raw) {
     switch ((raw ?? '').toUpperCase()) {
-      case 'VERIFIED': return AppColors.success;
-      case 'REJECTED': return AppColors.destructive;
-      case 'PENDING': case 'IN_PROGRESS': return AppColors.auction;
-      default: return const Color(0xFF64748B);
+      case 'VERIFIED':
+        return AppColors.success;
+      case 'REJECTED':
+        return AppColors.destructive;
+      case 'PENDING':
+      case 'IN_PROGRESS':
+        return AppColors.auction;
+      default:
+        return const Color(0xFF64748B);
     }
   }
 
   bool _isEditable(String? fieldStatus) {
     final s = (fieldStatus ?? '').toUpperCase();
-    return s.isEmpty || s == 'NOT_STARTED' || s == 'REJECTED' || s == 'REVERIFICATION_REQUIRED';
+    return s.isEmpty ||
+        s == 'NOT_STARTED' ||
+        s == 'REJECTED' ||
+        s == 'REVERIFICATION_REQUIRED';
   }
 
   @override
@@ -268,7 +327,10 @@ class _BusinessVerificationScreenState
       backgroundColor: AppColors.appBg,
       body: Column(
         children: [
-          ScreenHeader(title: 'Business Verification', onBack: () => context.pop()),
+          ScreenHeader(
+            title: 'Business Verification',
+            onBack: () => context.pop(),
+          ),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.screenPaddingH),
@@ -280,18 +342,68 @@ class _BusinessVerificationScreenState
                     decoration: BoxDecoration(
                       color: AppColors.destructive.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.destructive.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.error_outline, color: AppColors.destructive, size: 18),
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppColors.destructive,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(_message!, style: const TextStyle(fontSize: 12, color: AppColors.destructive, fontWeight: FontWeight.w600))),
+                        Expanded(
+                          child: Text(
+                            _message!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.destructive,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
 
                 _overallBanner(overallStatus),
+                if (_busy) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.auction.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                      border: Border.all(
+                        color: AppColors.auction.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${_busyLabel ?? 'Verification in progress'} Please keep this page open.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
 
                 _sectionCard(
@@ -299,12 +411,24 @@ class _BusinessVerificationScreenState
                   title: 'GSTIN Verification',
                   status: gstinStatus,
                   children: [
-                    _field('GSTIN', _gstinCtrl, readOnly: !gstinEditable, caps: true),
+                    _field(
+                      'GSTIN',
+                      _gstinCtrl,
+                      readOnly: !gstinEditable,
+                      caps: true,
+                    ),
                     const SizedBox(height: 12),
-                    _field('Business / Legal Name', _businessNameCtrl, readOnly: !gstinEditable),
+                    _field(
+                      'Business / Legal Name',
+                      _businessNameCtrl,
+                      readOnly: !gstinEditable,
+                    ),
                     if (gstinEditable) ...[
                       const SizedBox(height: 16),
-                      _actionButton('Verify GSTIN', _busy ? null : _verifyGstin),
+                      _actionButton(
+                        'Verify GSTIN',
+                        _busy ? null : _verifyGstin,
+                      ),
                     ],
                   ],
                 ),
@@ -315,16 +439,38 @@ class _BusinessVerificationScreenState
                   title: 'Bank Account Verification',
                   status: bankStatus,
                   children: [
-                    _field('Account Number', _accountCtrl, readOnly: !bankEditable, obscure: true),
+                    _field(
+                      'Account Number',
+                      _accountCtrl,
+                      readOnly: !bankEditable,
+                      obscure: true,
+                    ),
                     const SizedBox(height: 12),
-                    _field('Confirm Account Number', _confirmCtrl, readOnly: !bankEditable, obscure: true),
+                    _field(
+                      'Confirm Account Number',
+                      _confirmCtrl,
+                      readOnly: !bankEditable,
+                      obscure: true,
+                    ),
                     const SizedBox(height: 12),
-                    _field('IFSC Code', _ifscCtrl, readOnly: !bankEditable, caps: true),
+                    _field(
+                      'IFSC Code',
+                      _ifscCtrl,
+                      readOnly: !bankEditable,
+                      caps: true,
+                    ),
                     const SizedBox(height: 12),
-                    _field('Account Holder Name', _holderNameCtrl, readOnly: !bankEditable),
+                    _field(
+                      'Account Holder Name',
+                      _holderNameCtrl,
+                      readOnly: !bankEditable,
+                    ),
                     if (bankEditable) ...[
                       const SizedBox(height: 16),
-                      _actionButton('Verify Bank Account', _busy ? null : _verifyBank),
+                      _actionButton(
+                        'Verify Bank Account',
+                        _busy ? null : _verifyBank,
+                      ),
                     ],
                   ],
                 ),
@@ -343,7 +489,11 @@ class _BusinessVerificationScreenState
   Widget _identityCard() {
     final idStatus = (_identityStatus?['status'] as String?) ?? 'NOT_STARTED';
     final isVerified = idStatus == 'VERIFIED';
-    final canRetry = idStatus == 'NOT_STARTED' || idStatus == 'CANCELLED' || idStatus == 'FAILED' || idStatus == 'EXPIRED';
+    final canRetry =
+        idStatus == 'NOT_STARTED' ||
+        idStatus == 'CANCELLED' ||
+        idStatus == 'FAILED' ||
+        idStatus == 'EXPIRED';
 
     return Container(
       decoration: BoxDecoration(
@@ -362,17 +512,30 @@ class _BusinessVerificationScreenState
                 const Icon(Icons.fingerprint, size: 20, color: AppColors.navy),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text('Identity Verification', style: AppTextStyles.heading(size: 14, weight: FontWeight.w800)),
+                  child: Text(
+                    'Identity Verification',
+                    style: AppTextStyles.heading(
+                      size: 14,
+                      weight: FontWeight.w800,
+                    ),
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor(idStatus).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     _statusLabel(idStatus),
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _statusColor(idStatus)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _statusColor(idStatus),
+                    ),
                   ),
                 ),
               ],
@@ -390,29 +553,61 @@ class _BusinessVerificationScreenState
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.success.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.verified, size: 18, color: AppColors.success),
+                            Icon(
+                              Icons.verified,
+                              size: 18,
+                              color: AppColors.success,
+                            ),
                             const SizedBox(width: 8),
-                            Text('DigiLocker Verified', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
+                            Text(
+                              'DigiLocker Verified',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.success,
+                              ),
+                            ),
                           ],
                         ),
                         if (_identityStatus?['identity_name'] != null) ...[
                           const SizedBox(height: 8),
-                          Text('Name: ${_identityStatus!['identity_name']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                          Text(
+                            'Name: ${_identityStatus!['identity_name']}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                         if (_identityStatus?['aadhaar_masked'] != null) ...[
                           const SizedBox(height: 4),
-                          Text('Aadhaar: ${_identityStatus!['aadhaar_masked']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, fontFamily: 'monospace')),
+                          Text(
+                            'Aadhaar: ${_identityStatus!['aadhaar_masked']}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
                         ],
                         if (_identityStatus?['verified_at'] != null) ...[
                           const SizedBox(height: 4),
-                          Text('Verified: ${_identityStatus!['verified_at']}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          Text(
+                            'Verified: ${_identityStatus!['verified_at']}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -422,18 +617,30 @@ class _BusinessVerificationScreenState
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        _failureMessage(_identityStatus!['failure_code'] as String),
-                        style: const TextStyle(fontSize: 12, color: AppColors.destructive, fontWeight: FontWeight.w600),
+                        _failureMessage(
+                          _identityStatus!['failure_code'] as String,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.destructive,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   Text(
                     'Verify your identity securely through DigiLocker. You will be redirected to the DigiLocker website to authorize verification.',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Scrapify does not collect your Aadhaar OTP or DigiLocker credentials.',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                   if (canRetry) ...[
                     const SizedBox(height: 16),
@@ -443,16 +650,25 @@ class _BusinessVerificationScreenState
                       child: ElevatedButton.icon(
                         onPressed: _identityBusy
                             ? null
-                            : (idStatus == 'NOT_STARTED' ? _startDigiLocker : _retryDigiLocker),
+                            : (idStatus == 'NOT_STARTED'
+                                  ? _startDigiLocker
+                                  : _retryDigiLocker),
                         icon: _identityBusy
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
                             : const Icon(Icons.open_in_browser, size: 18),
                         label: Text(
                           _identityBusy
                               ? 'Connecting...'
                               : idStatus == 'NOT_STARTED'
-                                  ? 'Verify with DigiLocker'
-                                  : 'Try Again',
+                              ? 'Verify with DigiLocker'
+                              : 'Try Again',
                         ),
                       ),
                     ),
@@ -460,7 +676,10 @@ class _BusinessVerificationScreenState
                     const SizedBox(height: 12),
                     Text(
                       'Verification is in progress. Complete the DigiLocker authorization in your browser, then return here.',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
@@ -504,28 +723,43 @@ class _BusinessVerificationScreenState
         color: isVerified
             ? AppColors.success.withValues(alpha: 0.08)
             : isRejected
-                ? AppColors.destructive.withValues(alpha: 0.08)
-                : AppColors.auction.withValues(alpha: 0.08),
+            ? AppColors.destructive.withValues(alpha: 0.08)
+            : AppColors.auction.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppSpacing.radius2xl),
         border: Border.all(
           color: isVerified
               ? AppColors.success.withValues(alpha: 0.3)
               : isRejected
-                  ? AppColors.destructive.withValues(alpha: 0.3)
-                  : AppColors.auction.withValues(alpha: 0.3),
+              ? AppColors.destructive.withValues(alpha: 0.3)
+              : AppColors.auction.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
           Container(
-            width: 44, height: 44,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              color: (isVerified ? AppColors.success : isRejected ? AppColors.destructive : AppColors.auction).withValues(alpha: 0.15),
+              color:
+                  (isVerified
+                          ? AppColors.success
+                          : isRejected
+                          ? AppColors.destructive
+                          : AppColors.auction)
+                      .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              isVerified ? Icons.verified : isRejected ? Icons.warning_amber_rounded : Icons.hourglass_top_rounded,
-              color: isVerified ? AppColors.success : isRejected ? AppColors.destructive : AppColors.auction,
+              isVerified
+                  ? Icons.verified
+                  : isRejected
+                  ? Icons.warning_amber_rounded
+                  : Icons.hourglass_top_rounded,
+              color: isVerified
+                  ? AppColors.success
+                  : isRejected
+                  ? AppColors.destructive
+                  : AppColors.auction,
               size: 22,
             ),
           ),
@@ -536,12 +770,20 @@ class _BusinessVerificationScreenState
               children: [
                 Text(
                   'KYB Status',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _statusColor(status), letterSpacing: 0.5),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: _statusColor(status),
+                    letterSpacing: 0.5,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _statusLabel(status),
-                  style: AppTextStyles.heading(size: 16, weight: FontWeight.w800),
+                  style: AppTextStyles.heading(
+                    size: 16,
+                    weight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -554,7 +796,11 @@ class _BusinessVerificationScreenState
             ),
             child: Text(
               _statusLabel(status),
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _statusColor(status)),
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: _statusColor(status),
+              ),
             ),
           ),
         ],
@@ -585,17 +831,30 @@ class _BusinessVerificationScreenState
                 Icon(icon, size: 20, color: AppColors.navy),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(title, style: AppTextStyles.heading(size: 14, weight: FontWeight.w800)),
+                  child: Text(
+                    title,
+                    style: AppTextStyles.heading(
+                      size: 14,
+                      weight: FontWeight.w800,
+                    ),
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: _statusColor(status).withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     _statusLabel(status),
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: _statusColor(status)),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: _statusColor(status),
+                    ),
                   ),
                 ),
               ],
@@ -614,7 +873,13 @@ class _BusinessVerificationScreenState
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl, {bool readOnly = false, bool obscure = false, bool caps = false}) {
+  Widget _field(
+    String label,
+    TextEditingController ctrl, {
+    bool readOnly = false,
+    bool obscure = false,
+    bool caps = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -623,7 +888,14 @@ class _BusinessVerificationScreenState
           children: [
             Text(label, style: AppTextStyles.labelMedium),
             if (readOnly)
-              const Text('LOCKED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF94A3B8))),
+              const Text(
+                'LOCKED',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 6),
@@ -631,7 +903,12 @@ class _BusinessVerificationScreenState
           controller: ctrl,
           readOnly: readOnly,
           obscureText: obscure,
-          textCapitalization: caps ? TextCapitalization.characters : TextCapitalization.none,
+          textCapitalization: caps
+              ? TextCapitalization.characters
+              : TextCapitalization.none,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) =>
+              FocusManager.instance.primaryFocus?.unfocus(),
           decoration: InputDecoration(
             filled: readOnly,
             fillColor: readOnly ? const Color(0xFFF1F5F9) : AppColors.white,
@@ -648,7 +925,14 @@ class _BusinessVerificationScreenState
       child: ElevatedButton(
         onPressed: onPressed,
         child: _busy
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
             : Text(label),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_env.dart';
@@ -39,15 +40,47 @@ class ScrapifyApp extends StatelessWidget {
         final gatedChild = WebSecurityGate(
           child: child ?? const SizedBox.shrink(),
         );
+        final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+        final content = Stack(
+          children: [
+            gatedChild,
+            if (defaultTargetPlatform == TargetPlatform.iOS &&
+                keyboardInset > 0)
+              Positioned(
+                right: 12,
+                bottom: keyboardInset + 8,
+                child: Material(
+                  color: Colors.transparent,
+                  child: ElevatedButton(
+                    onPressed: () =>
+                        FocusManager.instance.primaryFocus?.unfocus(),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(72, 36),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      backgroundColor: const Color(0xFF0B1F3A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
         if (!AppEnv.isProd) {
           return Banner(
             location: BannerLocation.topStart,
             message: AppEnv.isDev ? 'DEV' : 'STG',
             color: AppEnv.isDev ? Colors.green : Colors.orange,
-            child: gatedChild,
+            child: content,
           );
         }
-        return gatedChild;
+        return content;
       },
     );
   }

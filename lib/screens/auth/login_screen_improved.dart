@@ -34,7 +34,8 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
   }
 
   Future<void> _login() async {
-    if (_identifierController.text.isEmpty || _passwordController.text.isEmpty) {
+    if (_identifierController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
       return;
     }
     ref.read(authProvider.notifier).clearError();
@@ -47,7 +48,7 @@ class _LoginScreenImprovedState extends ConsumerState<LoginScreenImproved> {
         );
     final state = ref.read(authProvider);
     if (state.isAuthenticated && mounted) {
-      context.go(state.isSeller ? '/seller' : '/home');
+      context.go('/home');
     }
   }
 

@@ -43,7 +43,7 @@ class _BiometricLockScreenState extends ConsumerState<BiometricLockScreen> {
       if (!mounted) return;
       final state = ref.read(authProvider);
       if (state.isAuthenticated) {
-        context.go(state.isSeller ? '/seller' : '/home');
+        context.go('/home');
       } else {
         context.go('/login');
       }
@@ -72,10 +72,7 @@ class _BiometricLockScreenState extends ConsumerState<BiometricLockScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF8F6F0),
-              Color(0xFFF0EDE6),
-            ],
+            colors: [Color(0xFFF8F6F0), Color(0xFFF0EDE6)],
           ),
         ),
         child: SafeArea(
@@ -98,10 +95,7 @@ class _BiometricLockScreenState extends ConsumerState<BiometricLockScreen> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(28),
-                  child: Image.asset(
-                    AssetPaths.appIcon,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.asset(AssetPaths.appIcon, fit: BoxFit.contain),
                 ),
               ),
               const SizedBox(height: 12),
@@ -158,10 +152,7 @@ class _BiometricLockScreenState extends ConsumerState<BiometricLockScreen> {
                     const SizedBox(height: 8),
                     const Text(
                       'Unlock with Face ID to continue',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF64748B),
-                      ),
+                      style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),

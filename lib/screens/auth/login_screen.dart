@@ -87,7 +87,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (state.isAuthenticated && mounted) {
       await _offerBiometricOptIn();
       if (!mounted) return;
-      context.go(state.isSeller ? '/seller' : '/home');
+      // Keep every authenticated role inside the shared shell so pending
+      // users retain access to Profile, Settings, logout, and account deletion.
+      context.go('/home');
     }
   }
 
@@ -211,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await ref.read(authProvider.notifier).refreshUser();
     final state = ref.read(authProvider);
     if (state.isAuthenticated && mounted) {
-      context.go(state.isSeller ? '/seller' : '/home');
+      context.go('/home');
     }
   }
 

@@ -35,13 +35,21 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
               const SizedBox(height: 20),
               ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: Image.asset(AssetPaths.appIcon, width: 48, height: 48, fit: BoxFit.cover),
+                child: Image.asset(
+                  AssetPaths.appIcon,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(height: 16),
-              Text('How will you use Scrapify?', style: AppTextStyles.displayMedium),
+              Text(
+                'How will you use Scrapify?',
+                style: AppTextStyles.displayMedium,
+              ),
               const SizedBox(height: 8),
               Text(
-                'You can always switch roles later',
+                'Choose the workspace that matches your account',
                 style: AppTextStyles.caption,
               ),
               const SizedBox(height: 32),
@@ -83,10 +91,14 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.auction.withValues(alpha: 0.05) : AppColors.appBg,
+          color: isSelected
+              ? AppColors.auction.withValues(alpha: 0.05)
+              : AppColors.appBg,
           borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
           border: Border.all(
-            color: isSelected ? AppColors.auction : AppColors.blackWithOpacity(0.05),
+            color: isSelected
+                ? AppColors.auction
+                : AppColors.blackWithOpacity(0.05),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -103,7 +115,9 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
               ),
               child: Icon(
                 icon,
-                color: isSelected ? AppColors.auction : AppColors.navyWithOpacity(0.5),
+                color: isSelected
+                    ? AppColors.auction
+                    : AppColors.navyWithOpacity(0.5),
               ),
             ),
             const SizedBox(width: 12),
@@ -125,7 +139,11 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
                   color: AppColors.auction,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, size: 14, color: AppColors.white),
+                child: const Icon(
+                  Icons.check,
+                  size: 14,
+                  color: AppColors.white,
+                ),
               ),
           ],
         ),

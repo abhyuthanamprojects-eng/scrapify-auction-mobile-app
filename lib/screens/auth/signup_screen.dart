@@ -70,6 +70,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   int _step = 1;
   String _registrationRole = 'buyer';
 
+  /// The signup route is intentionally unauthenticated until registration is
+  /// complete. Once the application is submitted, keep the user in the
+  /// authenticated session while KYC/payment review is pending so the role-
+  /// specific shell, profile, settings, and logout actions remain available.
+  Future<void> _continueToAuthenticatedHome() async {
+    final auth = ref.read(authProvider.notifier);
+    context.go('/home');
+    await auth.refreshUser(activateSession: true);
+  }
+
   // Step 1
   final _mobileCtl = TextEditingController();
   final _emailCtl = TextEditingController();
@@ -126,6 +136,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   String? _gstStatus;
   String? _gstError;
   bool _gstAddressAutofilled = false;
+  bool _pincodeLoading = false;
   bool _bankVerified = false;
   bool _bankLoading = false;
   String? _bankProvider;
@@ -197,7 +208,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           if (fee is num) _registrationFee = fee.toDouble();
           _registrationFeeRequired = required is bool ? required : false;
           _registrationBankDetails = config['registration_bank_details'] is Map
-              ? Map<String, dynamic>.from(config['registration_bank_details'] as Map)
+              ? Map<String, dynamic>.from(
+                  config['registration_bank_details'] as Map,
+                )
               : null;
         });
       }
@@ -472,22 +485,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       text: pincode,
       selection: TextSelection.collapsed(offset: pincode.length),
     );
-    if (mounted) setState(() {});
-    final result = await _pincodeService.lookup(pincode);
-    if (!mounted ||
-        requestId != _pincodeRequestId ||
-        gstRequestId != _gstRequestId) {
-      return;
+    if (mounted) setState(() => _pincodeLoading = true);
+    try {
+      final result = await _pincodeService.lookup(pincode);
+      if (!mounted ||
+          requestId != _pincodeRequestId ||
+          gstRequestId != _gstRequestId) {
+        return;
+      }
+      if (result == null) {
+        setState(() => _error = 'We could not resolve the GST PIN code.');
+        return;
+      }
+      setState(() {
+        _cityCtl.text = result.city;
+        _stateCtl.text = result.state;
+        _error = null;
+      });
+    } finally {
+      if (mounted && requestId == _pincodeRequestId) {
+        setState(() => _pincodeLoading = false);
+      }
     }
-    if (result == null) {
-      setState(() => _error = 'We could not resolve the GST PIN code.');
-      return;
-    }
-    setState(() {
-      _cityCtl.text = result.city;
-      _stateCtl.text = result.state;
-      _error = null;
-    });
   }
 
   Future<void> _onPincodeChanged(String value) async {
@@ -503,21 +522,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _cityCtl.clear();
     _stateCtl.clear();
     if (!_isPincode(pincode)) {
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _pincodeLoading = false);
       return;
     }
     final requestId = _pincodeRequestId;
-    final result = await _pincodeService.lookup(pincode);
-    if (!mounted || requestId != _pincodeRequestId) return;
-    if (result == null) {
-      setState(() => _error = 'We could not resolve this PIN code.');
-      return;
+    setState(() => _pincodeLoading = true);
+    try {
+      final result = await _pincodeService.lookup(pincode);
+      if (!mounted || requestId != _pincodeRequestId) return;
+      if (result == null) {
+        setState(() => _error = 'We could not resolve this PIN code.');
+        return;
+      }
+      setState(() {
+        _cityCtl.text = result.city;
+        _stateCtl.text = result.state;
+        _error = null;
+      });
+    } finally {
+      if (mounted && requestId == _pincodeRequestId) {
+        setState(() => _pincodeLoading = false);
+      }
     }
-    setState(() {
-      _cityCtl.text = result.city;
-      _stateCtl.text = result.state;
-      _error = null;
-    });
   }
 
   void _onBankChanged({String? account, String? ifsc}) {
@@ -1554,6 +1580,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ],
           ),
         ],
+        if (_pincodeLoading) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Loading city and state from PIN code…',
+                style: AppTextStyles.captionMuted,
+              ),
+            ],
+          ),
+        ],
         if (_gstVerified) ...[
           const SizedBox(height: 8),
           Container(
@@ -1887,7 +1930,22 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         ),
         if (_bankLoading) ...[
           const SizedBox(height: 8),
-          Text('Verifying bank account…', style: AppTextStyles.captionMuted),
+          Row(
+            children: [
+              const SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Checking bank and IFSC details. Please keep this page open…',
+                  style: AppTextStyles.captionMuted,
+                ),
+              ),
+            ],
+          ),
         ],
         if (_bankVerified) ...[
           const SizedBox(height: 8),
@@ -2504,12 +2562,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppSpacing.radiusLg), border: Border.all(color: AppColors.blackWithOpacity(0.08))),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('BANK TRANSFER DETAILS', style: AppTextStyles.body(size: 11, weight: FontWeight.w800, color: AppColors.navy)),
-              const SizedBox(height: 8),
-              ..._registrationBankDetails!.entries.map((entry) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('${entry.key.replaceAll('_', ' ').toUpperCase()}: ${entry.value}', style: AppTextStyles.body(size: 12, weight: FontWeight.w600)))),
-            ]),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: AppColors.blackWithOpacity(0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BANK TRANSFER DETAILS',
+                  style: AppTextStyles.body(
+                    size: 11,
+                    weight: FontWeight.w800,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ..._registrationBankDetails!.entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '${entry.key.replaceAll('_', ' ').toUpperCase()}: ${entry.value}',
+                      style: AppTextStyles.body(
+                        size: 12,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         const SizedBox(height: 20),
         _fieldLabel('Promo code (optional)'),
@@ -2568,20 +2651,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 8),
         GestureDetector(
           onTap: () async {
-            final file = await AppFilePicker.showPickerBottomSheet(context, title: 'Upload payment screenshot', allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'pdf']);
+            final file = await AppFilePicker.showPickerBottomSheet(
+              context,
+              title: 'Upload payment screenshot',
+              allowedExtensions: const ['png', 'jpg', 'jpeg', 'webp', 'pdf'],
+            );
             if (mounted && file != null) setState(() => _paymentProof = file);
           },
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(AppSpacing.radiusLg), border: Border.all(color: AppColors.blackWithOpacity(0.1))),
-            child: Row(children: [const Icon(Icons.upload_file, color: AppColors.navy), const SizedBox(width: 10), Expanded(child: Text(_paymentProof?.name ?? 'Tap to upload payment screenshot', style: AppTextStyles.body(size: 13, weight: FontWeight.w600)))]),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+              border: Border.all(color: AppColors.blackWithOpacity(0.1)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.upload_file, color: AppColors.navy),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _paymentProof?.name ?? 'Tap to upload payment screenshot',
+                    style: AppTextStyles.body(
+                      size: 13,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 12),
         _fieldLabel('Transaction ID (optional)'),
         const SizedBox(height: 8),
-        _inputField(controller: _transactionIdCtl, hint: 'Enter UTR/reference if available'),
+        _inputField(
+          controller: _transactionIdCtl,
+          hint: 'Enter UTR/reference if available',
+        ),
         if (_error != null) ...[
           const SizedBox(height: 16),
           _errorBanner(_error!),
@@ -2673,7 +2781,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         const SizedBox(height: 20),
         _primaryButton(
           label: 'Continue Browsing',
-          onTap: () => context.go('/home'),
+          onTap: () => _continueToAuthenticatedHome(),
         ),
       ],
     );
@@ -2724,7 +2832,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         _primaryButton(
           label: 'Start Bidding',
           color: AppColors.auction,
-          onTap: () => context.go('/home'),
+          onTap: () => _continueToAuthenticatedHome(),
         ),
       ],
     );
@@ -2792,6 +2900,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       textAlign: textAlign,
+      textInputAction: TextInputAction.done,
+      onSubmitted: (_) => FocusManager.instance.primaryFocus?.unfocus(),
       onChanged: onChanged,
       onEditingComplete: onEditingComplete,
       style: AppTextStyles.body(
