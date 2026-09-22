@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'bid.dart';
 import 'lot.dart';
+import '../core/network/api_config.dart';
 
 enum AuctionStatus {
   draft,
@@ -306,7 +307,7 @@ class Auction extends Equatable {
         contact: json['contact'] != null
             ? AuctionContact.fromJson(json['contact'] as Map<String, dynamic>)
             : null,
-        photos: (json['photos'] as List?)?.cast<String>() ?? [],
+        photos: _photoUrls(json['photos']),
         subLots: (json['sub_lots'] as List?)
                 ?.map((e) => Lot.fromJson(e as Map<String, dynamic>))
                 .toList() ??
@@ -397,6 +398,32 @@ class Auction extends Equatable {
     final end = DateTime.tryParse(scheduleEnd!);
     if (end == null) return 0;
     return end.difference(DateTime.now()).inSeconds.clamp(0, 999999);
+  }
+
+  static List<String> _photoUrls(dynamic value) {
+    if (value is! List) return const [];
+    return value.map((item) {
+      if (item is String) return _resolvePhotoUrl(item);
+      if (item is Map) {
+        return _resolvePhotoUrl(
+          (item['url'] ?? item['image_url'] ?? item['path'] ?? '').toString(),
+        );
+      }
+      return '';
+    }).where((url) => url.trim().isNotEmpty).toList(growable: false);
+  }
+
+  static String _resolvePhotoUrl(String value) {
+    final source = value.trim();
+    if (source.isEmpty) return '';
+    if (RegExp(r'^https?://', caseSensitive: false).hasMatch(source)) {
+      if (RegExp(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?/', caseSensitive: false).hasMatch(source)) {
+        final path = source.replaceFirst(RegExp(r'^https?://(localhost|127\.0\.0\.1)(:\d+)?', caseSensitive: false), '');
+        return '${ApiConfig.baseUrl}$path';
+      }
+      return source;
+    }
+    return '${ApiConfig.baseUrl}/${source.replaceFirst(RegExp(r'^/'), '')}';
   }
 
   Auction copyWith({
