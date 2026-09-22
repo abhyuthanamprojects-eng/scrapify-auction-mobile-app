@@ -30,6 +30,8 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Scrapify Auction uses the camera when you choose to capture KYC documents, inspection evidence, weighment slips, or auction-item photos.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Scrapify Auction uses your location only when you choose to add or verify an auction, inspection, or pickup location. Location access is not used in the background.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Scrapify Auction uses photo access to save receipts and certificates when you choose Save to Photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
