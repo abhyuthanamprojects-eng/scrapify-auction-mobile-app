@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Scrapify Auction uses the camera when you choose to capture KYC documents, inspection evidence, weighment slips, or auction-item photos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
