@@ -72,9 +72,7 @@ class AppFilePicker {
     required BuildContext context,
     ImageSource source = ImageSource.gallery,
   }) async {
-    final permission = source == ImageSource.camera
-        ? Permission.camera
-        : Permission.photos;
+    final permission = source == ImageSource.camera ? Permission.camera : null;
     final purpose = source == ImageSource.camera
         ? 'Scrapify uses the camera only when you choose to capture KYC documents, auction lot evidence, weighment slips, or dispute evidence. Camera access is not used in the background.'
         : 'Scrapify uses photo access only when you choose an existing image for KYC documents, auction lot evidence, weighment slips, or dispute evidence. Only the files you select are uploaded.';
@@ -82,12 +80,13 @@ class AppFilePicker {
         ? 'Camera access for document evidence'
         : 'Photo access for document uploads';
 
-    if (!await _ensurePermission(
-      context,
-      permission: permission,
-      title: title,
-      purpose: purpose,
-    )) {
+    if (permission != null &&
+        !await _ensurePermission(
+          context,
+          permission: permission,
+          title: title,
+          purpose: purpose,
+        )) {
       return null;
     }
 
@@ -121,13 +120,16 @@ class AppFilePicker {
   static Future<List<PickedAttachment>> pickMultiImages({
     required BuildContext context,
   }) async {
-    if (!await _ensurePermission(
-      context,
-      permission: Permission.photos,
-      title: 'Photo access for auction evidence',
-      purpose:
-          'Scrapify uses photo access only when you choose images for auction lot listings and inspection evidence. The app reads only the images you select and uploads them to the relevant auction record.',
-    )) {
+    // Android's image picker uses the system Photo Picker, so no broad media
+    // permission is needed. iOS still requires the photo-library permission.
+    if (Platform.isIOS &&
+        !await _ensurePermission(
+          context,
+          permission: Permission.photos,
+          title: 'Photo access for auction evidence',
+          purpose:
+              'Scrapify uses photo access only when you choose images for auction lot listings and inspection evidence. The app reads only the images you select and uploads them to the relevant auction record.',
+        )) {
       return [];
     }
 
