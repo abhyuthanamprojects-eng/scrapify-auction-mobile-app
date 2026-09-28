@@ -28,6 +28,11 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Scrapify Auction uses the camera when you choose to capture KYC documents, inspection evidence, weighment slips, or auction-item photos.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
