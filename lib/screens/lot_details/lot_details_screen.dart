@@ -1208,52 +1208,153 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
   }
 
   void _showLoginRequiredDialog(BuildContext context) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          8,
+          24,
+          MediaQuery.of(ctx).padding.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.lock_outline, color: AppColors.auction, size: 24),
-            const SizedBox(width: 10),
-            const Text('Login Required'),
-          ],
-        ),
-        titleTextStyle: AppTextStyles.heading(
-          size: 18,
-          weight: FontWeight.w800,
-        ),
-        content: const Text(
-          'Please login or register to proceed with this action. You need an account to bid, accept terms, or participate in auctions.',
-        ),
-        contentTextStyle: const TextStyle(
-          fontSize: 14,
-          color: Color(0xFF64748B),
-          height: 1.5,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppColors.navyWithOpacity(0.6)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              context.go('/onboarding');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.auction,
-              foregroundColor: AppColors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 24),
+              decoration: BoxDecoration(
+                color: AppColors.navyWithOpacity(0.15),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-            child: const Text('Login / Register'),
-          ),
-        ],
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.auction.withValues(alpha: 0.12),
+                    AppColors.auction.withValues(alpha: 0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.auction.withValues(alpha: 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.lock_outline_rounded,
+                color: AppColors.auction,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Authentication Required',
+              style: AppTextStyles.heading(
+                size: 20,
+                weight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Sign in to your account to bid on auctions, accept terms & conditions, and participate in live events.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.navyWithOpacity(0.55),
+                height: 1.6,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.navy.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 18,
+                    color: AppColors.navyWithOpacity(0.4),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Your data is encrypted and securely stored',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.navyWithOpacity(0.45),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  context.go('/onboarding');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.auction,
+                  foregroundColor: AppColors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                  ),
+                ),
+                child: Text(
+                  'Login / Register',
+                  style: AppTextStyles.heading(
+                    size: 15,
+                    weight: FontWeight.w700,
+                    color: AppColors.white,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.navyWithOpacity(0.6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
+                  ),
+                ),
+                child: const Text(
+                  'Continue Browsing',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -290,7 +290,9 @@ class Auction extends Equatable {
                 ?.whereType<Map<String, dynamic>>()
                 .toList() ??
             [],
-        termsVersion: json['terms_version'] as int? ?? 1,
+        termsVersion: json['terms_version'] is Map
+            ? (json['terms_version']['version'] as int? ?? 1)
+            : (json['terms_version'] as int? ?? 1),
         termsAccepted: json['terms_accepted'] as bool? ?? false,
         emdPaid: json['emd_paid'] as bool? ?? false,
         isRegistered: json['is_registered'] as bool? ??
