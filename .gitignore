@@ -35,6 +35,7 @@ migrate_working_dir/
 /coverage/
 
 # Symbolication
+temp_auto_push.bat
 app.*.symbols
 
 # Obfuscation
@@ -62,8 +63,6 @@ app.*.map.json
 /ios/Runner/GeneratedPluginRegistrant.*
 
 # Environment
-.env
-.env.*
 !.env.example
 
 # Generated
@@ -73,3 +72,5 @@ app.*.map.json
 lib/generated_plugin_registrant.dart
 branch_structure.json
 .gitignore
+config.bat
+node_modules
