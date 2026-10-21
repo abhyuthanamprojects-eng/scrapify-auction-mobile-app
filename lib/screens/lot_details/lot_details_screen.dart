@@ -1449,7 +1449,11 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
       ctaLabel = a.registrationOpen
           ? 'Register to participate'
           : 'Registration closed — view only';
-      onCta = () {};
+      // Terms acceptance is the first server-side participation step. Once
+      // accepted, the refreshed auction contract exposes the EMD action.
+      onCta = a.registrationOpen
+          ? () => context.push('/terms/${a.code}')
+          : () {};
       buttonColor = AppColors.navy;
     } else if (!a.termsAccepted) {
       ctaLabel = 'Accept Terms & Conditions';
@@ -1496,7 +1500,7 @@ class _LotDetailsScreenState extends ConsumerState<LotDetailsScreen>
             child: SizedBox(
               height: 52,
               child: ElevatedButton(
-                onPressed: a.isRegistered ? onCta : null,
+                onPressed: a.isRegistered || a.registrationOpen ? onCta : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: buttonColor,
                   foregroundColor: AppColors.white,

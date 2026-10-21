@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../providers/auction_provider.dart';
+import '../../services/auction_service.dart';
 
 class TermsConditionsScreen extends ConsumerStatefulWidget {
   final String auctionCode;
@@ -17,6 +18,7 @@ class TermsConditionsScreen extends ConsumerStatefulWidget {
 class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
   bool _agreed = false;
   bool _submitting = false;
+  final _auctionService = AuctionService();
 
   @override
   Widget build(BuildContext context) {
@@ -120,11 +122,20 @@ class _TermsConditionsScreenState extends ConsumerState<TermsConditionsScreen> {
                           ? null
                           : () async {
                               setState(() => _submitting = true);
-                              if (mounted) {
+                              try {
+                                await _auctionService.acceptAuctionTerms(widget.auctionCode);
+                                ref.invalidate(auctionDetailProvider(widget.auctionCode));
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('✓ Terms Accepted Successfully')),
                                 );
                                 context.pop();
+                              } catch (error) {
+                                if (!context.mounted) return;
+                                setState(() => _submitting = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Unable to accept terms: $error')),
+                                );
                               }
                             },
                       style: ElevatedButton.styleFrom(

@@ -70,9 +70,11 @@ class _LiveReverseAuctionScreenState extends ConsumerState<LiveReverseAuctionScr
   Future<void> _loadAuction() async {
     try {
       final auction = await AuctionService().show(widget.lotId);
-      if (!auction.isRegistered) {
+      if (!auction.isRegistered || (auction.emdAmountInr > 0 && !auction.emdPaid)) {
         throw Exception(auction.registrationOpen
-            ? 'You are not registered for this auction.'
+            ? (auction.emdAmountInr > 0 && !auction.emdPaid
+                ? 'Your EMD is not confirmed for this auction.'
+                : 'You are not registered for this auction.')
             : 'Auction registration has closed. This auction is view-only.');
       }
       final bids = await AuctionService().bids(widget.lotId);
