@@ -294,9 +294,13 @@ class Auction extends Equatable {
             ? (json['terms_version']['version'] as int? ?? 1)
             : (json['terms_version'] as int? ?? 1),
         termsAccepted: json['terms_accepted'] as bool? ?? false,
-        emdPaid: json['emd_paid'] as bool? ?? false,
+        // The API exposes the authoritative EMD lifecycle as emd_status
+        // (locked, pending, released, ...). Keep the legacy boolean fallback
+        // for older API responses, but treat a locked hold as paid/confirmed.
+        emdPaid: _emdIsPaid(json['emd_status']) || (json['emd_paid'] as bool? ?? false),
         isRegistered: json['is_registered'] as bool? ??
             ((json['terms_accepted'] as bool? ?? false) ||
+                _emdIsPaid(json['emd_status']) ||
                 (json['emd_paid'] as bool? ?? false) ||
                 json['my_rank'] != null),
         registrationOpen: json['registration_open'] as bool? ?? true,
@@ -344,6 +348,11 @@ class Auction extends Equatable {
         createdAt: json['created_at'] as String?,
         guidelinesDoc: json['guidelines_doc'] as String?,
       );
+
+  static bool _emdIsPaid(dynamic value) {
+    final status = value?.toString().toLowerCase();
+    return status == 'locked' || status == 'confirmed' || status == 'paid';
+  }
 
   Map<String, dynamic> toJson() => {
         'title': title,

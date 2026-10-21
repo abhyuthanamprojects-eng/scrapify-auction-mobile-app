@@ -2454,6 +2454,11 @@ class _CreateAuctionScreenState extends ConsumerState<CreateAuctionScreen> {
       // Upload auction documents (PDF)
       await _uploadAllDocuments(auctionCode);
 
+      // Creation intentionally starts as a draft. Move it into the
+      // approval queue only after configuration, material list, and document
+      // uploads have completed successfully.
+      await _auctionService.submit(auctionCode);
+
       // Invalidate is already called above but call again after template
       ref.invalidate(sellerAuctionsProvider);
 

@@ -44,6 +44,7 @@ import '../../screens/customer/auction_register_screen.dart';
 import '../../screens/customer/payable_summary_screen.dart';
 import '../../screens/customer/refund_tracker_screen.dart';
 import '../../screens/customer/emd_ledger_screen.dart';
+import '../../screens/customer/emd_lock_screen.dart';
 import '../../screens/wallet/wallet_screen.dart';
 import '../../screens/my_bids/my_bids_screen.dart';
 import '../../widgets/role_guard.dart';
@@ -171,6 +172,13 @@ abstract final class AppRouter {
           child: TermsConditionsScreen(
             auctionCode: state.pathParameters['id']!,
           ),
+        ),
+      ),
+      GoRoute(
+        path: '/emd/:id',
+        builder: (_, state) => RoleGuard(
+          allowedRoles: {'buyer'},
+          child: EmdLockScreen(auctionCode: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

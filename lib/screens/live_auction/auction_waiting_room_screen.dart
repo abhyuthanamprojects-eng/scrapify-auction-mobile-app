@@ -39,9 +39,11 @@ class _AuctionWaitingRoomScreenState extends ConsumerState<AuctionWaitingRoomScr
   Future<void> _loadAuction() async {
     try {
       final auction = await AuctionService().show(widget.auctionCode);
-      if (!auction.isRegistered && auction.isLive) {
+      if ((!auction.isRegistered || (auction.emdAmountInr > 0 && !auction.emdPaid)) && auction.isLive) {
         throw Exception(auction.registrationOpen
-            ? 'You are not registered for this auction.'
+            ? (auction.emdAmountInr > 0 && !auction.emdPaid
+                ? 'Your EMD is not confirmed for this auction.'
+                : 'You are not registered for this auction.')
             : 'Auction registration has closed. This auction is view-only.');
       }
       final startsAt = DateTime.tryParse(auction.scheduleStart ?? '');
