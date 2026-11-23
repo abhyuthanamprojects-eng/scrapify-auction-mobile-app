@@ -73,4 +73,3 @@ branch_structure.json
 .gitignore
 config.bat
 node_modules
-/.vscode/tasks.json
